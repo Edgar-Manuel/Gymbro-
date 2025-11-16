@@ -11,10 +11,12 @@ import {
   Sun,
   Menu,
   X,
-  Utensils
+  Utensils,
+  GraduationCap
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import GymBroAssistant from '@/components/GymBroAssistant';
 
 export default function Layout() {
   const location = useLocation();
@@ -26,6 +28,7 @@ export default function Layout() {
     { path: '/exercises', label: 'Ejercicios', icon: BookOpen },
     { path: '/workout', label: 'Entrenar', icon: Dumbbell },
     { path: '/progress', label: 'Progreso', icon: TrendingUp },
+    { path: '/education', label: 'Educación', icon: GraduationCap },
     { path: '/nutrition', label: 'Nutrición', icon: Utensils },
     { path: '/profile', label: 'Perfil', icon: User },
   ];
@@ -142,6 +145,9 @@ export default function Layout() {
           </p>
         </div>
       </footer>
+
+      {/* GymBro Assistant - disponible en todas las páginas */}
+      <GymBroAssistant />
     </div>
   );
 }

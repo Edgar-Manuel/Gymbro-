@@ -8,9 +8,10 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import RestTimer from '@/components/RestTimer';
+import DaySelector from '@/components/DaySelector';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
-import type { WorkoutLog, ExerciseLog, SerieLog } from '@/types';
+import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina } from '@/types';
 import {
   Check,
   ArrowRight,
@@ -24,10 +25,14 @@ export default function WorkoutSession() {
   const navigate = useNavigate();
   const { currentUser, activeRoutine, startWorkout, finishWorkout, activeWorkout } = useAppStore();
 
+  // Estado para selector de día
+  const [selectedDay, setSelectedDay] = useState<DiaRutina | null>(null);
+  const [hasStarted, setHasStarted] = useState(false);
+
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
   const [showTimer, setShowTimer] = useState(false);
-  const [startTime] = useState(new Date());
+  const [startTime, setStartTime] = useState(new Date());
 
   // Formulario de serie actual
   const [reps, setReps] = useState('');
@@ -37,29 +42,64 @@ export default function WorkoutSession() {
   // Estado del entrenamiento
   const [ejercicioLogs, setEjercicioLogs] = useState<Map<string, ExerciseLog>>(new Map());
 
-  useEffect(() => {
-    initializeWorkout();
-  }, []);
+  // Sugerencias de peso basadas en historial
+  const [pesoSugerido, setPesoSugerido] = useState<number | null>(null);
 
-  const initializeWorkout = () => {
+  useEffect(() => {
     if (!currentUser || !activeRoutine) {
       navigate('/');
-      return;
     }
+  }, [currentUser, activeRoutine, navigate]);
 
-    // Obtener el primer día con ejercicios
-    const diaConEjercicios = activeRoutine.dias.find(d => d.ejercicios.length > 0);
-    if (!diaConEjercicios) {
-      navigate('/');
-      return;
+  // Cargar peso sugerido cuando cambia el ejercicio
+  useEffect(() => {
+    if (selectedDay && hasStarted) {
+      loadPesoSugerido();
     }
+  }, [currentExerciseIndex, selectedDay, hasStarted]);
+
+  const loadPesoSugerido = async () => {
+    if (!currentUser || !selectedDay) return;
+
+    const ejercicioActual = selectedDay.ejercicios[currentExerciseIndex];
+    if (!ejercicioActual) return;
+
+    try {
+      // Obtener últimos workouts
+      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 10);
+
+      // Buscar última vez que se hizo este ejercicio
+      for (const workout of workouts) {
+        const ejercicioLog = workout.ejercicios.find(e => e.ejercicioId === ejercicioActual.ejercicioId);
+        if (ejercicioLog && ejercicioLog.series.length > 0) {
+          // Tomar el peso promedio de la primera serie
+          const pesoPromedio = ejercicioLog.series[0].peso;
+          setPesoSugerido(pesoPromedio);
+          setPeso(pesoPromedio.toString());
+          return;
+        }
+      }
+
+      setPesoSugerido(null);
+    } catch (error) {
+      console.error('Error cargando peso sugerido:', error);
+    }
+  };
+
+  const handleSelectDay = (dia: DiaRutina) => {
+    setSelectedDay(dia);
+  };
+
+  const handleStartWorkout = () => {
+    if (!currentUser || !selectedDay) return;
 
     // Inicializar workout log
     const workoutLog: WorkoutLog = {
       id: `workout-${Date.now()}`,
       userId: currentUser.id,
       fecha: new Date(),
-      diaRutina: diaConEjercicios.nombre,
+      diaRutina: selectedDay.nombre,
+      diaRutinaId: selectedDay.id,
       ejercicios: [],
       duracionReal: 0,
       sensacionGeneral: 3,
@@ -67,18 +107,43 @@ export default function WorkoutSession() {
     };
 
     startWorkout(workoutLog);
+    setStartTime(new Date());
+    setHasStarted(true);
   };
 
   if (!activeRoutine || !currentUser) {
     return null;
   }
 
-  const diaActual = activeRoutine.dias.find(d => d.ejercicios.length > 0);
-  if (!diaActual) {
-    return null;
+  // Si no ha seleccionado día o no ha empezado, mostrar selector
+  if (!selectedDay || !hasStarted) {
+    return (
+      <>
+        <DaySelector
+          dias={activeRoutine.dias.filter(d => d.ejercicios.length > 0)}
+          onSelectDay={handleSelectDay}
+          selectedDayId={selectedDay?.id}
+        />
+
+        {selectedDay && !hasStarted && (
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg">
+            <div className="container mx-auto max-w-4xl">
+              <Button
+                size="lg"
+                className="w-full h-14 text-lg"
+                onClick={handleStartWorkout}
+              >
+                <Check className="w-5 h-5 mr-2" />
+                Comenzar Entrenamiento: {selectedDay.nombre}
+              </Button>
+            </div>
+          </div>
+        )}
+      </>
+    );
   }
 
-  const ejerciciosDelDia = diaActual.ejercicios;
+  const ejerciciosDelDia = selectedDay.ejercicios;
   const ejercicioActual = ejerciciosDelDia[currentExerciseIndex];
 
   if (!ejercicioActual) {
@@ -120,7 +185,6 @@ export default function WorkoutSession() {
 
     // Limpiar formulario
     setReps('');
-    setPeso('');
     setRir(2);
 
     // Incrementar número de serie
@@ -143,6 +207,7 @@ export default function WorkoutSession() {
       setCurrentExerciseIndex(prev => prev + 1);
       setCurrentSetNumber(1);
       setShowTimer(false);
+      setPeso(''); // Limpiar peso para cargar nueva sugerencia
     } else {
       // Último ejercicio, finalizar entrenamiento
       handleFinalizarEntrenamiento();
@@ -154,6 +219,7 @@ export default function WorkoutSession() {
       setCurrentExerciseIndex(prev => prev - 1);
       setCurrentSetNumber(1);
       setShowTimer(false);
+      setPeso('');
     }
   };
 
@@ -190,9 +256,11 @@ export default function WorkoutSession() {
       }
 
       finishWorkout();
-      navigate('/progress');
+      // Navegar al resumen con el workout como state
+      navigate('/workout/summary', { state: { workout: workoutFinal } });
     } catch (error) {
       console.error('Error guardando entrenamiento:', error);
+      alert('Error al guardar el entrenamiento. Por favor, intenta de nuevo.');
     }
   };
 
@@ -214,7 +282,7 @@ export default function WorkoutSession() {
       <div className="sticky top-0 z-40 bg-primary text-primary-foreground p-4 shadow-lg">
         <div className="container mx-auto max-w-4xl">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-xl font-bold">{diaActual.nombre}</h1>
+            <h1 className="text-xl font-bold">{selectedDay.nombre}</h1>
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -259,6 +327,15 @@ export default function WorkoutSession() {
                 {totalSeries} series × {repsObjetivo} reps
               </p>
             </div>
+
+            {/* Peso sugerido */}
+            {pesoSugerido && (
+              <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg mb-4 border border-blue-200 dark:border-blue-800">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  💡 Última vez usaste: <span className="font-bold">{pesoSugerido}kg</span>
+                </p>
+              </div>
+            )}
 
             {/* Consejo clave */}
             {ejercicioActual.notas && (
@@ -305,7 +382,7 @@ export default function WorkoutSession() {
                     step="0.25"
                     value={peso}
                     onChange={(e) => setPeso(e.target.value)}
-                    placeholder="0"
+                    placeholder={pesoSugerido?.toString() || "0"}
                     className="text-lg font-semibold text-center h-14"
                     min="0"
                   />

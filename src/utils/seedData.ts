@@ -11,6 +11,15 @@ export async function initializeDatabase() {
       console.log('Poblando base de datos con ejercicios...');
       await dbHelpers.bulkAddExercises(exercisesData);
       console.log(`✅ ${exercisesData.length} ejercicios agregados`);
+    } else if (existingExercises !== exercisesData.length) {
+      // Si el número de ejercicios no coincide, actualizar la base de datos
+      console.log(`⚠️ La base de datos tiene ${existingExercises} ejercicios pero debería tener ${exercisesData.length}`);
+      console.log('Sincronizando base de datos...');
+
+      // Limpiar y volver a cargar todos los ejercicios
+      await db.exercises.clear();
+      await dbHelpers.bulkAddExercises(exercisesData);
+      console.log(`✅ Base de datos sincronizada: ${exercisesData.length} ejercicios cargados`);
     } else {
       console.log(`✅ Base de datos ya contiene ${existingExercises} ejercicios`);
     }

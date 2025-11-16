@@ -6,7 +6,9 @@ import type {
   WorkoutLog,
   Achievement,
   NutritionTracker,
-  UserStatistics
+  UserStatistics,
+  BodyMeasurement,
+  ProgressPhoto
 } from '@/types';
 
 export class GymBroDatabase extends Dexie {
@@ -17,6 +19,8 @@ export class GymBroDatabase extends Dexie {
   achievements!: Table<Achievement, string>;
   nutrition!: Table<NutritionTracker, string>;
   statistics!: Table<UserStatistics, string>;
+  bodyMeasurements!: Table<BodyMeasurement, string>;
+  progressPhotos!: Table<ProgressPhoto, string>;
 
   constructor() {
     super('GymBroDatabase');
@@ -29,6 +33,19 @@ export class GymBroDatabase extends Dexie {
       achievements: 'id, userId, tipo, fecha',
       nutrition: '[userId+fecha], userId, fecha',
       statistics: 'userId'
+    });
+
+    // Nueva versión con body tracking
+    this.version(2).stores({
+      exercises: 'id, grupoMuscular, categoria, tier, dificultad, *equipamiento, *tags',
+      users: 'id, nombre',
+      rutinas: 'id, userId, activa',
+      workouts: 'id, userId, fecha, diaRutinaId, completado',
+      achievements: 'id, userId, tipo, fecha',
+      nutrition: '[userId+fecha], userId, fecha',
+      statistics: 'userId',
+      bodyMeasurements: 'id, userId, fecha',
+      progressPhotos: 'id, userId, fecha, tipo'
     });
   }
 }
@@ -69,6 +86,10 @@ export const dbHelpers = {
   },
 
   async createOrUpdateUser(user: UserProfile) {
+    return await db.users.put(user);
+  },
+
+  async updateUser(user: UserProfile) {
     return await db.users.put(user);
   },
 
@@ -167,6 +188,69 @@ export const dbHelpers = {
     return await db.exercises.bulkAdd(exercises);
   },
 
+  // Body Measurements
+  async getBodyMeasurements(userId: string, limit?: number) {
+    let query = db.bodyMeasurements
+      .where('userId').equals(userId)
+      .reverse()
+      .sortBy('fecha');
+
+    const measurements = await query;
+    return limit ? measurements.slice(0, limit) : measurements;
+  },
+
+  async getLatestBodyMeasurement(userId: string) {
+    const measurements = await this.getBodyMeasurements(userId, 1);
+    return measurements[0];
+  },
+
+  async addBodyMeasurement(measurement: BodyMeasurement) {
+    return await db.bodyMeasurements.add(measurement);
+  },
+
+  async getBodyMeasurementsByDateRange(userId: string, startDate: Date, endDate: Date) {
+    return await db.bodyMeasurements
+      .where('userId').equals(userId)
+      .and(m => m.fecha >= startDate && m.fecha <= endDate)
+      .toArray();
+  },
+
+  // Progress Photos
+  async getProgressPhotos(userId: string, tipo?: string) {
+    let query = db.progressPhotos.where('userId').equals(userId);
+
+    if (tipo) {
+      query = query.and(p => p.tipo === tipo);
+    }
+
+    return await query.reverse().sortBy('fecha');
+  },
+
+  async addProgressPhoto(photo: ProgressPhoto) {
+    return await db.progressPhotos.add(photo);
+  },
+
+  async deleteProgressPhoto(id: string) {
+    return await db.progressPhotos.delete(id);
+  },
+
+  async getLatestPhotosByType(userId: string) {
+    const photos = await db.progressPhotos
+      .where('userId').equals(userId)
+      .reverse()
+      .sortBy('fecha');
+
+    // Obtener la más reciente de cada tipo
+    const photosByType: Record<string, ProgressPhoto> = {};
+    for (const photo of photos) {
+      if (!photosByType[photo.tipo]) {
+        photosByType[photo.tipo] = photo;
+      }
+    }
+
+    return photosByType;
+  },
+
   // Clear data (útil para desarrollo)
   async clearAllData() {
     await db.exercises.clear();
@@ -176,5 +260,7 @@ export const dbHelpers = {
     await db.achievements.clear();
     await db.nutrition.clear();
     await db.statistics.clear();
+    await db.bodyMeasurements.clear();
+    await db.progressPhotos.clear();
   }
 };
