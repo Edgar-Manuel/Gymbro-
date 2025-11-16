@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { BodyMeasurement } from '@/types';
-import { Scale, Ruler, TrendingUp, TrendingDown, Minus, Plus } from 'lucide-react';
+import { Scale, Ruler, TrendingUp, TrendingDown, Plus } from 'lucide-react';
 
 export default function BodyMeasurements() {
   const { currentUser } = useAppStore();

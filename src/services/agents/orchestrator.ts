@@ -18,7 +18,7 @@ class OrchestratorAgent implements Agent {
   private subAgents: Map<AgentType, Agent>;
 
   constructor() {
-    this.subAgents = new Map([
+    this.subAgents = new Map<AgentType, Agent>([
       ['nutrition', nutritionAgent],
       ['exercise', exerciseAgent],
       ['training', trainingAgent],
@@ -117,7 +117,7 @@ RESPONDE SOLO CON EL NOMBRE DEL AGENTE, NADA MÁS.`;
   /**
    * Determina qué agente debe responder
    */
-  private async routeToAgent(query: string, context: AgentContext): Promise<AgentType | 'orchestrator'> {
+  private async routeToAgent(query: string, _context: AgentContext): Promise<AgentType | 'orchestrator'> {
     // Reglas simples primero (más rápido y no consume API)
     const lowerQuery = query.toLowerCase();
 
@@ -230,7 +230,7 @@ RESPONDE SOLO CON EL NOMBRE DEL AGENTE, NADA MÁS.`;
   /**
    * Respuestas directas del orquestador
    */
-  private async respondDirectly(query: string, context: AgentContext): Promise<AgentResponse> {
+  private async respondDirectly(query: string, _context: AgentContext): Promise<AgentResponse> {
     const lowerQuery = query.toLowerCase();
 
     // Saludo

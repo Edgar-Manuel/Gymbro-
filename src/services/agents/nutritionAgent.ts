@@ -172,7 +172,7 @@ RESPONDE SIEMPRE en español, de forma concisa y práctica.`;
     }
   }
 
-  private getSuggestedActions(query: string, context: AgentContext) {
+  private getSuggestedActions(query: string, _context: AgentContext) {
     const actions = [];
 
     // Si pregunta sobre el plan, ofrecer ver detalles

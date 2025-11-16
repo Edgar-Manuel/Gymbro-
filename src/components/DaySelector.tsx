@@ -37,7 +37,7 @@ export default function DaySelector({ dias, onSelectDay, selectedDayId }: DaySel
                   <div className="flex-1">
                     <CardTitle className="text-2xl mb-2">{dia.nombre}</CardTitle>
                     <CardDescription className="text-base">
-                      {dia.gruposMusculares.join(' • ')}
+                      {(dia.gruposMusculares || dia.grupos).join(' • ')}
                     </CardDescription>
                   </div>
                   <Calendar className="w-6 h-6 text-muted-foreground" />
