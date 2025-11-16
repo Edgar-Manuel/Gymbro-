@@ -241,3 +241,34 @@ export interface UserStatistics {
   grupoMuscularMasEntrenado?: GrupoMuscular;
   progresoGeneral: number; // % de mejora desde inicio
 }
+
+// Body Measurements & Tracking
+export interface BodyMeasurement {
+  id: string;
+  userId: string;
+  fecha: Date;
+  peso: number; // kg
+  grasaCorporal?: number; // %
+  medidas: {
+    pecho?: number; // cm
+    cintura?: number;
+    cadera?: number;
+    brazoDerecho?: number;
+    brazoIzquierdo?: number;
+    musloDerecho?: number;
+    musloIzquierdo?: number;
+    pantorrillaDerecha?: number;
+    pantorrillaIzquierda?: number;
+  };
+  notas?: string;
+}
+
+export interface ProgressPhoto {
+  id: string;
+  userId: string;
+  fecha: Date;
+  tipo: 'frente' | 'espalda' | 'lado_derecho' | 'lado_izquierdo';
+  url: string; // base64 o blob URL
+  peso?: number; // peso en el momento de la foto
+  notas?: string;
+}

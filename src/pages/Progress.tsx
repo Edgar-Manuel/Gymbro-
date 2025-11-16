@@ -2,10 +2,15 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
 import { analizarProgresoEjercicio, generarDatosGrafico, calcularEstadisticasGenerales } from '@/utils/progressAnalyzer';
 import type { WorkoutLog, ExerciseKnowledge, ProgressAnalysis } from '@/types';
+import BodyMeasurements from '@/components/BodyMeasurements';
+import PhotoProgress from '@/components/PhotoProgress';
+import WorkoutCalendar from '@/components/WorkoutCalendar';
+import BodyWeightChart from '@/components/BodyWeightChart';
 import {
   LineChart,
   Line,
@@ -123,23 +128,33 @@ export default function Progress() {
         </p>
       </div>
 
-      {workouts.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Sin Datos de Entrenamiento</CardTitle>
-            <CardDescription>
-              Completa tu primer entrenamiento para ver tus estadísticas
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Las gráficas y análisis aparecerán aquí una vez que empieces a registrar tus entrenamientos.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Estadísticas Generales */}
+      <Tabs defaultValue="entrenamientos" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsTrigger value="entrenamientos">Entrenamientos</TabsTrigger>
+          <TabsTrigger value="corporal">Peso & Medidas</TabsTrigger>
+          <TabsTrigger value="fotos">Fotos</TabsTrigger>
+          <TabsTrigger value="calendario">Calendario</TabsTrigger>
+        </TabsList>
+
+        {/* Tab: Entrenamientos */}
+        <TabsContent value="entrenamientos">
+          {workouts.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Sin Datos de Entrenamiento</CardTitle>
+                <CardDescription>
+                  Completa tu primer entrenamiento para ver tus estadísticas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Las gráficas y análisis aparecerán aquí una vez que empieces a registrar tus entrenamientos.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Estadísticas Generales */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -409,8 +424,26 @@ export default function Progress() {
               </div>
             </CardContent>
           </Card>
-        </>
-      )}
+            </>
+          )}
+        </TabsContent>
+
+        {/* Tab: Peso & Medidas */}
+        <TabsContent value="corporal" className="space-y-6">
+          <BodyWeightChart />
+          <BodyMeasurements />
+        </TabsContent>
+
+        {/* Tab: Fotos */}
+        <TabsContent value="fotos">
+          <PhotoProgress />
+        </TabsContent>
+
+        {/* Tab: Calendario */}
+        <TabsContent value="calendario">
+          <WorkoutCalendar />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

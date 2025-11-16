@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { dbHelpers } from '@/db';
 import type { ExerciseKnowledge } from '@/types';
 import { GrupoMuscular, type Tier } from '@/types';
-import { Search, X } from 'lucide-react';
+import { Search, X, Youtube } from 'lucide-react';
+import { getVideosByExercise } from '@/data/exerciseVideos';
 
 export default function ExerciseLibrary() {
   const [exercises, setExercises] = useState<ExerciseKnowledge[]>([]);
@@ -315,6 +316,41 @@ export default function ExerciseLibrary() {
                   </div>
                 </div>
               )}
+
+              {/* Videos Educativos de BlueGym */}
+              {(() => {
+                const relatedVideos = getVideosByExercise(selectedExercise.id);
+                return relatedVideos.length > 0 && (
+                  <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-200 dark:border-blue-900">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Youtube className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <h3 className="font-semibold">Videos Educativos de BlueGym Animation</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {relatedVideos.map((video) => (
+                        <div key={video.id} className="bg-background rounded-lg overflow-hidden">
+                          {/* Reproductor de YouTube embebido */}
+                          <div className="aspect-video">
+                            <iframe
+                              width="100%"
+                              height="100%"
+                              src={`https://www.youtube.com/embed/${video.youtubeId}`}
+                              title={video.title}
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              className="w-full h-full"
+                            ></iframe>
+                          </div>
+                          <div className="p-3">
+                            <p className="text-sm font-medium">{video.title}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <Button
                 onClick={() => setSelectedExercise(null)}

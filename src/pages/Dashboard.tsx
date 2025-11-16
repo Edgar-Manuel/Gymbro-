@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { RutinaSemanal, WorkoutLog } from '@/types';
-import { Dumbbell, TrendingUp, Calendar, Award } from 'lucide-react';
+import { Dumbbell, TrendingUp, Calendar, Award, Flame, Target } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -46,8 +46,24 @@ export default function Dashboard() {
   const getNextWorkoutDay = () => {
     if (!activeRoutine || !activeRoutine.dias.length) return null;
 
-    // Por ahora, retornamos el primer día
-    // En una implementación completa, rastrearíamos qué día le toca
+    // Si no hay workouts previos, empezar con el primer día
+    if (recentWorkouts.length === 0) {
+      return activeRoutine.dias[0];
+    }
+
+    // Buscar qué día se entrenó la última vez
+    const ultimoWorkout = recentWorkouts[0];
+    const ultimoDiaIndex = activeRoutine.dias.findIndex(
+      d => d.id === ultimoWorkout.diaRutinaId || d.nombre === ultimoWorkout.diaRutina
+    );
+
+    // Si encontramos el último día, sugerir el siguiente en la rotación
+    if (ultimoDiaIndex !== -1) {
+      const nextIndex = (ultimoDiaIndex + 1) % activeRoutine.dias.length;
+      return activeRoutine.dias[nextIndex];
+    }
+
+    // Fallback: primer día
     return activeRoutine.dias[0];
   };
 
@@ -104,7 +120,7 @@ export default function Dashboard() {
                 ))}
               </div>
               <Button
-                onClick={() => navigate('/workout')}
+                onClick={() => navigate('/workout-session')}
                 size="lg"
                 className="w-full md:w-auto"
               >
@@ -125,18 +141,23 @@ export default function Dashboard() {
 
       {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
+        <Card className="border-orange-500 bg-gradient-to-br from-orange-50 to-background dark:from-orange-950/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Racha Actual</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Flame className="h-5 w-5 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {statistics?.rachaActual || 0} días
+            <div className="text-3xl font-bold text-orange-600">
+              {statistics?.rachaActual || 0} 🔥
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               Mejor racha: {statistics?.rachaMasLarga || 0} días
             </p>
+            {(statistics?.rachaActual || 0) >= 7 && (
+              <Badge variant="default" className="mt-2 bg-orange-500">
+                ¡Increíble consistencia!
+              </Badge>
+            )}
           </CardContent>
         </Card>
 
@@ -223,7 +244,7 @@ export default function Dashboard() {
                 Aún no has registrado ningún entrenamiento
               </p>
               <Button
-                onClick={() => navigate('/workout')}
+                onClick={() => navigate('/workout-session')}
                 variant="outline"
                 className="mt-4"
               >
