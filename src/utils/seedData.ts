@@ -35,6 +35,7 @@ export async function initializeDatabase() {
         objetivoCalorico: 'superavit',
         factorActividad: 1.5,
         notificacionesActivas: true,
+        modoBeast: false,
         fechaInicio: new Date(),
         pesoInicial: 70,
         rachaActual: 0

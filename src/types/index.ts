@@ -58,6 +58,9 @@ export interface ExerciseKnowledge {
   variantes: ExerciseVariante[];
   descansoSugerido: number; // segundos
   tags?: string[]; // ej: ["tiron_vertical", "tiron_horizontal"]
+
+  // Configuración personalizada por usuario
+  descansoPersonalizado?: number; // override del descanso sugerido
 }
 
 // User Profile
@@ -84,6 +87,7 @@ export interface UserProfile {
   // Configuración
   horaPreferida?: string; // "08:00"
   notificacionesActivas: boolean;
+  modoBeast: boolean; // Modo ultra-minimal
 
   // Progreso
   fechaInicio: Date;
@@ -99,6 +103,19 @@ export interface EjercicioEnRutina {
   repsObjetivo: number | [number, number]; // número fijo o rango [min, max]
   pesoSugerido?: number;
   notas?: string;
+
+  // Advanced techniques
+  superset?: string; // ID del ejercicio con el que hace superset
+  tecnicaAvanzada?: 'dropset' | 'rest-pause' | 'myo-reps' | null;
+
+  // Warmup
+  seriesCalentamiento?: WarmupSet[];
+}
+
+export interface WarmupSet {
+  peso: number;
+  reps: number;
+  porcentaje: number; // % del peso de trabajo
 }
 
 export interface DiaRutina {
@@ -107,6 +124,7 @@ export interface DiaRutina {
   ejercicios: EjercicioEnRutina[];
   duracionEstimada: number; // minutos
   orden: number; // día 1, 2, 3, etc
+  warmupChecklist?: string[]; // checklist de calentamiento
 }
 
 export interface RutinaSemanal {
@@ -117,6 +135,7 @@ export interface RutinaSemanal {
   dias: DiaRutina[];
   fechaCreacion: Date;
   activa: boolean;
+  isTemplate?: boolean; // Si es un template guardado
 }
 
 // Workout Logging
@@ -124,15 +143,19 @@ export interface SerieLog {
   numero: number;
   repeticiones: number;
   peso: number; // kg
-  RIR: number; // Reps In Reserve (0-3)
+  RIR: number; // Reps In Reserve (0-4)
   tiempoDescanso: number; // segundos
   completada: boolean;
+  notas?: string; // Notas rápidas por serie
+  fallo?: boolean; // Si llegó a fallo real
+  tecnicaAvanzada?: 'dropset' | 'rest-pause' | null;
 }
 
 export interface ExerciseLog {
   ejercicioId: string;
   ejercicio?: ExerciseKnowledge; // populated
   series: SerieLog[];
+  seriesCalentamiento?: SerieLog[]; // Sets de warmup
   tecnicaCorrecta: boolean;
   sensacionMuscular: 1 | 2 | 3 | 4 | 5;
   notas?: string;
@@ -149,6 +172,7 @@ export interface WorkoutLog {
   sensacionGeneral: 1 | 2 | 3 | 4 | 5;
   notas?: string;
   completado: boolean;
+  warmupCompletado?: boolean;
 }
 
 // Progress Analysis
@@ -175,6 +199,24 @@ export interface ProgressAnalysis {
 
   recomendacion: RecomendacionProgresion;
   proximoObjetivo: string;
+}
+
+// Personal Records (PRs)
+export type PRType = 'peso_maximo' | 'volumen_total' | 'reps_maximas' | 'one_rep_max';
+
+export interface PersonalRecord {
+  id: string;
+  userId: string;
+  ejercicioId: string;
+  ejercicioNombre: string;
+  tipo: PRType;
+  valor: number; // kg, reps, o volumen
+  reps?: number; // para contexto del peso máximo
+  fecha: Date;
+  anterior?: {
+    valor: number;
+    fecha: Date;
+  };
 }
 
 // Nutrition Tracking
@@ -221,7 +263,7 @@ export interface ProgressDataPoint {
 export interface Achievement {
   id: string;
   userId: string;
-  tipo: 'weight' | 'streak' | 'volume' | 'consistency' | 'custom';
+  tipo: 'weight' | 'streak' | 'volume' | 'consistency' | 'pr' | 'custom';
   titulo: string;
   descripcion: string;
   icono: string;
@@ -240,4 +282,65 @@ export interface UserStatistics {
   ejercicioFavorito?: string;
   grupoMuscularMasEntrenado?: GrupoMuscular;
   progresoGeneral: number; // % de mejora desde inicio
+}
+
+// Progress Photos
+export interface ProgressPhoto {
+  id: string;
+  userId: string;
+  fecha: Date;
+  imageData: string; // base64 o URL
+  peso: number;
+  notas?: string;
+  tipo: 'frente' | 'lado' | 'espalda' | 'otro';
+}
+
+// Plate Calculator
+export interface PlateConfig {
+  peso: number;
+  color: string;
+  cantidad: number;
+}
+
+// Voice Command
+export interface VoiceCommand {
+  comando: string;
+  accion: 'completar_serie' | 'siguiente_ejercicio' | 'iniciar_timer' | 'pausar_timer';
+  parametros?: {
+    peso?: number;
+    reps?: number;
+    rir?: number;
+  };
+}
+
+// 1RM Calculation
+export interface OneRepMaxData {
+  peso: number;
+  reps: number;
+  oneRepMax: number; // calculado
+  porcentajes: {
+    porcentaje: number;
+    peso: number;
+  }[];
+}
+
+// Volume Landmarks
+export interface VolumeLandmark {
+  id: string;
+  userId: string;
+  tipo: 'total' | 'mensual' | 'semanal' | 'por_ejercicio';
+  umbral: number; // kg (ej: 10000 = 10 toneladas)
+  alcanzado: boolean;
+  fecha?: Date;
+  mensaje: string;
+}
+
+// Exercise History Entry (para historial detallado)
+export interface ExerciseHistoryEntry {
+  fecha: Date;
+  series: SerieLog[];
+  pesoMaximo: number;
+  volumenTotal: number;
+  repsPromedio: number;
+  workoutId: string;
 }

@@ -6,7 +6,10 @@ import type {
   WorkoutLog,
   Achievement,
   NutritionTracker,
-  UserStatistics
+  UserStatistics,
+  PersonalRecord,
+  ProgressPhoto,
+  VolumeLandmark
 } from '@/types';
 
 export class GymBroDatabase extends Dexie {
@@ -17,6 +20,9 @@ export class GymBroDatabase extends Dexie {
   achievements!: Table<Achievement, string>;
   nutrition!: Table<NutritionTracker, string>;
   statistics!: Table<UserStatistics, string>;
+  personalRecords!: Table<PersonalRecord, string>;
+  progressPhotos!: Table<ProgressPhoto, string>;
+  volumeLandmarks!: Table<VolumeLandmark, string>;
 
   constructor() {
     super('GymBroDatabase');
@@ -24,11 +30,14 @@ export class GymBroDatabase extends Dexie {
     this.version(1).stores({
       exercises: 'id, grupoMuscular, categoria, tier, dificultad, *equipamiento, *tags',
       users: 'id, nombre',
-      rutinas: 'id, userId, activa',
+      rutinas: 'id, userId, activa, isTemplate',
       workouts: 'id, userId, fecha, diaRutinaId, completado',
       achievements: 'id, userId, tipo, fecha',
       nutrition: '[userId+fecha], userId, fecha',
-      statistics: 'userId'
+      statistics: 'userId',
+      personalRecords: 'id, userId, ejercicioId, tipo, fecha',
+      progressPhotos: 'id, userId, fecha, tipo',
+      volumeLandmarks: 'id, userId, tipo, alcanzado'
     });
   }
 }
@@ -167,6 +176,98 @@ export const dbHelpers = {
     return await db.exercises.bulkAdd(exercises);
   },
 
+  // Personal Records (PRs)
+  async getUserPRs(userId: string, ejercicioId?: string) {
+    let query = db.personalRecords.where('userId').equals(userId);
+
+    if (ejercicioId) {
+      const all = await query.toArray();
+      return all.filter(pr => pr.ejercicioId === ejercicioId);
+    }
+
+    return await query.reverse().sortBy('fecha');
+  },
+
+  async getExercisePRs(userId: string, ejercicioId: string) {
+    return await db.personalRecords
+      .where('userId').equals(userId)
+      .and(pr => pr.ejercicioId === ejercicioId)
+      .reverse()
+      .sortBy('fecha');
+  },
+
+  async addPersonalRecord(pr: PersonalRecord) {
+    return await db.personalRecords.add(pr);
+  },
+
+  async getLatestPR(userId: string, ejercicioId: string, tipo: string) {
+    const prs = await db.personalRecords
+      .where('userId').equals(userId)
+      .and(pr => pr.ejercicioId === ejercicioId && pr.tipo === tipo)
+      .reverse()
+      .sortBy('fecha');
+
+    return prs[0];
+  },
+
+  // Progress Photos
+  async getUserPhotos(userId: string, limit?: number) {
+    const photos = await db.progressPhotos
+      .where('userId').equals(userId)
+      .reverse()
+      .sortBy('fecha');
+
+    return limit ? photos.slice(0, limit) : photos;
+  },
+
+  async addProgressPhoto(photo: ProgressPhoto) {
+    return await db.progressPhotos.add(photo);
+  },
+
+  async deleteProgressPhoto(photoId: string) {
+    return await db.progressPhotos.delete(photoId);
+  },
+
+  // Volume Landmarks
+  async getUserLandmarks(userId: string) {
+    return await db.volumeLandmarks
+      .where('userId').equals(userId)
+      .toArray();
+  },
+
+  async updateLandmark(landmark: VolumeLandmark) {
+    return await db.volumeLandmarks.put(landmark);
+  },
+
+  async addLandmark(landmark: VolumeLandmark) {
+    return await db.volumeLandmarks.add(landmark);
+  },
+
+  async getPendingLandmarks(userId: string) {
+    return await db.volumeLandmarks
+      .where('userId').equals(userId)
+      .and(l => !l.alcanzado)
+      .toArray();
+  },
+
+  // Workout Templates
+  async getTemplates(userId: string) {
+    return await db.rutinas
+      .where('userId').equals(userId)
+      .and(r => r.isTemplate === true)
+      .toArray();
+  },
+
+  async saveAsTemplate(rutina: RutinaSemanal) {
+    const template = {
+      ...rutina,
+      id: `template-${Date.now()}`,
+      isTemplate: true,
+      activa: false
+    };
+    return await db.rutinas.add(template);
+  },
+
   // Clear data (útil para desarrollo)
   async clearAllData() {
     await db.exercises.clear();
@@ -176,5 +277,8 @@ export const dbHelpers = {
     await db.achievements.clear();
     await db.nutrition.clear();
     await db.statistics.clear();
+    await db.personalRecords.clear();
+    await db.progressPhotos.clear();
+    await db.volumeLandmarks.clear();
   }
 };

@@ -8,9 +8,11 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import RestTimer from '@/components/RestTimer';
+import PRCelebration from '@/components/PRCelebration';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
-import type { WorkoutLog, ExerciseLog, SerieLog } from '@/types';
+import { detectarPR, generarSetsCalentamiento } from '@/utils/gymCalculators';
+import type { WorkoutLog, ExerciseLog, SerieLog, PersonalRecord } from '@/types';
 import {
   Check,
   ArrowRight,
@@ -33,13 +35,70 @@ export default function WorkoutSession() {
   const [reps, setReps] = useState('');
   const [peso, setPeso] = useState('');
   const [rir, setRir] = useState<number>(2);
+  const [nota, setNota] = useState('');
 
   // Estado del entrenamiento
   const [ejercicioLogs, setEjercicioLogs] = useState<Map<string, ExerciseLog>>(new Map());
 
+  // PR Tracking
+  const [currentPR, setCurrentPR] = useState<PersonalRecord | null>(null);
+  const [showPRCelebration, setShowPRCelebration] = useState(false);
+
+  // Previous Performance Tracking
+  const [previousPerformance, setPreviousPerformance] = useState<{
+    series: SerieLog[];
+    fecha: Date;
+    volumenTotal: number;
+  } | null>(null);
+
+  // Warmup Sets
+  const [isWarmupMode, setIsWarmupMode] = useState(true);
+  const [warmupSetsCompleted, setWarmupSetsCompleted] = useState<SerieLog[]>([]);
+  const [showWarmupSuggestions, setShowWarmupSuggestions] = useState(true);
+
   useEffect(() => {
     initializeWorkout();
   }, []);
+
+  // Load previous performance when exercise changes
+  useEffect(() => {
+    loadPreviousPerformance();
+    // Reset warmup mode for new exercise
+    setIsWarmupMode(true);
+    setWarmupSetsCompleted([]);
+    setShowWarmupSuggestions(true);
+  }, [currentExerciseIndex]);
+
+  const loadPreviousPerformance = async () => {
+    if (!currentUser || !ejercicioActual) return;
+
+    try {
+      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 10);
+
+      // Find the most recent workout that included this exercise
+      for (const workout of workouts) {
+        const ejercicioLog = workout.ejercicios.find(
+          e => e.ejercicioId === ejercicioActual.ejercicioId
+        );
+
+        if (ejercicioLog && ejercicioLog.series.length > 0) {
+          const volumenTotal = ejercicioLog.series.reduce(
+            (sum, s) => sum + (s.peso * s.repeticiones),
+            0
+          );
+
+          setPreviousPerformance({
+            series: ejercicioLog.series,
+            fecha: workout.fecha,
+            volumenTotal
+          });
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading previous performance:', error);
+    }
+  };
 
   const initializeWorkout = () => {
     if (!currentUser || !activeRoutine) {
@@ -89,8 +148,8 @@ export default function WorkoutSession() {
   const seriesCompletadas = ejercicioLog?.series.length || 0;
   const totalSeries = ejercicioActual.seriesObjetivo;
 
-  const handleRegistrarSerie = () => {
-    if (!reps || !peso) {
+  const handleRegistrarSerie = async () => {
+    if (!reps || !peso || !currentUser) {
       alert('Por favor completa repeticiones y peso');
       return;
     }
@@ -101,7 +160,8 @@ export default function WorkoutSession() {
       peso: parseFloat(peso),
       RIR: rir,
       tiempoDescanso: ejercicioActual.ejercicio?.descansoSugerido || 90,
-      completada: true
+      completada: true,
+      notas: nota || undefined
     };
 
     // Actualizar o crear ejercicio log
@@ -118,10 +178,42 @@ export default function WorkoutSession() {
 
     setEjercicioLogs(prev => new Map(prev.set(ejercicioActual.ejercicioId, logActualizado)));
 
+    // *** PR DETECTION ***
+    // Check if this set is a new personal record
+    try {
+      const prAnterior = await dbHelpers.getLatestPR(
+        currentUser.id,
+        ejercicioActual.ejercicioId,
+        'peso_maximo'
+      );
+
+      const nuevoPR = detectarPR(
+        ejercicioActual.ejercicioId,
+        ejercicioActual.ejercicio?.nombre || 'Ejercicio',
+        currentUser.id,
+        nuevaSerie,
+        prAnterior
+      );
+
+      if (nuevoPR) {
+        // Save PR to database
+        await dbHelpers.addPersonalRecord(nuevoPR);
+
+        // Show celebration after a brief delay
+        setTimeout(() => {
+          setCurrentPR(nuevoPR);
+          setShowPRCelebration(true);
+        }, 800);
+      }
+    } catch (error) {
+      console.error('Error checking for PR:', error);
+    }
+
     // Limpiar formulario
     setReps('');
     setPeso('');
     setRir(2);
+    setNota('');
 
     // Incrementar número de serie
     setCurrentSetNumber(prev => prev + 1);
@@ -260,6 +352,35 @@ export default function WorkoutSession() {
               </p>
             </div>
 
+            {/* Previous Performance Comparison */}
+            {previousPerformance && (
+              <div className="bg-blue-500/10 border border-blue-500/30 p-4 rounded-lg mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                    📊 Última vez ({new Date(previousPerformance.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}):
+                  </p>
+                  <Badge variant="outline" className="text-xs">
+                    {previousPerformance.volumenTotal.toFixed(0)}kg total
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {previousPerformance.series.slice(0, 6).map((serie, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-background/50 p-2 rounded text-center text-sm"
+                    >
+                      <span className="font-semibold">{serie.repeticiones}</span>
+                      <span className="text-muted-foreground"> × </span>
+                      <span className="font-semibold">{serie.peso}kg</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  ¡Intenta igualar o superar estos números!
+                </p>
+              </div>
+            )}
+
             {/* Consejo clave */}
             {ejercicioActual.notas && (
               <div className="bg-primary/10 p-4 rounded-lg mb-4 flex gap-3">
@@ -268,6 +389,98 @@ export default function WorkoutSession() {
                   <p className="font-medium text-sm mb-1">Consejo Clave:</p>
                   <p className="text-sm">{ejercicioActual.notas}</p>
                 </div>
+              </div>
+            )}
+
+            {/* Warmup Suggestions */}
+            {isWarmupMode && showWarmupSuggestions && seriesCompletadas === 0 && (
+              <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-lg mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🔥</span>
+                    <p className="font-semibold text-orange-600 dark:text-orange-400">
+                      Calentamiento Sugerido
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsWarmupMode(false);
+                      setShowWarmupSuggestions(false);
+                    }}
+                    className="text-xs"
+                  >
+                    Saltar
+                  </Button>
+                </div>
+                {(() => {
+                  // Get estimated working weight from previous performance
+                  const estimatedWeight = previousPerformance?.series[0]?.peso || 60;
+                  const warmupSets = generarSetsCalentamiento(
+                    estimatedWeight,
+                    Array.isArray(ejercicioActual.repsObjetivo)
+                      ? ejercicioActual.repsObjetivo[0]
+                      : ejercicioActual.repsObjetivo
+                  );
+
+                  return (
+                    <div className="space-y-2">
+                      {warmupSets.map((set, idx) => (
+                        <div
+                          key={idx}
+                          className={`flex items-center justify-between p-2 rounded-lg ${
+                            warmupSetsCompleted.length > idx
+                              ? 'bg-green-500/20 border border-green-500/30'
+                              : 'bg-background/50'
+                          }`}
+                        >
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">
+                              {set.reps} reps × {set.peso}kg
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {set.descripcion}
+                            </p>
+                          </div>
+                          {warmupSetsCompleted.length === idx && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const completedSet: SerieLog = {
+                                  numero: warmupSetsCompleted.length + 1,
+                                  repeticiones: set.reps,
+                                  peso: set.peso,
+                                  RIR: 5,
+                                  tiempoDescanso: 30,
+                                  completada: true
+                                };
+                                setWarmupSetsCompleted([...warmupSetsCompleted, completedSet]);
+
+                                // If all warmup sets completed, exit warmup mode
+                                if (warmupSetsCompleted.length + 1 >= warmupSets.length) {
+                                  setTimeout(() => {
+                                    setIsWarmupMode(false);
+                                    setShowWarmupSuggestions(false);
+                                  }, 500);
+                                }
+                              }}
+                            >
+                              <Check className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {warmupSetsCompleted.length > idx && (
+                            <Check className="w-5 h-5 text-green-600" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+                <p className="text-xs text-muted-foreground mt-3 text-center">
+                  El calentamiento reduce lesiones y mejora el rendimiento
+                </p>
               </div>
             )}
 
@@ -328,6 +541,32 @@ export default function WorkoutSession() {
                 </div>
               </div>
 
+              {/* Quick Notes */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Notas rápidas (opcional):</Label>
+                <div className="flex flex-wrap gap-2">
+                  {['💪 Fácil', '😤 Difícil', '🔥 Fallo', '⚠️ Técnica mala', '✅ Buena forma'].map((quickNote) => (
+                    <Button
+                      key={quickNote}
+                      type="button"
+                      variant={nota === quickNote ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setNota(nota === quickNote ? '' : quickNote)}
+                      className="text-xs"
+                    >
+                      {quickNote}
+                    </Button>
+                  ))}
+                </div>
+                <Input
+                  type="text"
+                  value={nota}
+                  onChange={(e) => setNota(e.target.value)}
+                  placeholder="O escribe tu nota personalizada..."
+                  className="text-sm"
+                />
+              </div>
+
               <Button
                 onClick={handleRegistrarSerie}
                 size="lg"
@@ -347,16 +586,23 @@ export default function WorkoutSession() {
                   {ejercicioLog.series.map((serie) => (
                     <div
                       key={serie.numero}
-                      className="flex items-center justify-between p-3 rounded-lg bg-accent/30 border"
+                      className="p-3 rounded-lg bg-accent/30 border"
                     >
-                      <span className="font-medium">Serie {serie.numero}</span>
-                      <div className="text-sm">
-                        <span className="font-semibold">{serie.repeticiones} reps</span>
-                        {' × '}
-                        <span className="font-semibold">{serie.peso}kg</span>
-                        {' • '}
-                        <span className="text-muted-foreground">RIR {serie.RIR}</span>
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">Serie {serie.numero}</span>
+                        <div className="text-sm">
+                          <span className="font-semibold">{serie.repeticiones} reps</span>
+                          {' × '}
+                          <span className="font-semibold">{serie.peso}kg</span>
+                          {' • '}
+                          <span className="text-muted-foreground">RIR {serie.RIR}</span>
+                        </div>
                       </div>
+                      {serie.notas && (
+                        <p className="text-xs text-muted-foreground mt-1 italic">
+                          {serie.notas}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -404,6 +650,17 @@ export default function WorkoutSession() {
           duration={ejercicioActual.ejercicio?.descansoSugerido || 90}
           onComplete={() => setShowTimer(false)}
           onClose={() => setShowTimer(false)}
+        />
+      )}
+
+      {/* PR Celebration */}
+      {showPRCelebration && currentPR && (
+        <PRCelebration
+          pr={currentPR}
+          onClose={() => {
+            setShowPRCelebration(false);
+            setCurrentPR(null);
+          }}
         />
       )}
     </div>
