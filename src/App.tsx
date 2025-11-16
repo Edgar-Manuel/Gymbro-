@@ -6,6 +6,9 @@ import { useAppStore } from '@/store';
 import Layout from '@/components/Layout';
 import Dashboard from '@/pages/Dashboard';
 import ExerciseLibrary from '@/pages/ExerciseLibrary';
+import RoutineGenerator from '@/pages/RoutineGenerator';
+import WorkoutSession from '@/pages/WorkoutSession';
+import Progress from '@/pages/Progress';
 import { Dumbbell } from 'lucide-react';
 
 function App() {
@@ -61,10 +64,10 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="exercises" element={<ExerciseLibrary />} />
-          <Route path="workout" element={<div className="p-8">Entrenamiento (próximamente)</div>} />
+          <Route path="workout" element={<WorkoutSession />} />
           <Route path="workout/:id" element={<div className="p-8">Detalle de entrenamiento (próximamente)</div>} />
-          <Route path="routine-generator" element={<div className="p-8">Generador de rutinas (próximamente)</div>} />
-          <Route path="progress" element={<div className="p-8">Progreso (próximamente)</div>} />
+          <Route path="routine-generator" element={<RoutineGenerator />} />
+          <Route path="progress" element={<Progress />} />
           <Route path="nutrition" element={<div className="p-8">Nutrición (próximamente)</div>} />
           <Route path="profile" element={<div className="p-8">Perfil (próximamente)</div>} />
           <Route path="*" element={<Navigate to="/" replace />} />
