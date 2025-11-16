@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Scale, Ruler, Calendar, TrendingUp, Target, Moon, Sun } from 'lucide-react';
+import { User, Scale, TrendingUp, Target, Moon, Sun } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { dbHelpers } from '@/db';
 
@@ -24,7 +24,7 @@ export default function Profile() {
     if (currentUser) {
       setFormData({
         nombre: currentUser.nombre,
-        peso: currentUser.peso,
+        peso: currentUser.peso || currentUser.pesoActual,
         altura: currentUser.altura,
         edad: currentUser.edad,
       });
@@ -75,7 +75,7 @@ export default function Profile() {
     if (currentUser) {
       setFormData({
         nombre: currentUser.nombre,
-        peso: currentUser.peso,
+        peso: currentUser.peso || currentUser.pesoActual,
         altura: currentUser.altura,
         edad: currentUser.edad,
       });
@@ -84,10 +84,10 @@ export default function Profile() {
   };
 
   // Calcular métricas
-  const calcularIMC = () => {
+  const calcularIMC = (): number => {
     if (!formData.peso || !formData.altura) return 0;
     const alturaMetros = formData.altura / 100;
-    return (formData.peso / (alturaMetros * alturaMetros)).toFixed(1);
+    return formData.peso / (alturaMetros * alturaMetros);
   };
 
   const calcularTDEE = () => {
@@ -106,7 +106,7 @@ export default function Profile() {
     return { texto: 'Obesidad', color: 'text-red-600' };
   };
 
-  const imc = parseFloat(calcularIMC());
+  const imc = calcularIMC();
   const clasificacion = clasificarIMC(imc);
   const tdee = calcularTDEE();
 

@@ -153,7 +153,7 @@ RESPONDE SIEMPRE en español, con análisis objetivo basado en datos.`;
     }
   }
 
-  private getSuggestedActions(query: string, context: AgentContext) {
+  private getSuggestedActions(query: string, _context: AgentContext) {
     const actions = [];
 
     // Si pregunta sobre progreso, ofrecer ver estadísticas

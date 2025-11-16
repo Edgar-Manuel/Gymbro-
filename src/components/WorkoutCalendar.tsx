@@ -61,7 +61,6 @@ export default function WorkoutCalendar() {
   const getWorkoutsForDay = (day: number) => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const dateToCheck = new Date(year, month, day);
 
     return workouts.filter(w => {
       const workoutDate = new Date(w.fecha);

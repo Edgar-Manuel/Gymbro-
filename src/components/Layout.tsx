@@ -1,5 +1,6 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
   Home,
@@ -12,7 +13,8 @@ import {
   Menu,
   X,
   Utensils,
-  GraduationCap
+  GraduationCap,
+  LogOut
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -20,8 +22,19 @@ import GymBroAssistant from '@/components/GymBroAssistant';
 
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useAppStore();
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: Home },
@@ -69,6 +82,13 @@ export default function Layout() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {/* User name - desktop only */}
+            {user && (
+              <span className="hidden md:block text-sm text-muted-foreground mr-2">
+                {user.name}
+              </span>
+            )}
+
             <Button
               variant="ghost"
               size="icon"
@@ -80,6 +100,17 @@ export default function Layout() {
               ) : (
                 <Moon className="h-5 w-5" />
               )}
+            </Button>
+
+            {/* Logout button - desktop */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              aria-label="Cerrar sesión"
+              className="hidden md:flex"
+            >
+              <LogOut className="h-5 w-5" />
             </Button>
 
             {/* Mobile menu button */}
@@ -124,6 +155,18 @@ export default function Layout() {
                   </Link>
                 );
               })}
+
+              {/* Logout button - mobile */}
+              <div
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors hover:bg-accent cursor-pointer text-destructive"
+              >
+                <LogOut className="h-5 w-5" />
+                <span>Cerrar Sesión</span>
+              </div>
             </nav>
           </div>
         )}

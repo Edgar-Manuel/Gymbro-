@@ -107,7 +107,7 @@ RESPONDE SIEMPRE en español, con PRECISIÓN TÉCNICA.`;
     }
   }
 
-  private getSuggestedActions(query: string, context: AgentContext) {
+  private getSuggestedActions(query: string, _context: AgentContext) {
     const actions = [];
 
     // Si pregunta sobre ejercicios, ofrecer ver biblioteca

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { RutinaSemanal, WorkoutLog } from '@/types';
-import { Dumbbell, TrendingUp, Calendar, Award, Flame, Target } from 'lucide-react';
+import { Dumbbell, TrendingUp, Award, Flame } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();

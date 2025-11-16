@@ -154,7 +154,7 @@ RESPONDE SIEMPRE en español, con datos concretos y motivación realista.`;
     }
   }
 
-  private getSuggestedActions(query: string, context: AgentContext) {
+  private getSuggestedActions(query: string, _context: AgentContext) {
     const actions = [];
 
     // Si pregunta sobre rutinas

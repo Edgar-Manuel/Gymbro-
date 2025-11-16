@@ -3,7 +3,11 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { initializeDatabase } from '@/utils/seedData';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
+import { AuthProvider } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
 import Dashboard from '@/pages/Dashboard';
 import ExerciseLibrary from '@/pages/ExerciseLibrary';
 import RoutineGenerator from '@/pages/RoutineGenerator';
@@ -64,24 +68,38 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="exercises" element={<ExerciseLibrary />} />
-          <Route path="workout" element={<WorkoutHub />} />
-          <Route path="workout-session" element={<WorkoutSession />} />
-          <Route path="workout/summary" element={<WorkoutSummary />} />
-          <Route path="workout/:id" element={<div className="p-8">Detalle de entrenamiento (próximamente)</div>} />
-          <Route path="routine-generator" element={<RoutineGenerator />} />
-          <Route path="progress" element={<Progress />} />
-          <Route path="education" element={<Education />} />
-          <Route path="nutrition" element={<Nutrition />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Rutas públicas */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Rutas protegidas */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="exercises" element={<ExerciseLibrary />} />
+            <Route path="workout" element={<WorkoutHub />} />
+            <Route path="workout-session" element={<WorkoutSession />} />
+            <Route path="workout/summary" element={<WorkoutSummary />} />
+            <Route path="workout/:id" element={<div className="p-8">Detalle de entrenamiento (próximamente)</div>} />
+            <Route path="routine-generator" element={<RoutineGenerator />} />
+            <Route path="progress" element={<Progress />} />
+            <Route path="education" element={<Education />} />
+            <Route path="nutrition" element={<Nutrition />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

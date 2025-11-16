@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { orchestrator, type AgentContext } from '@/services/agents';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useAppStore } from '@/store';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -85,7 +86,7 @@ export default function GymBroAssistant() {
         user: currentUser ? {
           id: parseInt(currentUser.id),
           nombre: currentUser.nombre,
-          peso: currentUser.peso,
+          peso: currentUser.peso || currentUser.pesoActual,
           altura: currentUser.altura,
           edad: currentUser.edad,
         } : undefined,

@@ -73,6 +73,7 @@ export interface UserProfile {
 
   // Datos físicos
   pesoActual: number; // kg
+  peso?: number; // Alias para pesoActual
   altura: number; // cm
   edad: number;
   sexo: 'masculino' | 'femenino';
@@ -102,8 +103,10 @@ export interface EjercicioEnRutina {
 }
 
 export interface DiaRutina {
+  id?: string;
   nombre: string;
   grupos: GrupoMuscular[];
+  gruposMusculares?: GrupoMuscular[]; // Alias para grupos
   ejercicios: EjercicioEnRutina[];
   duracionEstimada: number; // minutos
   orden: number; // día 1, 2, 3, etc
