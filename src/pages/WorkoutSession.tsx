@@ -21,7 +21,8 @@ import {
   X,
   Save,
   Lightbulb,
-  Zap
+  Zap,
+  BookmarkPlus
 } from 'lucide-react';
 
 export default function WorkoutSession() {
@@ -257,6 +258,18 @@ export default function WorkoutSession() {
     }
   };
 
+  const handleGuardarComoTemplate = async () => {
+    if (!activeRoutine || !currentUser) return;
+
+    try {
+      await dbHelpers.saveAsTemplate(activeRoutine);
+      alert('✅ Rutina guardada como template. Podrás reutilizarla desde el generador de rutinas.');
+    } catch (error) {
+      console.error('Error guardando template:', error);
+      alert('❌ Error al guardar template');
+    }
+  };
+
   const handleFinalizarEntrenamiento = async () => {
     if (!activeWorkout || !currentUser) return;
 
@@ -316,6 +329,15 @@ export default function WorkoutSession() {
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-xl font-bold">{diaActual.nombre}</h1>
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleGuardarComoTemplate}
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+                title="Guardar como Template"
+              >
+                <BookmarkPlus className="w-4 h-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
