@@ -39,6 +39,7 @@ export default function WorkoutSession() {
   const [rir, setRir] = useState<number>(2);
   const [nota, setNota] = useState('');
   const [fallo, setFallo] = useState(false);
+  const [tecnicaAvanzada, setTecnicaAvanzada] = useState<'dropset' | 'rest-pause' | null>(null);
 
   // Estado del entrenamiento
   const [ejercicioLogs, setEjercicioLogs] = useState<Map<string, ExerciseLog>>(new Map());
@@ -165,7 +166,8 @@ export default function WorkoutSession() {
       tiempoDescanso: ejercicioActual.ejercicio?.descansoSugerido || 90,
       completada: true,
       notas: nota || undefined,
-      fallo: fallo || undefined
+      fallo: fallo || undefined,
+      tecnicaAvanzada: tecnicaAvanzada || undefined
     };
 
     // Actualizar o crear ejercicio log
@@ -219,6 +221,7 @@ export default function WorkoutSession() {
     setRir(2);
     setNota('');
     setFallo(false);
+    setTecnicaAvanzada(null);
 
     // Incrementar número de serie
     setCurrentSetNumber(prev => prev + 1);
@@ -607,6 +610,31 @@ export default function WorkoutSession() {
                 </div>
               </div>
 
+              {/* Advanced Techniques */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Técnicas avanzadas (opcional):</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant={tecnicaAvanzada === 'dropset' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTecnicaAvanzada(tecnicaAvanzada === 'dropset' ? null : 'dropset')}
+                    className="text-xs"
+                  >
+                    💥 Dropset
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={tecnicaAvanzada === 'rest-pause' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTecnicaAvanzada(tecnicaAvanzada === 'rest-pause' ? null : 'rest-pause')}
+                    className="text-xs"
+                  >
+                    ⏸️ Rest-Pause
+                  </Button>
+                </div>
+              </div>
+
               {/* Quick Notes */}
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Notas rápidas (opcional):</Label>
@@ -687,6 +715,11 @@ export default function WorkoutSession() {
                       {serie.fallo && (
                         <Badge variant="destructive" className="mt-2 text-xs">
                           🔥 Fallo muscular
+                        </Badge>
+                      )}
+                      {serie.tecnicaAvanzada && (
+                        <Badge variant="secondary" className="mt-2 text-xs ml-2">
+                          {serie.tecnicaAvanzada === 'dropset' ? '💥 Dropset' : '⏸️ Rest-Pause'}
                         </Badge>
                       )}
                     </div>
