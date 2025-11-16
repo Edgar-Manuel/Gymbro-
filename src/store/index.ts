@@ -32,6 +32,8 @@ interface AppState {
   toggleDarkMode: () => void;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
+  beastMode: boolean;
+  toggleBeastMode: () => void;
 
   // Selected exercise (for detail view)
   selectedExercise: ExerciseKnowledge | null;
@@ -64,6 +66,8 @@ export const useAppStore = create<AppState>()(
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
       sidebarOpen: true,
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      beastMode: false,
+      toggleBeastMode: () => set((state) => ({ beastMode: !state.beastMode })),
 
       // Selected exercise
       selectedExercise: null,
@@ -75,6 +79,7 @@ export const useAppStore = create<AppState>()(
         currentUser: state.currentUser,
         isDarkMode: state.isDarkMode,
         sidebarOpen: state.sidebarOpen,
+        beastMode: state.beastMode,
       }),
     }
   )

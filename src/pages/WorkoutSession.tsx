@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import RestTimer from '@/components/RestTimer';
 import PRCelebration from '@/components/PRCelebration';
@@ -19,12 +20,13 @@ import {
   ArrowLeft,
   X,
   Save,
-  Lightbulb
+  Lightbulb,
+  Zap
 } from 'lucide-react';
 
 export default function WorkoutSession() {
   const navigate = useNavigate();
-  const { currentUser, activeRoutine, startWorkout, finishWorkout, activeWorkout } = useAppStore();
+  const { currentUser, activeRoutine, startWorkout, finishWorkout, activeWorkout, beastMode, toggleBeastMode } = useAppStore();
 
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
@@ -36,6 +38,7 @@ export default function WorkoutSession() {
   const [peso, setPeso] = useState('');
   const [rir, setRir] = useState<number>(2);
   const [nota, setNota] = useState('');
+  const [fallo, setFallo] = useState(false);
 
   // Estado del entrenamiento
   const [ejercicioLogs, setEjercicioLogs] = useState<Map<string, ExerciseLog>>(new Map());
@@ -161,7 +164,8 @@ export default function WorkoutSession() {
       RIR: rir,
       tiempoDescanso: ejercicioActual.ejercicio?.descansoSugerido || 90,
       completada: true,
-      notas: nota || undefined
+      notas: nota || undefined,
+      fallo: fallo || undefined
     };
 
     // Actualizar o crear ejercicio log
@@ -214,6 +218,7 @@ export default function WorkoutSession() {
     setPeso('');
     setRir(2);
     setNota('');
+    setFallo(false);
 
     // Incrementar número de serie
     setCurrentSetNumber(prev => prev + 1);
@@ -311,6 +316,17 @@ export default function WorkoutSession() {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={toggleBeastMode}
+                className={`text-primary-foreground hover:bg-primary-foreground/20 ${
+                  beastMode ? 'bg-primary-foreground/30' : ''
+                }`}
+                title={beastMode ? 'Desactivar Modo Beast' : 'Activar Modo Beast'}
+              >
+                <Zap className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleCancelarEntrenamiento}
                 className="text-primary-foreground hover:bg-primary-foreground/20"
               >
@@ -326,24 +342,74 @@ export default function WorkoutSession() {
       </div>
 
       <div className="container mx-auto p-4 max-w-4xl">
-        {/* Tarjeta del ejercicio actual */}
-        <Card className="mb-4 border-primary">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <CardTitle className="text-2xl mb-1">
-                  {ejercicioActual.ejercicio?.nombre}
-                </CardTitle>
-                <CardDescription className="text-base">
-                  {ejercicioActual.ejercicio?.grupoMuscular} • {ejercicioActual.ejercicio?.categoria}
-                </CardDescription>
+        {/* BEAST MODE - Ultra Minimal UI */}
+        {beastMode ? (
+          <Card className="mb-4 border-primary bg-gradient-to-br from-orange-500/10 to-red-500/10">
+            <CardContent className="p-8">
+              {/* Exercise Name - Large */}
+              <h2 className="text-4xl font-black mb-6 text-center">
+                {ejercicioActual.ejercicio?.nombre}
+              </h2>
+
+              {/* Set Number - Large */}
+              <div className="text-6xl font-black text-center mb-8 text-primary">
+                {currentSetNumber}/{totalSeries}
               </div>
-              <Badge variant={ejercicioActual.ejercicio?.tier === 'S' ? 'success' : 'default'} className="text-lg px-3 py-1">
-                Tier {ejercicioActual.ejercicio?.tier}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
+
+              {/* Inputs - Extra Large */}
+              <div className="space-y-6 mb-8">
+                <div>
+                  <Input
+                    type="number"
+                    value={reps}
+                    onChange={(e) => setReps(e.target.value)}
+                    placeholder="REPS"
+                    className="h-20 text-4xl font-bold text-center"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="number"
+                    step="0.25"
+                    value={peso}
+                    onChange={(e) => setPeso(e.target.value)}
+                    placeholder="KG"
+                    className="h-20 text-4xl font-bold text-center"
+                  />
+                </div>
+              </div>
+
+              {/* Complete Button - Massive */}
+              <Button
+                onClick={handleRegistrarSerie}
+                size="lg"
+                className="w-full h-24 text-3xl font-black"
+                disabled={!reps || !peso}
+              >
+                ✓
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          /* NORMAL MODE - Full Featured UI */
+          <Card className="mb-4 border-primary">
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <CardTitle className="text-2xl mb-1">
+                    {ejercicioActual.ejercicio?.nombre}
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    {ejercicioActual.ejercicio?.grupoMuscular} • {ejercicioActual.ejercicio?.categoria}
+                  </CardDescription>
+                </div>
+                <Badge variant={ejercicioActual.ejercicio?.tier === 'S' ? 'success' : 'default'} className="text-lg px-3 py-1">
+                  Tier {ejercicioActual.ejercicio?.tier}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
             {/* Objetivo */}
             <div className="bg-accent/50 p-4 rounded-lg mb-4">
               <p className="text-sm font-medium mb-1">Objetivo:</p>
@@ -567,6 +633,21 @@ export default function WorkoutSession() {
                 />
               </div>
 
+              {/* Failure Tracking */}
+              <div className="flex items-center space-x-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <Checkbox
+                  id="fallo"
+                  checked={fallo}
+                  onCheckedChange={(checked: boolean) => setFallo(checked)}
+                />
+                <label
+                  htmlFor="fallo"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  🔥 Alcancé el fallo muscular
+                </label>
+              </div>
+
               <Button
                 onClick={handleRegistrarSerie}
                 size="lg"
@@ -603,13 +684,19 @@ export default function WorkoutSession() {
                           {serie.notas}
                         </p>
                       )}
+                      {serie.fallo && (
+                        <Badge variant="destructive" className="mt-2 text-xs">
+                          🔥 Fallo muscular
+                        </Badge>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Navegación */}
         <div className="flex gap-3">
