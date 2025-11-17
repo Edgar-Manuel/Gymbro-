@@ -104,7 +104,7 @@ export function generarRutinaPersonalizada(
       ejercicio: ex,
       seriesObjetivo: determinarSeries(ex, user.objetivo),
       repsObjetivo: determinarReps(ex, user.objetivo),
-      pesoSugerido: undefined, // Se determinará en base al historial
+      pesoSugerido: undefined as number | undefined, // Se determinará en base al historial
       notas: ex.tecnica.consejosClave[0]
     }));
 

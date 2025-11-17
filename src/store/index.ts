@@ -42,21 +42,21 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       // User
-      currentUser: null,
+      currentUser: null as UserProfile | null,
       setCurrentUser: (user) => set({ currentUser: user }),
 
       // Current workout session
-      activeWorkout: null,
+      activeWorkout: null as WorkoutLog | null,
       startWorkout: (workout) => set({ activeWorkout: workout }),
       updateActiveWorkout: (workout) => set({ activeWorkout: workout }),
       finishWorkout: () => set({ activeWorkout: null }),
 
       // Active routine
-      activeRoutine: null,
+      activeRoutine: null as RutinaSemanal | null,
       setActiveRoutine: (routine) => set({ activeRoutine: routine }),
 
       // Statistics
-      statistics: null,
+      statistics: null as UserStatistics | null,
       setStatistics: (stats) => set({ statistics: stats }),
 
       // UI state
@@ -66,7 +66,7 @@ export const useAppStore = create<AppState>()(
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
       // Selected exercise
-      selectedExercise: null,
+      selectedExercise: null as ExerciseKnowledge | null,
       setSelectedExercise: (exercise) => set({ selectedExercise: exercise }),
     }),
     {

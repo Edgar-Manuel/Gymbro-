@@ -64,32 +64,35 @@ export interface ExerciseKnowledge {
 export interface UserProfile {
   id: string;
   nombre: string;
+  email?: string; // Para Appwrite
   nivel: Nivel;
   objetivo: Objetivo;
   diasDisponibles: number;
   equipamiento: Equipamiento[];
-  lesiones: string[];
-  tiempoSesion: number; // minutos
+  lesiones?: string[];
+  tiempoSesion?: number; // minutos
+  preferencias?: Record<string, any>; // Para Appwrite
+  restricciones?: string[]; // Para Appwrite
 
   // Datos físicos
   pesoActual: number; // kg
   peso?: number; // Alias para pesoActual
   altura: number; // cm
   edad: number;
-  sexo: 'masculino' | 'femenino';
+  sexo?: 'masculino' | 'femenino';
 
   // Objetivos nutricionales
-  objetivoCalorico: ObjetivoCalorico;
-  factorActividad: number; // 1.2 - 1.9
+  objetivoCalorico?: ObjetivoCalorico;
+  factorActividad?: number; // 1.2 - 1.9
 
   // Configuración
   horaPreferida?: string; // "08:00"
-  notificacionesActivas: boolean;
+  notificacionesActivas?: boolean;
 
   // Progreso
-  fechaInicio: Date;
-  pesoInicial: number;
-  rachaActual: number; // días consecutivos
+  fechaInicio?: Date;
+  pesoInicial?: number;
+  rachaActual?: number; // días consecutivos
 }
 
 // Workout Planning
@@ -116,8 +119,13 @@ export interface RutinaSemanal {
   id: string;
   userId: string;
   nombre: string;
-  descripcion: string;
-  dias: DiaRutina[];
+  descripcion?: string;
+  objetivo?: Objetivo; // Para Appwrite
+  nivel?: Nivel; // Para Appwrite
+  diasPorSemana?: number; // Para Appwrite
+  diasRutina?: DiaRutina[]; // Para Appwrite
+  dias?: DiaRutina[]; // Alias para diasRutina
+  duracionTotal?: number; // Para Appwrite
   fechaCreacion: Date;
   activa: boolean;
 }
@@ -145,13 +153,18 @@ export interface WorkoutLog {
   id: string;
   userId: string;
   fecha: Date;
+  rutinaId?: string; // Para Appwrite
   diaRutinaId?: string;
-  diaRutina: string; // nombre del día, ej: "Pecho y Tríceps"
+  diaRutina?: string; // nombre del día, ej: "Pecho y Tríceps"
   ejercicios: ExerciseLog[];
-  duracionReal: number; // minutos
-  sensacionGeneral: 1 | 2 | 3 | 4 | 5;
+  duracion?: number; // Para Appwrite (alias de duracionReal)
+  duracionReal?: number; // minutos
+  sensacionGeneral?: 1 | 2 | 3 | 4 | 5;
   notas?: string;
   completado: boolean;
+  volumenTotal?: number; // Para Appwrite
+  caloriaQuemadas?: number; // Para Appwrite (sin 's' para Appwrite)
+  caloriasQuemadas?: number; // Alias con 's'
 }
 
 // Progress Analysis
@@ -199,9 +212,15 @@ export interface Meal {
 export interface NutritionTracker {
   userId: string;
   fecha: Date;
-  caloriasDiarias: number;
-  macrosObjetivo: Macros;
-  comidasRegistradas: Meal[];
+  calorias?: number; // Para Appwrite
+  caloriasDiarias?: number; // Alias
+  proteinas?: number; // Para Appwrite
+  carbohidratos?: number; // Para Appwrite
+  grasas?: number; // Para Appwrite
+  macrosObjetivo?: Macros;
+  comidas?: Meal[]; // Para Appwrite (sin 'Registradas')
+  comidasRegistradas?: Meal[]; // Alias
+  agua?: number; // Para Appwrite (en ml)
 }
 
 export interface NutritionNeeds {
@@ -225,24 +244,35 @@ export interface Achievement {
   id: string;
   userId: string;
   tipo: 'weight' | 'streak' | 'volume' | 'consistency' | 'custom';
-  titulo: string;
+  nombre?: string; // Para Appwrite
+  titulo?: string; // Alias de nombre
   descripcion: string;
   icono: string;
   fecha: Date;
   valor?: number;
+  detalles?: string; // Para Appwrite
 }
 
 // Statistics
 export interface UserStatistics {
   userId: string;
-  totalEntrenamientos: number;
-  rachaActual: number;
-  rachaMasLarga: number;
-  volumenTotalMovido: number; // kg total en toda la historia
-  volumenEsteMes: number;
+  totalWorkouts?: number; // Para Appwrite
+  totalEntrenamientos?: number; // Alias
+  currentStreak?: number; // Para Appwrite
+  rachaActual?: number; // Alias
+  longestStreak?: number; // Para Appwrite
+  rachaMasLarga?: number; // Alias
+  totalVolume?: number; // Para Appwrite
+  volumenTotalMovido?: number; // kg total en toda la historia
+  volumenEsteMes?: number;
+  totalCalories?: number; // Para Appwrite
+  totalMinutes?: number; // Para Appwrite
+  favoriteExercises?: Record<string, number>; // Para Appwrite
+  muscleGroupStats?: Record<string, number>; // Para Appwrite
   ejercicioFavorito?: string;
   grupoMuscularMasEntrenado?: GrupoMuscular;
-  progresoGeneral: number; // % de mejora desde inicio
+  progresoGeneral?: number; // % de mejora desde inicio
+  lastWorkoutDate?: Date; // Para Appwrite
 }
 
 // Body Measurements & Tracking
@@ -252,7 +282,18 @@ export interface BodyMeasurement {
   fecha: Date;
   peso: number; // kg
   grasaCorporal?: number; // %
-  medidas: {
+  masaMuscular?: number; // Para Appwrite
+  // Campos individuales para Appwrite (además del objeto medidas)
+  pecho?: number;
+  cintura?: number;
+  cadera?: number;
+  brazoDerecho?: number;
+  brazoIzquierdo?: number;
+  musloDerecho?: number;
+  musloIzquierdo?: number;
+  pantorrillaDerecha?: number;
+  pantorrillaIzquierda?: number;
+  medidas?: {
     pecho?: number; // cm
     cintura?: number;
     cadera?: number;
@@ -270,7 +311,8 @@ export interface ProgressPhoto {
   id: string;
   userId: string;
   fecha: Date;
-  tipo: 'frente' | 'espalda' | 'lado_derecho' | 'lado_izquierdo';
+  tipo: 'frente' | 'espalda' | 'lado_derecho' | 'lado_izquierdo' | 'frontal' | 'lateral' | 'trasera';
+  fileId?: string; // Para Appwrite Storage
   url: string; // base64 o blob URL
   peso?: number; // peso en el momento de la foto
   notas?: string;

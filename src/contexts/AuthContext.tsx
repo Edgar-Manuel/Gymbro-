@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { account } from '@/services/appwrite';
+import { setStorageMode } from '@/db';
 
 // Tipo para el usuario de Appwrite
 interface AppwriteUser {
@@ -28,6 +29,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     checkSession();
   }, []);
+
+  // Cambiar modo de almacenamiento según autenticación
+  useEffect(() => {
+    if (user) {
+      // Usuario autenticado: usar Appwrite (cloud)
+      setStorageMode('cloud');
+    } else {
+      // Sin autenticación: usar IndexedDB (local)
+      setStorageMode('local');
+    }
+  }, [user]);
 
   const checkSession = async () => {
     try {
