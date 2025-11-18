@@ -19,6 +19,7 @@ export type Nivel = 'principiante' | 'intermedio' | 'avanzado';
 export type Objetivo = 'fuerza' | 'hipertrofia' | 'resistencia' | 'perdida_grasa';
 export type ObjetivoCalorico = 'superavit' | 'mantenimiento' | 'deficit';
 export type Equipamiento = 'barra' | 'mancuerna' | 'polea' | 'peso_corporal' | 'maquina';
+export type Somatotipo = 'ectomorfo' | 'mesomorfo' | 'endomorfo';
 
 // Exercise Knowledge Base
 export interface ExerciseTecnica {
@@ -80,6 +81,8 @@ export interface UserProfile {
   altura: number; // cm
   edad: number;
   sexo?: 'masculino' | 'femenino';
+  somatotipo?: Somatotipo; // Tipo de cuerpo
+  intolerancias?: string[]; // Ej: ['lactosa', 'gluten']
 
   // Objetivos nutricionales
   objetivoCalorico?: ObjetivoCalorico;
