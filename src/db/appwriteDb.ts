@@ -75,17 +75,23 @@ export const appwriteDbHelpers = {
       const userData = {
         userId,
         nombre: user.nombre,
-        email: user.email,
-        edad: user.edad,
-        peso: user.peso || user.pesoActual,
-        pesoActual: user.pesoActual,
-        altura: user.altura,
-        objetivo: user.objetivo,
-        nivel: user.nivel,
-        diasDisponibles: user.diasDisponibles,
-        equipamiento: user.equipamiento,
-        preferencias: JSON.stringify(user.preferencias || {}),
-        restricciones: JSON.stringify(user.restricciones || []),
+        email: user.email || '',
+        datosPersonales: JSON.stringify({
+          edad: user.edad,
+          peso: user.peso || user.pesoActual,
+          pesoActual: user.pesoActual,
+          altura: user.altura,
+        }),
+        configuracion: JSON.stringify({
+          objetivo: user.objetivo,
+          nivel: user.nivel,
+          diasDisponibles: user.diasDisponibles,
+          equipamiento: user.equipamiento,
+        }),
+        preferencias: JSON.stringify({
+          preferencias: user.preferencias || {},
+          restricciones: user.restricciones || [],
+        }),
       };
 
       if (existing.documents.length > 0) {
@@ -196,13 +202,15 @@ export const appwriteDbHelpers = {
       const rutinaData = {
         userId,
         nombre: rutina.nombre,
-        objetivo: rutina.objetivo,
-        nivel: rutina.nivel,
-        diasPorSemana: rutina.diasPorSemana,
-        diasRutina: JSON.stringify(rutina.diasRutina),
-        duracionTotal: rutina.duracionTotal,
         activa: rutina.activa,
         fechaCreacion: new Date().toISOString(),
+        datos: JSON.stringify({
+          objetivo: rutina.objetivo,
+          nivel: rutina.nivel,
+          diasPorSemana: rutina.diasPorSemana,
+          diasRutina: rutina.diasRutina || rutina.dias,
+          duracionTotal: rutina.duracionTotal,
+        }),
       };
 
       const response = await databases.createDocument(
@@ -285,15 +293,17 @@ export const appwriteDbHelpers = {
 
       const workoutData = {
         userId,
-        rutinaId: workout.rutinaId || '',
-        diaRutinaId: workout.diaRutinaId || '',
         fecha: workout.fecha.toISOString(),
-        ejercicios: JSON.stringify(workout.ejercicios),
-        duracion: workout.duracion,
-        notas: workout.notas || '',
         completado: workout.completado,
-        volumenTotal: workout.volumenTotal || 0,
-        caloriaQuemadas: workout.caloriaQuemadas || 0,
+        datos: JSON.stringify({
+          rutinaId: workout.rutinaId || '',
+          diaRutinaId: workout.diaRutinaId || '',
+          ejercicios: workout.ejercicios,
+          duracion: workout.duracion || workout.duracionReal,
+          notas: workout.notas || '',
+          volumenTotal: workout.volumenTotal || 0,
+          caloriaQuemadas: workout.caloriaQuemadas || 0,
+        }),
       };
 
       const response = await databases.createDocument(
@@ -432,15 +442,17 @@ export const appwriteDbHelpers = {
 
       const statsData = {
         userId: stats.userId,
-        totalWorkouts: stats.totalWorkouts,
-        currentStreak: stats.currentStreak,
-        longestStreak: stats.longestStreak,
-        totalVolume: stats.totalVolume,
-        totalCalories: stats.totalCalories,
-        totalMinutes: stats.totalMinutes,
-        favoriteExercises: JSON.stringify(stats.favoriteExercises || {}),
-        muscleGroupStats: JSON.stringify(stats.muscleGroupStats || {}),
-        lastWorkoutDate: stats.lastWorkoutDate?.toISOString(),
+        datos: JSON.stringify({
+          totalWorkouts: stats.totalWorkouts,
+          currentStreak: stats.currentStreak,
+          longestStreak: stats.longestStreak,
+          totalVolume: stats.totalVolume,
+          totalCalories: stats.totalCalories,
+          totalMinutes: stats.totalMinutes,
+          favoriteExercises: stats.favoriteExercises || {},
+          muscleGroupStats: stats.muscleGroupStats || {},
+          lastWorkoutDate: stats.lastWorkoutDate?.toISOString(),
+        }),
       };
 
       if (response.documents.length > 0) {
@@ -517,11 +529,13 @@ export const appwriteDbHelpers = {
       const achievementData = {
         userId,
         tipo: achievement.tipo,
-        nombre: achievement.nombre,
-        descripcion: achievement.descripcion,
-        icono: achievement.icono,
         fecha: achievement.fecha.toISOString(),
-        detalles: achievement.detalles || '',
+        datos: JSON.stringify({
+          nombre: achievement.nombre,
+          descripcion: achievement.descripcion,
+          icono: achievement.icono,
+          detalles: achievement.detalles || '',
+        }),
       };
 
       const response = await databases.createDocument(
@@ -591,12 +605,14 @@ export const appwriteDbHelpers = {
       const nutritionData = {
         userId,
         fecha: nutrition.fecha.toISOString(),
-        calorias: nutrition.calorias,
-        proteinas: nutrition.proteinas,
-        carbohidratos: nutrition.carbohidratos,
-        grasas: nutrition.grasas,
-        comidas: JSON.stringify(nutrition.comidas),
-        agua: nutrition.agua || 0,
+        datos: JSON.stringify({
+          calorias: nutrition.calorias,
+          proteinas: nutrition.proteinas,
+          carbohidratos: nutrition.carbohidratos,
+          grasas: nutrition.grasas,
+          comidas: nutrition.comidas,
+          agua: nutrition.agua || 0,
+        }),
       };
 
       if (existing.documents.length > 0) {
@@ -668,18 +684,20 @@ export const appwriteDbHelpers = {
         userId,
         fecha: measurement.fecha.toISOString(),
         peso: measurement.peso,
-        cintura: measurement.cintura,
-        cadera: measurement.cadera,
-        pecho: measurement.pecho,
-        brazoDerecho: measurement.brazoDerecho,
-        brazoIzquierdo: measurement.brazoIzquierdo,
-        musloDerecho: measurement.musloDerecho,
-        musloIzquierdo: measurement.musloIzquierdo,
-        pantorrillaDerecha: measurement.pantorrillaDerecha,
-        pantorrillaIzquierda: measurement.pantorrillaIzquierda,
-        grasaCorporal: measurement.grasaCorporal,
-        masaMuscular: measurement.masaMuscular,
-        notas: measurement.notas || '',
+        datos: JSON.stringify({
+          cintura: measurement.cintura,
+          cadera: measurement.cadera,
+          pecho: measurement.pecho,
+          brazoDerecho: measurement.brazoDerecho,
+          brazoIzquierdo: measurement.brazoIzquierdo,
+          musloDerecho: measurement.musloDerecho,
+          musloIzquierdo: measurement.musloIzquierdo,
+          pantorrillaDerecha: measurement.pantorrillaDerecha,
+          pantorrillaIzquierda: measurement.pantorrillaIzquierda,
+          grasaCorporal: measurement.grasaCorporal,
+          masaMuscular: measurement.masaMuscular,
+          notas: measurement.notas || '',
+        }),
       };
 
       const response = await databases.createDocument(
@@ -761,10 +779,12 @@ export const appwriteDbHelpers = {
         userId,
         fecha: photo.fecha.toISOString(),
         tipo: photo.tipo,
-        fileId: photo.fileId,
-        url: photo.url,
-        peso: photo.peso,
-        notas: photo.notas || '',
+        datos: JSON.stringify({
+          fileId: photo.fileId,
+          url: photo.url,
+          peso: photo.peso,
+          notas: photo.notas || '',
+        }),
       };
 
       const response = await databases.createDocument(
@@ -842,20 +862,24 @@ export const appwriteDbHelpers = {
    * Mapear documento de Appwrite a UserProfile
    */
   mapUserDocumentToProfile(doc: any): UserProfile {
+    const datosPersonales = doc.datosPersonales ? JSON.parse(doc.datosPersonales) : {};
+    const configuracion = doc.configuracion ? JSON.parse(doc.configuracion) : {};
+    const preferenciasData = doc.preferencias ? JSON.parse(doc.preferencias) : {};
+
     return {
       id: doc.userId,
       nombre: doc.nombre,
       email: doc.email,
-      edad: doc.edad,
-      peso: doc.peso,
-      pesoActual: doc.pesoActual,
-      altura: doc.altura,
-      objetivo: doc.objetivo,
-      nivel: doc.nivel,
-      diasDisponibles: doc.diasDisponibles,
-      equipamiento: doc.equipamiento,
-      preferencias: doc.preferencias ? JSON.parse(doc.preferencias) : {},
-      restricciones: doc.restricciones ? JSON.parse(doc.restricciones) : [],
+      edad: datosPersonales.edad,
+      peso: datosPersonales.peso,
+      pesoActual: datosPersonales.pesoActual,
+      altura: datosPersonales.altura,
+      objetivo: configuracion.objetivo,
+      nivel: configuracion.nivel,
+      diasDisponibles: configuracion.diasDisponibles,
+      equipamiento: configuracion.equipamiento,
+      preferencias: preferenciasData.preferencias || {},
+      restricciones: preferenciasData.restricciones || [],
     };
   },
 
@@ -863,15 +887,18 @@ export const appwriteDbHelpers = {
    * Mapear documento de Appwrite a RutinaSemanal
    */
   mapRoutineDocumentToRutina(doc: any): RutinaSemanal {
+    const datos = doc.datos ? JSON.parse(doc.datos) : {};
+
     return {
       id: doc.$id,
       userId: doc.userId,
       nombre: doc.nombre,
-      objetivo: doc.objetivo,
-      nivel: doc.nivel,
-      diasPorSemana: doc.diasPorSemana,
-      diasRutina: JSON.parse(doc.diasRutina),
-      duracionTotal: doc.duracionTotal,
+      objetivo: datos.objetivo,
+      nivel: datos.nivel,
+      diasPorSemana: datos.diasPorSemana,
+      diasRutina: datos.diasRutina || [],
+      dias: datos.diasRutina || [], // Alias
+      duracionTotal: datos.duracionTotal,
       activa: doc.activa,
       fechaCreacion: new Date(doc.fechaCreacion),
     };
@@ -881,18 +908,21 @@ export const appwriteDbHelpers = {
    * Mapear documento de Appwrite a WorkoutLog
    */
   mapWorkoutDocumentToLog(doc: any): WorkoutLog {
+    const datos = doc.datos ? JSON.parse(doc.datos) : {};
+
     return {
       id: doc.$id,
       userId: doc.userId,
-      rutinaId: doc.rutinaId,
-      diaRutinaId: doc.diaRutinaId,
+      rutinaId: datos.rutinaId,
+      diaRutinaId: datos.diaRutinaId,
       fecha: new Date(doc.fecha),
-      ejercicios: JSON.parse(doc.ejercicios),
-      duracion: doc.duracion,
-      notas: doc.notas,
+      ejercicios: datos.ejercicios || [],
+      duracion: datos.duracion,
+      duracionReal: datos.duracion, // Alias
+      notas: datos.notas,
       completado: doc.completado,
-      volumenTotal: doc.volumenTotal,
-      caloriaQuemadas: doc.caloriaQuemadas,
+      volumenTotal: datos.volumenTotal,
+      caloriaQuemadas: datos.caloriaQuemadas,
     };
   },
 
@@ -900,17 +930,19 @@ export const appwriteDbHelpers = {
    * Mapear documento de Appwrite a UserStatistics
    */
   mapStatisticsDocumentToStats(doc: any): UserStatistics {
+    const datos = doc.datos ? JSON.parse(doc.datos) : {};
+
     return {
       userId: doc.userId,
-      totalWorkouts: doc.totalWorkouts,
-      currentStreak: doc.currentStreak,
-      longestStreak: doc.longestStreak,
-      totalVolume: doc.totalVolume,
-      totalCalories: doc.totalCalories,
-      totalMinutes: doc.totalMinutes,
-      favoriteExercises: doc.favoriteExercises ? JSON.parse(doc.favoriteExercises) : {},
-      muscleGroupStats: doc.muscleGroupStats ? JSON.parse(doc.muscleGroupStats) : {},
-      lastWorkoutDate: doc.lastWorkoutDate ? new Date(doc.lastWorkoutDate) : undefined,
+      totalWorkouts: datos.totalWorkouts || 0,
+      currentStreak: datos.currentStreak || 0,
+      longestStreak: datos.longestStreak || 0,
+      totalVolume: datos.totalVolume || 0,
+      totalCalories: datos.totalCalories || 0,
+      totalMinutes: datos.totalMinutes || 0,
+      favoriteExercises: datos.favoriteExercises || {},
+      muscleGroupStats: datos.muscleGroupStats || {},
+      lastWorkoutDate: datos.lastWorkoutDate ? new Date(datos.lastWorkoutDate) : undefined,
     };
   },
 
@@ -918,15 +950,17 @@ export const appwriteDbHelpers = {
    * Mapear documento de Appwrite a Achievement
    */
   mapAchievementDocumentToAchievement(doc: any): Achievement {
+    const datos = doc.datos ? JSON.parse(doc.datos) : {};
+
     return {
       id: doc.$id,
       userId: doc.userId,
       tipo: doc.tipo,
-      nombre: doc.nombre,
-      descripcion: doc.descripcion,
-      icono: doc.icono,
+      nombre: datos.nombre,
+      descripcion: datos.descripcion,
+      icono: datos.icono,
       fecha: new Date(doc.fecha),
-      detalles: doc.detalles,
+      detalles: datos.detalles,
     };
   },
 
@@ -934,15 +968,17 @@ export const appwriteDbHelpers = {
    * Mapear documento de Appwrite a NutritionTracker
    */
   mapNutritionDocumentToTracker(doc: any): NutritionTracker {
+    const datos = doc.datos ? JSON.parse(doc.datos) : {};
+
     return {
       userId: doc.userId,
       fecha: new Date(doc.fecha),
-      calorias: doc.calorias,
-      proteinas: doc.proteinas,
-      carbohidratos: doc.carbohidratos,
-      grasas: doc.grasas,
-      comidas: JSON.parse(doc.comidas),
-      agua: doc.agua,
+      calorias: datos.calorias || 0,
+      proteinas: datos.proteinas || 0,
+      carbohidratos: datos.carbohidratos || 0,
+      grasas: datos.grasas || 0,
+      comidas: datos.comidas || [],
+      agua: datos.agua || 0,
     };
   },
 
@@ -950,23 +986,26 @@ export const appwriteDbHelpers = {
    * Mapear documento de Appwrite a BodyMeasurement
    */
   mapBodyMeasurementDocumentToMeasurement(doc: any): BodyMeasurement {
+    const datos = doc.datos ? JSON.parse(doc.datos) : {};
+
     return {
       id: doc.$id,
       userId: doc.userId,
       fecha: new Date(doc.fecha),
       peso: doc.peso,
-      cintura: doc.cintura,
-      cadera: doc.cadera,
-      pecho: doc.pecho,
-      brazoDerecho: doc.brazoDerecho,
-      brazoIzquierdo: doc.brazoIzquierdo,
-      musloDerecho: doc.musloDerecho,
-      musloIzquierdo: doc.musloIzquierdo,
-      pantorrillaDerecha: doc.pantorrillaDerecha,
-      pantorrillaIzquierda: doc.pantorrillaIzquierda,
-      grasaCorporal: doc.grasaCorporal,
-      masaMuscular: doc.masaMuscular,
-      notas: doc.notas,
+      cintura: datos.cintura,
+      cadera: datos.cadera,
+      pecho: datos.pecho,
+      brazoDerecho: datos.brazoDerecho,
+      brazoIzquierdo: datos.brazoIzquierdo,
+      musloDerecho: datos.musloDerecho,
+      musloIzquierdo: datos.musloIzquierdo,
+      pantorrillaDerecha: datos.pantorrillaDerecha,
+      pantorrillaIzquierda: datos.pantorrillaIzquierda,
+      grasaCorporal: datos.grasaCorporal,
+      masaMuscular: datos.masaMuscular,
+      notas: datos.notas,
+      medidas: datos, // Incluir también en formato nested para compatibilidad
     };
   },
 
@@ -974,15 +1013,17 @@ export const appwriteDbHelpers = {
    * Mapear documento de Appwrite a ProgressPhoto
    */
   mapProgressPhotoDocumentToPhoto(doc: any): ProgressPhoto {
+    const datos = doc.datos ? JSON.parse(doc.datos) : {};
+
     return {
       id: doc.$id,
       userId: doc.userId,
       fecha: new Date(doc.fecha),
       tipo: doc.tipo,
-      fileId: doc.fileId,
-      url: doc.url,
-      peso: doc.peso,
-      notas: doc.notas,
+      fileId: datos.fileId,
+      url: datos.url,
+      peso: datos.peso,
+      notas: datos.notas,
     };
   },
 };
