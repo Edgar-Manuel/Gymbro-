@@ -12,13 +12,28 @@ export interface ExerciseVideo {
   relatedExercises: string[]; // IDs de ejercicios relacionados
 }
 
-// Extraer ID de YouTube desde URL
+// Extraer ID de YouTube desde URL (soporta youtube.com y youtu.be)
 const getYouTubeId = (url: string): string => {
-  const match = url.match(/[?&]v=([^&]+)/);
-  return match ? match[1] : '';
+  // Primero intenta el formato youtube.com/watch?v=
+  const watchMatch = url.match(/[?&]v=([^&]+)/);
+  if (watchMatch) return watchMatch[1];
+
+  // Luego intenta el formato youtu.be/
+  const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
+  if (shortMatch) return shortMatch[1];
+
+  return '';
 };
 
 export const exerciseVideos: ExerciseVideo[] = [
+  {
+    id: 'rutina-mancuernas-completa',
+    title: 'TODO solo con mancuernas (Rutina completa + explicación)',
+    youtubeId: getYouTubeId('https://youtu.be/kIaSk_4znvk'),
+    url: 'https://youtu.be/kIaSk_4znvk',
+    category: 'general',
+    relatedExercises: ['press-banca-mancuernas', 'press-inclinado-mancuernas', 'press-militar-mancuernas', 'remo-mancuerna', 'curl-mancuernas', 'elevaciones-laterales-mancuernas', 'sentadilla-mancuernas'],
+  },
   {
     id: 'press-banca-perfecto',
     title: 'Cómo hacer el press de banca perfecto: técnica, postura y agarre',

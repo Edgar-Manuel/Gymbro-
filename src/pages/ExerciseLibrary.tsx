@@ -3,11 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dbHelpers } from '@/db';
 import type { ExerciseKnowledge } from '@/types';
 import { GrupoMuscular, type Tier } from '@/types';
 import { Search, X, Youtube } from 'lucide-react';
-import { getVideosByExercise } from '@/data/exerciseVideos';
+import { getVideosByExercise, exerciseVideos } from '@/data/exerciseVideos';
 
 export default function ExerciseLibrary() {
   const [exercises, setExercises] = useState<ExerciseKnowledge[]>([]);
@@ -87,114 +88,189 @@ export default function ExerciseLibrary() {
         </p>
       </div>
 
-      {/* Búsqueda y filtros */}
-      <div className="mb-6 space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar ejercicio..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      <Tabs defaultValue="ejercicios" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+          <TabsTrigger value="ejercicios">Ejercicios</TabsTrigger>
+          <TabsTrigger value="videos">Videos</TabsTrigger>
+        </TabsList>
 
-        {/* Filtros de grupo muscular */}
-        <div>
-          <p className="text-sm font-medium mb-2">Grupo Muscular</p>
-          <div className="flex gap-2 flex-wrap">
-            {Object.values(GrupoMuscular).map((grupo) => (
-              <Badge
-                key={grupo}
-                variant={selectedMuscleGroup === grupo ? 'default' : 'outline'}
-                className="cursor-pointer"
-                onClick={() => setSelectedMuscleGroup(
-                  selectedMuscleGroup === grupo ? null : grupo
-                )}
+        <TabsContent value="ejercicios" className="space-y-6">
+          {/* Búsqueda y filtros */}
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar ejercicio..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Filtros de grupo muscular */}
+            <div>
+              <p className="text-sm font-medium mb-2">Grupo Muscular</p>
+              <div className="flex gap-2 flex-wrap">
+                {Object.values(GrupoMuscular).map((grupo) => (
+                  <Badge
+                    key={grupo}
+                    variant={selectedMuscleGroup === grupo ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedMuscleGroup(
+                      selectedMuscleGroup === grupo ? null : grupo
+                    )}
+                  >
+                    {grupo}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Filtros de tier */}
+            <div>
+              <p className="text-sm font-medium mb-2">Clasificación (Tier)</p>
+              <div className="flex gap-2">
+                {(['S', 'A', 'B', 'C', 'F'] as Tier[]).map((tier) => (
+                  <Badge
+                    key={tier}
+                    variant={selectedTier === tier ? getTierColor(tier) : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedTier(selectedTier === tier ? null : tier)}
+                  >
+                    Tier {tier}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Botón limpiar filtros */}
+            {(searchQuery || selectedMuscleGroup || selectedTier) && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="w-4 h-4 mr-2" />
+                Limpiar filtros
+              </Button>
+            )}
+          </div>
+
+          {/* Grid de ejercicios */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredExercises.map((exercise) => (
+              <Card
+                key={exercise.id}
+                className="cursor-pointer hover:shadow-lg hover:border-primary transition-all"
+                onClick={() => setSelectedExercise(exercise)}
               >
-                {grupo}
-              </Badge>
+                <CardHeader>
+                  <div className="flex justify-between items-start mb-2">
+                    <CardTitle className="text-lg line-clamp-2">
+                      {exercise.nombre}
+                    </CardTitle>
+                    <Badge variant={getTierColor(exercise.tier)}>
+                      {exercise.tier}
+                    </Badge>
+                  </div>
+                  <CardDescription>
+                    {exercise.grupoMuscular} • {exercise.categoria}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-1">
+                      {exercise.equipamiento.slice(0, 2).map((eq) => (
+                        <Badge key={eq} variant="outline" className="text-xs">
+                          {eq}
+                        </Badge>
+                      ))}
+                      {exercise.equipamiento.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{exercise.equipamiento.length - 2}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {exercise.tecnica.consejosClave[0]}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
-        </div>
 
-        {/* Filtros de tier */}
-        <div>
-          <p className="text-sm font-medium mb-2">Clasificación (Tier)</p>
-          <div className="flex gap-2">
-            {(['S', 'A', 'B', 'C', 'F'] as Tier[]).map((tier) => (
-              <Badge
-                key={tier}
-                variant={selectedTier === tier ? getTierColor(tier) : 'outline'}
-                className="cursor-pointer"
-                onClick={() => setSelectedTier(selectedTier === tier ? null : tier)}
-              >
-                Tier {tier}
-              </Badge>
+          {filteredExercises.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                No se encontraron ejercicios con los filtros seleccionados
+              </p>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="videos" className="space-y-6">
+          <div className="mb-4">
+            <h2 className="text-2xl font-bold mb-2">Videos Educativos de BlueGym Animation</h2>
+            <p className="text-muted-foreground">
+              {exerciseVideos.length} videos educativos sobre técnica de ejercicios y entrenamiento
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {exerciseVideos.map((video, index) => (
+              <Card key={video.id}>
+                <CardContent className="p-6">
+                  <div className="grid md:grid-cols-[auto_1fr] gap-6">
+                    {/* Video embebido */}
+                    <div className="w-full md:w-[400px]">
+                      <div className="aspect-video rounded-lg overflow-hidden">
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          src={`https://www.youtube.com/embed/${video.youtubeId}`}
+                          title={video.title}
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          className="w-full h-full"
+                        ></iframe>
+                      </div>
+                    </div>
+
+                    {/* Información del video */}
+                    <div className="flex flex-col justify-center">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm flex-shrink-0">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg mb-2">{video.title}</h3>
+                          <div className="flex items-center gap-2 mb-3">
+                            <Badge variant="secondary">{video.category}</Badge>
+                            <a
+                              href={video.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
+                            >
+                              <Youtube className="w-4 h-4" />
+                              Ver en YouTube
+                            </a>
+                          </div>
+                          {video.relatedExercises.length > 0 && (
+                            <div>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                Ejercicios relacionados: {video.relatedExercises.length}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
-        </div>
-
-        {/* Botón limpiar filtros */}
-        {(searchQuery || selectedMuscleGroup || selectedTier) && (
-          <Button variant="ghost" size="sm" onClick={clearFilters}>
-            <X className="w-4 h-4 mr-2" />
-            Limpiar filtros
-          </Button>
-        )}
-      </div>
-
-      {/* Grid de ejercicios */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredExercises.map((exercise) => (
-          <Card
-            key={exercise.id}
-            className="cursor-pointer hover:shadow-lg hover:border-primary transition-all"
-            onClick={() => setSelectedExercise(exercise)}
-          >
-            <CardHeader>
-              <div className="flex justify-between items-start mb-2">
-                <CardTitle className="text-lg line-clamp-2">
-                  {exercise.nombre}
-                </CardTitle>
-                <Badge variant={getTierColor(exercise.tier)}>
-                  {exercise.tier}
-                </Badge>
-              </div>
-              <CardDescription>
-                {exercise.grupoMuscular} • {exercise.categoria}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-1">
-                  {exercise.equipamiento.slice(0, 2).map((eq) => (
-                    <Badge key={eq} variant="outline" className="text-xs">
-                      {eq}
-                    </Badge>
-                  ))}
-                  {exercise.equipamiento.length > 2 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{exercise.equipamiento.length - 2}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {exercise.tecnica.consejosClave[0]}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredExercises.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">
-            No se encontraron ejercicios con los filtros seleccionados
-          </p>
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
 
       {/* Modal de detalle de ejercicio */}
       {selectedExercise && (
