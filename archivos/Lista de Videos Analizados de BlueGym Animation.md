@@ -4,7 +4,9 @@ A continuación, se presenta la lista de videos del canal de YouTube analizados 
 
 | Título del Video | Foco Principal | URL |
 | :--- | :--- | :--- |
-| Cómo Perder Grasa: La Guía Simple y Realista para Resultados Reales | Pérdida de Grasa | [Ver Video](https://www.youtube.com/watch?v=DHqnLf6R1dk) |
+TODO solo con mancuernas (Rutina completa + explicación)
+(https://youtu.be/kIaSk_4znvk?si=-2Cp9cnISlSXEHHu)
+| Cómo Perder Grasa: La Guía Simple y Realista para Resultados Reales | Pérdida de Grasa | [Ver Video](https://www.youtube.com/watch?v=DHqnLf6R1dk)|
 | Cómo duplicar tus dominadas: el método eficiente para aumentar repeticiones | Espalda | [Ver Video](https://www.youtube.com/watch?v=GScM1sXnbjI) |
 | Cómo entrenar bíceps eficazmente: ejercicios para cabeza larga, corta y braquial | Bíceps | [Ver Video](https://www.youtube.com/watch?v=-QnKDiHhSro) |
 | Errores comunes y patrones clave para mejorar la técnica en ejercicios de gimnasio | Errores Comunes en la Técnica de Ejercicios Populares en el Gimnasio | [Ver Video](https://www.youtube.com/watch?v=YSIMV2ZmZCw) |
