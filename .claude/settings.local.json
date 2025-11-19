@@ -11,7 +11,16 @@
       "Bash(git push:*)",
       "Bash(npm install:*)",
       "Bash(taskkill:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(tree:*)",
+      "Bash(dir /S \"c:\\Users\\34672\\Gymbro-\\src\")",
+      "Bash(dir \"c:\\Users\\34672\\Gymbro-\\public\")",
+      "Bash(npm run test:run:*)",
+      "Bash(git -C \"c:\\Users\\34672\\Gymbro-\" status)",
+      "Bash(git -C \"c:\\Users\\34672\\Gymbro-\" diff --stat)",
+      "Bash(git -C \"c:\\Users\\34672\\Gymbro-\" log --oneline -5)",
+      "Bash(git -C \"c:\\Users\\34672\\Gymbro-\" add -A)",
+      "Bash(git -C \"c:\\Users\\34672\\Gymbro-\" commit -m \"$(cat <<''EOF''\nfeat: Mejoras de auditoría - Testing, Logger, Error Boundaries, PWA\n\n- Setup Vitest con 51 tests (nutritionCalculator + routineGenerator)\n- Logger centralizado con niveles debug/info/warn/error\n- Error Boundaries globales para captura de errores React\n- Service Worker con estrategias de cache (stale-while-revalidate)\n- Registro automático de SW con logging\n- Captura de errores globales (unhandledrejection, error)\n- Scripts de test: npm run test/test:run/test:coverage\n- Template .env.example actualizado\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
