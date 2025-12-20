@@ -76,18 +76,14 @@ export const appwriteDbHelpers = {
         userId,
         nombre: user.nombre,
         email: user.email || '',
-        datosPersonales: JSON.stringify({
-          edad: user.edad,
-          peso: user.peso || user.pesoActual,
-          pesoActual: user.pesoActual,
-          altura: user.altura,
-        }),
-        configuracion: JSON.stringify({
-          objetivo: user.objetivo,
-          nivel: user.nivel,
-          diasDisponibles: user.diasDisponibles,
-          equipamiento: user.equipamiento,
-        }),
+        edad: user.edad || 25,
+        peso: user.peso || user.pesoActual || 70,
+        pesoActual: user.pesoActual || user.peso || 70,
+        altura: user.altura || 175,
+        objetivo: user.objetivo || 'hipertrofia',
+        nivel: user.nivel || 'principiante',
+        diasDisponibles: user.diasDisponibles || 4,
+        equipamiento: Array.isArray(user.equipamiento) ? user.equipamiento : ['mancuerna'],
         preferencias: JSON.stringify({
           preferencias: user.preferencias || {},
           restricciones: user.restricciones || [],
@@ -216,7 +212,7 @@ export const appwriteDbHelpers = {
       const response = await databases.createDocument(
         APPWRITE_DATABASE_ID,
         COLLECTIONS.ROUTINES,
-        ID.unique(),
+        rutina.id,
         rutinaData
       );
 
@@ -309,7 +305,7 @@ export const appwriteDbHelpers = {
       const response = await databases.createDocument(
         APPWRITE_DATABASE_ID,
         COLLECTIONS.WORKOUTS,
-        ID.unique(),
+        workout.id,
         workoutData
       );
 
@@ -541,7 +537,7 @@ export const appwriteDbHelpers = {
       const response = await databases.createDocument(
         APPWRITE_DATABASE_ID,
         COLLECTIONS.ACHIEVEMENTS,
-        ID.unique(),
+        achievement.id,
         achievementData
       );
 
@@ -703,7 +699,7 @@ export const appwriteDbHelpers = {
       const response = await databases.createDocument(
         APPWRITE_DATABASE_ID,
         COLLECTIONS.BODY_MEASUREMENTS,
-        ID.unique(),
+        measurement.id,
         measurementData
       );
 
@@ -790,7 +786,7 @@ export const appwriteDbHelpers = {
       const response = await databases.createDocument(
         APPWRITE_DATABASE_ID,
         COLLECTIONS.PROGRESS_PHOTOS,
-        ID.unique(),
+        photo.id,
         photoData
       );
 
@@ -862,22 +858,20 @@ export const appwriteDbHelpers = {
    * Mapear documento de Appwrite a UserProfile
    */
   mapUserDocumentToProfile(doc: any): UserProfile {
-    const datosPersonales = doc.datosPersonales ? JSON.parse(doc.datosPersonales) : {};
-    const configuracion = doc.configuracion ? JSON.parse(doc.configuracion) : {};
     const preferenciasData = doc.preferencias ? JSON.parse(doc.preferencias) : {};
 
     return {
       id: doc.userId,
       nombre: doc.nombre,
       email: doc.email,
-      edad: datosPersonales.edad,
-      peso: datosPersonales.peso,
-      pesoActual: datosPersonales.pesoActual,
-      altura: datosPersonales.altura,
-      objetivo: configuracion.objetivo,
-      nivel: configuracion.nivel,
-      diasDisponibles: configuracion.diasDisponibles,
-      equipamiento: configuracion.equipamiento,
+      edad: doc.edad,
+      peso: doc.peso,
+      pesoActual: doc.pesoActual,
+      altura: doc.altura,
+      objetivo: doc.objetivo,
+      nivel: doc.nivel,
+      diasDisponibles: doc.diasDisponibles,
+      equipamiento: doc.equipamiento,
       preferencias: preferenciasData.preferencias || {},
       restricciones: preferenciasData.restricciones || [],
     };
