@@ -185,11 +185,11 @@ export default function RoutineGenerator() {
                 <p className="text-sm font-medium">Tu perfil:</p>
                 <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
                   <div>Nivel: <span className="text-foreground font-medium">{currentUser.nivel}</span></div>
-                  <div>Tiempo/sesión: <span className="text-foreground font-medium">{currentUser.tiempoSesion} min</span></div>
+                  <div>Tiempo/sesión: <span className="text-foreground font-medium">{currentUser.tiempoSesion || 60} min</span></div>
                   <div className="col-span-2">
-                    Equipamiento: <span className="text-foreground font-medium">{currentUser.equipamiento.join(', ')}</span>
+                    Equipamiento: <span className="text-foreground font-medium">{Array.isArray(currentUser.equipamiento) ? currentUser.equipamiento.join(', ') : 'No especificado'}</span>
                   </div>
-                  {currentUser.lesiones.length > 0 && (
+                  {currentUser.lesiones && currentUser.lesiones.length > 0 && (
                     <div className="col-span-2 text-destructive">
                       Lesiones: {currentUser.lesiones.join(', ')}
                     </div>
@@ -340,8 +340,8 @@ export default function RoutineGenerator() {
                               <span className="font-medium">{idx + 1}. {ej.ejercicio?.nombre}</span>
                               <Badge variant={
                                 ej.ejercicio?.tier === 'S' ? 'success' :
-                                ej.ejercicio?.tier === 'A' ? 'default' :
-                                'secondary'
+                                  ej.ejercicio?.tier === 'A' ? 'default' :
+                                    'secondary'
                               } className="text-xs">
                                 {ej.ejercicio?.tier}
                               </Badge>
