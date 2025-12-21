@@ -3,9 +3,16 @@ import { Client, Account, Databases, Storage } from 'appwrite';
 // Configuración del cliente de Appwrite
 const client = new Client();
 
+const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID || 'placeholder-id';
+
 client
-  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
-  .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID);
+  .setEndpoint(endpoint)
+  .setProject(projectId);
+
+if (!import.meta.env.VITE_APPWRITE_PROJECT_ID) {
+  console.warn('⚠️ Appwrite Project ID not found in environment variables. Using placeholder.');
+}
 
 // Servicios
 export const account = new Account(client);

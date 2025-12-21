@@ -21,7 +21,11 @@ TODO solo con mancuernas (Rutina completa + explicación)
 | Rutina y técnica correcta para press de pierna en la prensa del gimnasio | Rutina de piernas con énfasis en la correcta utilización de la máquina prensa y la técnica de ejecución | [Ver Video](https://www.youtube.com/watch?v=bNsrqXUIJqc) |
 | Cómo entrenar los tríceps en polea: Extensiones hacia arriba y hacia abajo explicado | Tríceps - Uso correcto de máquinas de polea y técnica de ejecución para extensiones de tríceps | [Ver Video](https://www.youtube.com/watch?v=xfS2-dkcC1k) |
 | Rutina de Pecho Efectiva con Solo 4 Ejercicios y Mancuernas | Pecho | [Ver Video](https://www.youtube.com/watch?v=4VuCF75s6jE) |
-| Cómo hacer el jalón al pecho correctamente para trabajar dorsales y espalda en V | Espalda | [Ver Video](https://www.youtube.com/watch?v=yWxms_0WDPg) |
+| Así crecen tus Dorsales | Espalda - Crecimiento de dorsales | [Ver Video](https://youtu.be/QucbwJWZtiE) |
 | Curl de Bíceps: Diferencias entre Barra Recta, Barra Z y Mancuernas para Mejorar tus Brazos | Bíceps | [Ver Video](https://www.youtube.com/watch?v=M67E8xSxrsA) |
 | Cómo hacer el press de banca perfecto: técnica, postura y agarre para evitar lesiones y maximizar ganancias | Press de banca - técnica correcta y prevención de lesiones | [Ver Video](https://www.youtube.com/watch?v=TAH8RxOS0VI) |
 | Cómo proteger tu hombro y manguito rotador en días de pecho y empuje en el gimnasio | Prevención y cuidado del manguito rotador durante ejercicios de empuje (push), especialmente en días de entrenamiento de pecho y tríceps | [Ver Video](https://www.youtube.com/watch?v=AhuhoGgZ9I4) |
+| Pasar de principiante a intermedio | General - Progresión de entrenamiento | [Ver Video](https://youtu.be/u1H0CEYxo74) |
+| Los MEJORES ejercicios de GLÚTEO | Piernas - Ejercicios de glúteo | [Ver Video](https://youtu.be/ziimTMMKZxk) |
+| Cómo evitar lesiones y mejorar rendimiento | General - Prevención de lesiones | [Ver Video](https://youtu.be/NAPI0odb9HQ) |
+| Cómo crear tu rutina | General - Planificación de rutinas | [Ver Video](https://youtu.be/dmX0l1TprQg) |

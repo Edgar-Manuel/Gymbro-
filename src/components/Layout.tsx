@@ -19,6 +19,7 @@ import {
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import GymBroAssistant from '@/components/GymBroAssistant';
+import { SyncIndicator } from '@/components/SyncIndicator';
 
 export default function Layout() {
   const location = useLocation();
@@ -88,6 +89,8 @@ export default function Layout() {
                 {user.name}
               </span>
             )}
+
+            <SyncIndicator />
 
             <Button
               variant="ghost"
