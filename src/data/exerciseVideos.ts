@@ -88,7 +88,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/QucbwJWZtiE'),
     url: 'https://youtu.be/QucbwJWZtiE',
     category: 'espalda',
-    relatedExercises: ['jalon-pecho-agarre-amplio', 'jalon-pecho-agarre-cerrado', 'dominadas-pronas', 'remo-barra'],
+    relatedExercises: ['lat-pulldown', 'dominadas', 'chin-ups', 'remo-barra', 'remo-mancuerna-unilateral', 'pullover-mancuerna'],
   },
   {
     id: 'dominadas-principiantes',
@@ -184,7 +184,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/u1H0CEYxo74'),
     url: 'https://youtu.be/u1H0CEYxo74',
     category: 'general',
-    relatedExercises: [],
+    relatedExercises: ['press-banca-barra', 'sentadilla-barra', 'peso-muerto-convencional', 'dominadas', 'press-militar'],
   },
   {
     id: 'ejercicios-gluteo',
@@ -192,7 +192,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/ziimTMMKZxk'),
     url: 'https://youtu.be/ziimTMMKZxk',
     category: 'piernas',
-    relatedExercises: ['hip-thrust', 'sentadilla-barra', 'peso-muerto-rumano'],
+    relatedExercises: ['hip-thrust', 'sentadilla-barra', 'peso-muerto-rumano', 'zancadas', 'prensa-pierna'],
   },
   {
     id: 'evitar-lesiones-rendimiento',
@@ -200,7 +200,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/NAPI0odb9HQ'),
     url: 'https://youtu.be/NAPI0odb9HQ',
     category: 'general',
-    relatedExercises: [],
+    relatedExercises: ['press-banca-barra', 'sentadilla-barra', 'peso-muerto-convencional', 'peso-muerto-rumano', 'press-militar'],
   },
   {
     id: 'crear-tu-rutina',
@@ -208,7 +208,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/dmX0l1TprQg'),
     url: 'https://youtu.be/dmX0l1TprQg',
     category: 'general',
-    relatedExercises: [],
+    relatedExercises: ['press-banca-barra', 'sentadilla-barra', 'peso-muerto-convencional', 'dominadas', 'press-militar'],
   },
 ];
 
