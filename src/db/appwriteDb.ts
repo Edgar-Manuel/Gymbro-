@@ -408,14 +408,16 @@ export const appwriteDbHelpers = {
         ID.unique(),
         {
           userId,
-          totalWorkouts: 0,
-          currentStreak: 0,
-          longestStreak: 0,
-          totalVolume: 0,
-          totalCalories: 0,
-          totalMinutes: 0,
-          favoriteExercises: JSON.stringify({}),
-          muscleGroupStats: JSON.stringify({}),
+          datos: JSON.stringify({
+            totalWorkouts: 0,
+            currentStreak: 0,
+            longestStreak: 0,
+            totalVolume: 0,
+            totalCalories: 0,
+            totalMinutes: 0,
+            favoriteExercises: {},
+            muscleGroupStats: {},
+          }),
         }
       );
     } catch (error) {
