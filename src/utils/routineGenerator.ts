@@ -150,13 +150,15 @@ function seleccionarEjerciciosParaDia(
       if (ex.grupoMuscular !== grupo) return false;
 
       // Debe tener equipamiento disponible
+      const userEquipo = Array.isArray(user.equipamiento) ? user.equipamiento : [];
       const tieneEquipamiento = ex.equipamiento.some(eq =>
-        user.equipamiento.includes(eq)
+        userEquipo.includes(eq)
       );
       if (!tieneEquipamiento) return false;
 
       // No debe involucrar músculos lesionados
-      const involucraLesion = user.lesiones.some(lesion =>
+      const userLesiones = Array.isArray(user.lesiones) ? user.lesiones : [];
+      const involucraLesion = userLesiones.some(lesion =>
         ex.nombre.toLowerCase().includes(lesion.toLowerCase()) ||
         ex.enfoqueMuscular.some(m => m.toLowerCase().includes(lesion.toLowerCase()))
       );
@@ -273,7 +275,7 @@ export function validarRutina(rutina: RutinaSemanal, user: UserProfile): { valid
 
   // Verificar que no exceda el tiempo disponible
   rutina.dias.forEach(dia => {
-    if (dia.duracionEstimada > user.tiempoSesion + 15) { // +15 min de margen
+    if (dia.duracionEstimada > (user.tiempoSesion || 60) + 15) { // +15 min de margen
       errores.push(`El día "${dia.nombre}" excede el tiempo disponible (${dia.duracionEstimada} min)`);
     }
   });
