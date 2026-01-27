@@ -2,7 +2,17 @@ import { db, dbHelpers } from '@/db';
 import { exercisesData } from '@/data/exercises';
 import type { UserProfile, UserStatistics } from '@/types';
 
+// Flag para evitar inicialización múltiple (React StrictMode ejecuta efectos 2 veces)
+let isInitializing = false;
+let isInitialized = false;
+
 export async function initializeDatabase() {
+  // Evitar ejecución múltiple
+  if (isInitializing || isInitialized) {
+    return true;
+  }
+  isInitializing = true;
+
   try {
     // Verificar si ya hay datos
     const existingExercises = await db.exercises.count();
@@ -65,15 +75,22 @@ export async function initializeDatabase() {
       console.log('✅ Usuario por defecto creado');
     }
 
+    isInitialized = true;
+    isInitializing = false;
     return true;
   } catch (error) {
     console.error('Error inicializando base de datos:', error);
+    isInitializing = false;
     return false;
   }
 }
 
 export async function resetDatabase() {
   try {
+    // Resetear flags para permitir reinicialización
+    isInitialized = false;
+    isInitializing = false;
+
     await dbHelpers.clearAllData();
     await initializeDatabase();
     console.log('✅ Base de datos reiniciada');

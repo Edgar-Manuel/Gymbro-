@@ -278,6 +278,9 @@ export function getSuplementosRecomendados(
   somatotipo: Somatotipo,
   _objetivo: Objetivo
 ): string[] {
+  // El parámetro objetivo está disponible para futura personalización
+  void _objetivo;
+
   const basicos = ['Proteína Whey/Isolate', 'Creatina Monohidrato 5g/día'];
 
   const especificos: Record<Somatotipo, string[]> = {
