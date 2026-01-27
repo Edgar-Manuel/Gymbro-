@@ -14,7 +14,11 @@ interface ChartDataPoint {
   timestamp: number;
 }
 
-export default function BodyWeightChart() {
+interface BodyWeightChartProps {
+  refreshTrigger?: number;
+}
+
+export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartProps) {
   const { currentUser } = useAppStore();
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
@@ -22,7 +26,7 @@ export default function BodyWeightChart() {
 
   useEffect(() => {
     loadData();
-  }, [currentUser]);
+  }, [currentUser, refreshTrigger]);
 
   const loadData = async () => {
     if (!currentUser) return;

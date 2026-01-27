@@ -10,7 +10,11 @@ import { useAppStore } from '@/store';
 import type { BodyMeasurement } from '@/types';
 import { Scale, Ruler, TrendingUp, TrendingDown, Plus } from 'lucide-react';
 
-export default function BodyMeasurements() {
+interface BodyMeasurementsProps {
+  onUpdate?: () => void;
+}
+
+export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
   const { currentUser } = useAppStore();
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -89,6 +93,10 @@ export default function BodyMeasurements() {
       setPantorrillaIzquierda('');
       setNotas('');
       setShowForm(false);
+
+      if (onUpdate) {
+        onUpdate();
+      }
     } catch (error) {
       console.error('Error guardando medición:', error);
       alert('Error al guardar la medición');
