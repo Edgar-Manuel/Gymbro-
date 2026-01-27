@@ -1,10 +1,11 @@
 import { useAppStore } from '@/store';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Scale, TrendingUp, Target, Moon, Sun, Info } from 'lucide-react';
+import { User, Scale, TrendingUp, Target, Moon, Sun, Info, CheckCircle, Cloud, CloudOff, Mail } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { dbHelpers } from '@/db';
 import type { Somatotipo } from '@/types';
@@ -143,6 +144,9 @@ export default function Profile() {
   const clasificacion = clasificarIMC(imc);
   const tdee = calcularTDEE();
 
+  // Obtener información de autenticación de Appwrite
+  const { user: authUser, isAuthenticated } = useAuth();
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Header */}
@@ -152,6 +156,54 @@ export default function Profile() {
           Gestiona tu información personal y preferencias
         </p>
       </div>
+
+      {/* Estado de la Cuenta */}
+      <Card className={`mb-6 ${isAuthenticated ? 'border-green-500/50' : 'border-orange-500/50'}`}>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            {isAuthenticated ? (
+              <Cloud className="w-5 h-5 text-green-500" />
+            ) : (
+              <CloudOff className="w-5 h-5 text-orange-500" />
+            )}
+            <CardTitle>Estado de la Cuenta</CardTitle>
+          </div>
+          <CardDescription>
+            {isAuthenticated
+              ? 'Cuenta sincronizada con la nube - tus datos están respaldados'
+              : 'Modo local - los datos solo se guardan en este dispositivo'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isAuthenticated && authUser ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                <Mail className="w-5 h-5 text-green-600" />
+                <div className="flex-1">
+                  <p className="font-medium">{authUser.email}</p>
+                  <p className="text-sm text-muted-foreground">Email de la cuenta</p>
+                </div>
+                <CheckCircle className="w-6 h-6 text-green-500" />
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                <User className="w-5 h-5" />
+                <div className="flex-1">
+                  <p className="font-medium">{authUser.name}</p>
+                  <p className="text-sm text-muted-foreground">Nombre de usuario</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 bg-orange-50 dark:bg-orange-950/30 rounded-lg text-center">
+              <CloudOff className="w-8 h-8 mx-auto mb-2 text-orange-500" />
+              <p className="font-medium">Sin cuenta registrada</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Regístrate para sincronizar tus datos en la nube
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Información Personal */}
       <Card className="mb-6">

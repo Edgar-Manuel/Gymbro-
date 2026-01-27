@@ -63,16 +63,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Helper para esperar un tiempo
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Helper para intentar login con retries
+  const loginWithRetry = async (email: string, password: string, maxRetries: number = 3) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Intento de login ${attempt}/${maxRetries}...`);
+        await account.createEmailPasswordSession(email, password);
+        const session = await account.get();
+        setUser(session);
+        console.log('✅ Login exitoso');
+        return; // Éxito, salir
+      } catch (error: any) {
+        console.warn(`Intento ${attempt} falló:`, error.message);
+        if (attempt < maxRetries) {
+          // Esperar antes de reintentar (incrementalmente más tiempo)
+          const waitTime = attempt * 500; // 500ms, 1000ms, 1500ms
+          console.log(`Esperando ${waitTime}ms antes de reintentar...`);
+          await delay(waitTime);
+        } else {
+          // Último intento falló
+          throw error;
+        }
+      }
+    }
+  };
+
   const register = async (email: string, password: string, name: string) => {
     try {
       // Crear cuenta
+      console.log('Creando cuenta en Appwrite...');
       await account.create('unique()', email, password, name);
+      console.log('✅ Cuenta creada exitosamente');
 
-      // Iniciar sesión automáticamente
-      await login(email, password);
-    } catch (error) {
+      // Pequeño delay para que Appwrite procese la cuenta
+      await delay(300);
+
+      // Iniciar sesión automáticamente con retry
+      await loginWithRetry(email, password);
+    } catch (error: any) {
       console.error('Error al registrarse:', error);
-      throw error;
+      // Si el error es que la cuenta ya existe, intentar login directamente
+      if (error.code === 409) {
+        console.log('La cuenta ya existe, intentando login...');
+        await loginWithRetry(email, password);
+      } else {
+        throw error;
+      }
     }
   };
 

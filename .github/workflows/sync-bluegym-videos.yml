@@ -1,0 +1,64 @@
+# GitHub Action: Sincronizar videos de BlueGym Animation
+# Se ejecuta automáticamente cada lunes a las 8:00 AM (UTC)
+# También se puede ejecutar manualmente desde GitHub
+
+name: Sync BlueGym Videos
+
+on:
+  # Ejecutar cada lunes a las 8:00 AM UTC (10:00 AM España)
+  schedule:
+    - cron: '0 8 * * 1'
+  
+  # Permitir ejecución manual
+  workflow_dispatch:
+
+jobs:
+  sync-videos:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run sync script
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          VITE_GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: npx tsx scripts/sync-bluegym-videos.ts
+      
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add src/data/exerciseVideos.ts archivos/
+          git commit -m "🎬 Auto-sync: Nuevos videos de BlueGym Animation"
+          git push
+      
+      - name: Summary
+        run: |
+          if [ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]; then
+            echo "✅ Nuevos videos sincronizados y subidos"
+          else
+            echo "ℹ️ No hay videos nuevos esta semana"
+          fi

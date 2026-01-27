@@ -27,9 +27,8 @@ export default function DaySelector({ dias, onSelectDay, selectedDayId }: DaySel
           return (
             <Card
               key={dia.id}
-              className={`cursor-pointer transition-all hover:shadow-lg ${
-                isSelected ? 'border-primary border-2 bg-primary/5' : ''
-              }`}
+              className={`cursor-pointer transition-all hover:shadow-lg ${isSelected ? 'border-primary border-2 bg-primary/5' : ''
+                }`}
               onClick={() => onSelectDay(dia)}
             >
               <CardHeader>
@@ -62,8 +61,8 @@ export default function DaySelector({ dias, onSelectDay, selectedDayId }: DaySel
 
                   {/* Lista de ejercicios */}
                   <div className="space-y-1">
-                    {dia.ejercicios.slice(0, 3).map((ej, index) => (
-                      <div key={index} className="text-sm flex items-center justify-between">
+                    {dia.ejercicios.slice(0, 3).map((ej) => (
+                      <div key={ej.ejercicioId} className="text-sm flex items-center justify-between">
                         <span className="truncate">{ej.ejercicio?.nombre}</span>
                         <Badge variant="outline" className="ml-2 flex-shrink-0">
                           {ej.seriesObjetivo}×

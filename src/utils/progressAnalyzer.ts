@@ -152,10 +152,16 @@ export function analizarProgresoEjercicio(
 
 /**
  * Calcula el volumen total (kg × reps) en un rango de fechas
+ * Nota: En la implementación actual, calculamos todo el volumen disponible
+ * ya que ExerciseLog no tiene fecha directa. El filtrado por fechas
+ * se realiza previamente al filtrar los WorkoutLogs.
  */
-function calcularVolumenEnRango(logs: ExerciseLog[], _desde: Date, _hasta: Date): number {
-  // Por ahora calculamos todo el volumen
-  // En producción filtraríamos por fechas del workout
+function calcularVolumenEnRango(logs: ExerciseLog[], _desde?: Date, _hasta?: Date): number {
+  // Los parámetros desde/hasta están disponibles para futura implementación
+  // cuando ExerciseLog incluya timestamp propio
+  void _desde; // Silenciar advertencia de variable no usada
+  void _hasta; // Silenciar advertencia de variable no usada
+
   return logs.reduce((total, log) => {
     return total + log.series.reduce((sum, serie) => {
       return sum + (serie.peso * serie.repeticiones);
