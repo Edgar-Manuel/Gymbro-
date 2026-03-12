@@ -18,14 +18,6 @@ export default function ExerciseLibrary() {
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseKnowledge | null>(null);
 
-  useEffect(() => {
-    loadExercises();
-  }, []);
-
-  useEffect(() => {
-    filterExercises();
-  }, [exercises, searchQuery, selectedMuscleGroup, selectedTier]);
-
   const loadExercises = async () => {
     const allExercises = await dbHelpers.getAllExercises();
     // Ordenar por tier (S > A > B > C > F) y luego por nombre
@@ -62,6 +54,14 @@ export default function ExerciseLibrary() {
 
     setFilteredExercises(filtered);
   };
+
+  useEffect(() => {
+    loadExercises();
+  }, []);
+
+  useEffect(() => {
+    filterExercises();
+  }, [exercises, searchQuery, selectedMuscleGroup, selectedTier]);
 
   const getTierColor = (tier: Tier): "success" | "default" | "secondary" | "warning" | "destructive" => {
     switch (tier) {

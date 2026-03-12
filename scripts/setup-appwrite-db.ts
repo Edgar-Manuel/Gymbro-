@@ -1,4 +1,4 @@
-import { Client, Databases, ID, Permission, Role } from 'node-appwrite';
+import { Client, Databases, Permission, Role } from 'node-appwrite';
 import * as dotenv from 'dotenv';
 
 // Cargar variables de entorno
@@ -87,7 +87,7 @@ async function setupDatabase() {
 
 async function createUsersCollection() {
   try {
-    const collection = await databases.createCollection(
+    await databases.createCollection(
       DATABASE_ID,
       'users',
       'Users',

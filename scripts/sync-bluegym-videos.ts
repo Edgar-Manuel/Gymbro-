@@ -24,8 +24,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
-const GROQ_API_KEY = process.env.VITE_GROQ_API_KEY;
-const BLUEGYM_CHANNEL_ID = 'UCxxxxxxxxxxxxxxxxxx'; // Se detectará automáticamente
+// Se detectará automáticamente mediante la API de YouTube
 
 // Mapeo de palabras clave a categorías
 const CATEGORY_KEYWORDS: Record<string, string[]> = {

@@ -72,7 +72,7 @@ export interface UserProfile {
   equipamiento: Equipamiento[];
   lesiones?: string[];
   tiempoSesion?: number; // minutos
-  preferencias?: Record<string, any>; // Para Appwrite
+  preferencias?: Record<string, unknown>; // Para Appwrite
   restricciones?: string[]; // Para Appwrite
 
   // Datos físicos

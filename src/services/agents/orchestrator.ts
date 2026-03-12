@@ -11,7 +11,7 @@ import { trainingAgent } from './trainingAgent';
 import { progressAgent } from './progressAgent';
 
 class OrchestratorAgent implements Agent {
-  type: 'orchestrator' = 'orchestrator';
+  type = 'orchestrator' as const;
   name = 'GymBro Assistant';
 
   // Mapa de subagentes

@@ -24,8 +24,9 @@ export default function Login() {
     try {
       await login(email, password);
       navigate('/');
-    } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión. Verifica tus credenciales.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al iniciar sesión. Verifica tus credenciales.';
+      setError(message);
     } finally {
       setLoading(false);
     }

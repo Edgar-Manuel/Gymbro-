@@ -7,7 +7,7 @@ import { groqService, type GroqMessage } from '../groq';
 import type { Agent, AgentContext, AgentResponse } from './types';
 
 class ProgressAgent implements Agent {
-  type: 'progress' = 'progress';
+  type = 'progress' as const;
   name = 'Experto en Progreso';
   systemPrompt = `Eres el agente experto en ANÁLISIS DE PROGRESO de GymBro, especializado en datos y optimización.
 

@@ -19,5 +19,11 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Async data fetching via useEffect + setState is a standard React pattern
+      'react-hooks/set-state-in-effect': 'off',
+      // Allow _prefixed params to be unused (intentional no-op params)
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    },
   },
 ])

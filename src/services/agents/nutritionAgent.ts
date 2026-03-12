@@ -106,7 +106,7 @@ const DIET_AI_PLAN = `
 `;
 
 class NutritionAgent implements Agent {
-  type: 'nutrition' = 'nutrition';
+  type = 'nutrition' as const;
   name = 'Experto en Nutrición';
   systemPrompt = `Eres el agente experto en NUTRICIÓN de GymBro, especializado en el plan dietAI.
 
