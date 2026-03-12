@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { databases, account } from '@/services/appwrite';
 import { APPWRITE_DATABASE_ID, COLLECTIONS } from '@/config/appwriteSchema';
 import { Query, ID } from 'appwrite';

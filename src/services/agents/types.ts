@@ -20,18 +20,18 @@ export interface AgentContext {
   };
 
   // Contexto de ejercicios
-  exercises?: any[];
-  currentExercise?: any;
+  exercises?: unknown[];
+  currentExercise?: unknown;
 
   // Contexto de entrenamiento
-  currentWorkout?: any;
-  workoutHistory?: any[];
+  currentWorkout?: unknown;
+  workoutHistory?: unknown[];
 
   // Contexto de progreso
-  progressData?: any[];
+  progressData?: unknown[];
 
   // Contexto de nutrición
-  nutritionPlan?: any;
+  nutritionPlan?: unknown;
 
   // Página actual donde se encuentra el usuario
   currentPage?: 'dashboard' | 'exercises' | 'workout' | 'progress' | 'education' | 'nutrition' | 'profile';
@@ -42,7 +42,7 @@ export interface AgentResponse {
   suggestedActions?: {
     label: string;
     action: string;
-    data?: any;
+    data?: unknown;
   }[];
   needsSubAgent?: {
     type: AgentType;

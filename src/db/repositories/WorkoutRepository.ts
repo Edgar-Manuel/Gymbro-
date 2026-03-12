@@ -16,7 +16,7 @@ export const WorkoutRepository = {
             }
         }
 
-        let query = db.workouts
+        const query = db.workouts
             .where('userId').equals(userId)
             .reverse()
             .sortBy('fecha');

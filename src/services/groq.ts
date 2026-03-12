@@ -149,7 +149,7 @@ class GroqService {
               if (content) {
                 yield content;
               }
-            } catch (e) {
+            } catch {
               // Ignorar errores de parseo de líneas individuales
             }
           }

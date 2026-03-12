@@ -51,13 +51,6 @@ export default function WorkoutSession() {
     }
   }, [currentUser, activeRoutine, navigate]);
 
-  // Cargar peso sugerido cuando cambia el ejercicio
-  useEffect(() => {
-    if (selectedDay && hasStarted) {
-      loadPesoSugerido();
-    }
-  }, [currentExerciseIndex, selectedDay, hasStarted]);
-
   const loadPesoSugerido = async () => {
     if (!currentUser || !selectedDay) return;
 
@@ -85,6 +78,13 @@ export default function WorkoutSession() {
       console.error('Error cargando peso sugerido:', error);
     }
   };
+
+  // Cargar peso sugerido cuando cambia el ejercicio
+  useEffect(() => {
+    if (selectedDay && hasStarted) {
+      loadPesoSugerido();
+    }
+  }, [currentExerciseIndex, selectedDay, hasStarted]);
 
   const handleSelectDay = (dia: DiaRutina) => {
     setSelectedDay(dia);
