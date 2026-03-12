@@ -38,8 +38,9 @@ export default function Register() {
     try {
       await register(email, password, name);
       navigate('/');
-    } catch (err: any) {
-      setError(err.message || 'Error al registrarse. Intenta nuevamente.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al registrarse. Intenta nuevamente.';
+      setError(message);
     } finally {
       setLoading(false);
     }

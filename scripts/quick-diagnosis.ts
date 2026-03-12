@@ -1,4 +1,4 @@
-import { Client, Databases, Account } from 'node-appwrite';
+import { Client, Databases } from 'node-appwrite';
 import * as dotenv from 'dotenv';
 
 dotenv.config();

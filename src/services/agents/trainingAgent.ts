@@ -7,7 +7,7 @@ import { groqService, type GroqMessage } from '../groq';
 import type { Agent, AgentContext, AgentResponse } from './types';
 
 class TrainingAgent implements Agent {
-  type: 'training' = 'training';
+  type = 'training' as const;
   name = 'Experto en Entrenamiento';
   systemPrompt = `Eres el agente experto en ENTRENAMIENTO Y PROGRESIÓN de GymBro, basado en el método BlueGym Animation.
 

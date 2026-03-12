@@ -33,10 +33,6 @@ function App() {
     }
   }, [isDarkMode]);
 
-  useEffect(() => {
-    initApp();
-  }, []);
-
   const initApp = async () => {
     try {
       // Inicializar base de datos
@@ -54,6 +50,10 @@ function App() {
       setIsInitialized(true); // Continuar de todas formas
     }
   };
+
+  useEffect(() => {
+    initApp();
+  }, []);
 
   if (!isInitialized) {
     return (

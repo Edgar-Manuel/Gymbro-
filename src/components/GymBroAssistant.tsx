@@ -20,7 +20,7 @@ interface Message {
   suggestedActions?: {
     label: string;
     action: string;
-    data?: any;
+    data?: unknown;
   }[];
 }
 
@@ -123,7 +123,7 @@ export default function GymBroAssistant() {
     }
   };
 
-  const handleActionClick = (action: any) => {
+  const handleActionClick = (action: { action: string; data?: { to?: string } }) => {
     if (action.action === 'navigate' && action.data?.to) {
       navigate(action.data.to);
       // NO cerramos el chat, solo navegamos

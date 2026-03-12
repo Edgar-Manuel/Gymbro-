@@ -23,14 +23,14 @@ export default function RoutineGenerator() {
   const [diasDisponibles, setDiasDisponibles] = useState(currentUser?.diasDisponibles || 4);
   const [objetivo, setObjetivo] = useState(currentUser?.objetivo || 'hipertrofia');
 
-  useEffect(() => {
-    loadExercises();
-  }, []);
-
   const loadExercises = async () => {
     const allExercises = await dbHelpers.getAllExercises();
     setExercises(allExercises);
   };
+
+  useEffect(() => {
+    loadExercises();
+  }, []);
 
   const handleGenerate = async () => {
     if (!currentUser) return;
