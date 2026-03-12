@@ -15,10 +15,6 @@ export default function Dashboard() {
   const [recentWorkouts, setRecentWorkouts] = useState<WorkoutLog[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [currentUser]);
-
   const loadDashboardData = async () => {
     if (!currentUser) return;
 
@@ -42,6 +38,10 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [currentUser]);
 
   const getNextWorkoutDay = () => {
     if (!activeRoutine || !activeRoutine.dias.length) return null;

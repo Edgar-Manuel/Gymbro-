@@ -44,16 +44,6 @@ export default function Progress() {
   const [analysis, setAnalysis] = useState<ProgressAnalysis | null>(null);
   const [statsRefreshKey, setStatsRefreshKey] = useState(0);
 
-  useEffect(() => {
-    loadData();
-  }, [currentUser]);
-
-  useEffect(() => {
-    if (selectedExerciseId && exercises.length > 0 && workouts.length > 0) {
-      analyzeExercise(selectedExerciseId);
-    }
-  }, [selectedExerciseId, exercises, workouts]);
-
   const loadData = async () => {
     if (!currentUser) return;
 
@@ -78,6 +68,16 @@ export default function Progress() {
     const progressAnalysis = analizarProgresoEjercicio(ejercicioId, workouts, exercise);
     setAnalysis(progressAnalysis);
   };
+
+  useEffect(() => {
+    loadData();
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (selectedExerciseId && exercises.length > 0 && workouts.length > 0) {
+      analyzeExercise(selectedExerciseId);
+    }
+  }, [selectedExerciseId, exercises, workouts]);
 
   if (!currentUser) {
     return null;

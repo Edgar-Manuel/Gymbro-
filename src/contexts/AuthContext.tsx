@@ -7,7 +7,7 @@ interface AppwriteUser {
   $id: string;
   name: string;
   email: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface AuthContextType {
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const session = await account.get();
       setUser(session);
-    } catch (error) {
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
@@ -76,8 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session);
         console.log('✅ Login exitoso');
         return; // Éxito, salir
-      } catch (error: any) {
-        console.warn(`Intento ${attempt} falló:`, error.message);
+      } catch (error) {
+        console.warn(`Intento ${attempt} falló:`, (error as Error).message);
         if (attempt < maxRetries) {
           // Esperar antes de reintentar (incrementalmente más tiempo)
           const waitTime = attempt * 500; // 500ms, 1000ms, 1500ms
@@ -103,10 +103,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Iniciar sesión automáticamente con retry
       await loginWithRetry(email, password);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error al registrarse:', error);
       // Si el error es que la cuenta ya existe, intentar login directamente
-      if (error.code === 409) {
+      if ((error as { code?: number }).code === 409) {
         console.log('La cuenta ya existe, intentando login...');
         await loginWithRetry(email, password);
       } else {
@@ -137,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

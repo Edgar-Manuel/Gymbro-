@@ -31,9 +31,9 @@ export const SyncManager = {
                     // For now, try create.
                     try {
                         await appwriteDbHelpers.createRoutine(routine);
-                    } catch (err: any) {
+                    } catch (err) {
                         // If error is "Document already exists", maybe we should ignore or update?
-                        if (err.code === 409) {
+                        if ((err as { code?: number }).code === 409) {
                             // Already exists, mark as synced
                         } else {
                             throw err;
@@ -54,8 +54,8 @@ export const SyncManager = {
                 if (workout.syncStatus === 'pending_create') {
                     try {
                         await appwriteDbHelpers.logWorkout(workout);
-                    } catch (err: any) {
-                        if (err.code === 409) {
+                    } catch (err) {
+                        if ((err as { code?: number }).code === 409) {
                             // Exists
                         } else {
                             throw err;
