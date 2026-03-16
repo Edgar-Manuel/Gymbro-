@@ -284,4 +284,7 @@ async function syncBlueGymVideos() {
 }
 
 // Ejecutar
-syncBlueGymVideos();
+syncBlueGymVideos().catch(err => {
+    console.error('❌ Error fatal en la sincronización:', err);
+    process.exit(1);
+});
