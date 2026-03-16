@@ -15,7 +15,9 @@ on:
 jobs:
   sync-videos:
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -53,7 +55,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add src/data/exerciseVideos.ts archivos/
           git commit -m "🎬 Auto-sync: Nuevos videos de BlueGym Animation"
-          git push
+          git push origin HEAD:main
       
       - name: Summary
         run: |
