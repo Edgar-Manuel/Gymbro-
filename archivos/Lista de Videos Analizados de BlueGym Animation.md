@@ -152,3 +152,26 @@ A continuación, se presenta la lista completa de **28 videos** del canal de You
 | Cómo hacer elevaciones de talones | general | [Ver Video](https://www.youtube.com/watch?v=HfKfOT9R9D0) |
 | Haz crecer tus GEMELOS | general | [Ver Video](https://www.youtube.com/watch?v=NhcqVnHSZcY) |
 | Así crecen tus Pantorrillas | general | [Ver Video](https://www.youtube.com/watch?v=oVDpGxF8-Qo) |
+
+| El problema de entrenar con flexiones | pecho | [Ver Video](https://www.youtube.com/watch?v=kuyv6FBpdp0) |
+| El problema de hacer solo flexiones | pecho | [Ver Video](https://www.youtube.com/watch?v=CU2Ab6BdlpQ) |
+| Cómo hacer FACEPULL | espalda | [Ver Video](https://www.youtube.com/watch?v=y73pzFKQ6MU) |
+| Cómo entrenar tu Espalda ALTA | espalda | [Ver Video](https://www.youtube.com/watch?v=YeUArEtacmc) |
+| Cómo hacer Encogimientos de Hombro | espalda | [Ver Video](https://www.youtube.com/watch?v=FHZRCBlTtyc) |
+| Que ejercicios hacer en el GYM | general | [Ver Video](https://www.youtube.com/watch?v=CiwBcKwkeSg) |
+| Cómo empezar a entrenar | general | [Ver Video](https://www.youtube.com/watch?v=rwDs-RR-qGg) |
+| Con cuanta INTENSIDAD hay que ENTRENAR | general | [Ver Video](https://www.youtube.com/watch?v=HeVZWNt8TrM) |
+| Nunca es tarde para el GYM | general | [Ver Video](https://www.youtube.com/watch?v=ZRhnE-zJ7hQ) |
+| Si empezara a entrenar de nuevo haría esto | general | [Ver Video](https://www.youtube.com/watch?v=pJf0ZmGZTcg) |
+| Straps y Falso agarre en Gym/Calistenia | general | [Ver Video](https://www.youtube.com/watch?v=JzCXv71gqKs) |
+| Cómo entrenar FUERZA de AGARRE | general | [Ver Video](https://www.youtube.com/watch?v=IZ0lQFvoLeI) |
+| El tipo de agarre da mas fuerza | general | [Ver Video](https://www.youtube.com/watch?v=qBQbOm8SB_s) |
+| Cómo entrenar FUERZA de AGARRE | general | [Ver Video](https://www.youtube.com/watch?v=x2X8SRYcqR4) |
+| Truco para llevar el Hombro al FALLO | hombros | [Ver Video](https://www.youtube.com/watch?v=hmKLt4szPxU) |
+| Entrenar Hombro a frecuencia 3 | hombros | [Ver Video](https://www.youtube.com/watch?v=VbaOT5Qt-xU) |
+| Así crecen tus Hombros 🥥🥥 | hombros | [Ver Video](https://www.youtube.com/watch?v=VZSA75hZRwo) |
+| Diferencias de formas de hacer Abdominales (Sit ups) | core | [Ver Video](https://www.youtube.com/watch?v=z8OKYLzNdYs) |
+| Cómo hacer Planchas Correctamente | core | [Ver Video](https://www.youtube.com/watch?v=qd0ZXzVXNLg) |
+| Cómo hacer CRUNCH en polea | core | [Ver Video](https://www.youtube.com/watch?v=XuQWMR4QKF0) |
+| Cómo hacer elevaciones de piernas | piernas | [Ver Video](https://www.youtube.com/watch?v=tocRn03UdKw) |
+| Cómo entrenar tus abdominales | core | [Ver Video](https://www.youtube.com/watch?v=D6scEW4LMkI) |
