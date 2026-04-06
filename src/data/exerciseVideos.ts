@@ -631,6 +631,46 @@ export const exerciseVideos: ExerciseVideo[] = [
     category: 'core',
     relatedExercises: [],
   },
+  {
+    id: 'como-hacer-recomposicion-corporal',
+    title: 'Cómo hacer RECOMPOSICIÓN Corporal',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=sSFW6hy_p8Q'),
+    url: 'https://www.youtube.com/watch?v=sSFW6hy_p8Q',
+    category: 'general',
+    relatedExercises: [],
+  },
+  {
+    id: 'es-necesario-el-cardio',
+    title: 'Es necesario el cardio?',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=8ZLlFEkmVes'),
+    url: 'https://www.youtube.com/watch?v=8ZLlFEkmVes',
+    category: 'nutricion',
+    relatedExercises: [],
+  },
+  {
+    id: 'mejora-la-tecnica-de-tus-flexiones',
+    title: 'Mejora la técnica de tus FLEXIONES',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=tLLtcwumEbY'),
+    url: 'https://www.youtube.com/watch?v=tLLtcwumEbY',
+    category: 'pecho',
+    relatedExercises: [],
+  },
+  {
+    id: 'como-hacer-flexiones',
+    title: 'Cómo hacer Flexiones',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=zrDwwnY5GBc'),
+    url: 'https://www.youtube.com/watch?v=zrDwwnY5GBc',
+    category: 'pecho',
+    relatedExercises: [],
+  },
+  {
+    id: 'como-entrenar-solo-con-flexiones',
+    title: 'Cómo entrenar solo con FLEXIONES',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=UibWbEl6FUk'),
+    url: 'https://www.youtube.com/watch?v=UibWbEl6FUk',
+    category: 'pecho',
+    relatedExercises: [],
+  },
 ];
 
 // Helper functions

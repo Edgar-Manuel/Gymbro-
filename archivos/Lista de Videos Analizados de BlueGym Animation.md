@@ -175,3 +175,9 @@ A continuación, se presenta la lista completa de **28 videos** del canal de You
 | Cómo hacer CRUNCH en polea | core | [Ver Video](https://www.youtube.com/watch?v=XuQWMR4QKF0) |
 | Cómo hacer elevaciones de piernas | piernas | [Ver Video](https://www.youtube.com/watch?v=tocRn03UdKw) |
 | Cómo entrenar tus abdominales | core | [Ver Video](https://www.youtube.com/watch?v=D6scEW4LMkI) |
+
+| Cómo hacer RECOMPOSICIÓN Corporal | general | [Ver Video](https://www.youtube.com/watch?v=sSFW6hy_p8Q) |
+| Es necesario el cardio? | nutricion | [Ver Video](https://www.youtube.com/watch?v=8ZLlFEkmVes) |
+| Mejora la técnica de tus FLEXIONES | pecho | [Ver Video](https://www.youtube.com/watch?v=tLLtcwumEbY) |
+| Cómo hacer Flexiones | pecho | [Ver Video](https://www.youtube.com/watch?v=zrDwwnY5GBc) |
+| Cómo entrenar solo con FLEXIONES | pecho | [Ver Video](https://www.youtube.com/watch?v=UibWbEl6FUk) |
