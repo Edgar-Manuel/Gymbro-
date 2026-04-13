@@ -671,6 +671,46 @@ export const exerciseVideos: ExerciseVideo[] = [
     category: 'pecho',
     relatedExercises: [],
   },
+  {
+    id: 'rutina-de-pierna-minimalista-',
+    title: 'Rutina de Pierna MINIMALISTA 💪',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=zxX9V7hgRec'),
+    url: 'https://www.youtube.com/watch?v=zxX9V7hgRec',
+    category: 'piernas',
+    relatedExercises: [],
+  },
+  {
+    id: 'la-rutina-de-pierna-mas-simple-y-efectiva',
+    title: 'La Rutina de PIERNA más Simple y Efectiva',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=p37Lt-v4XUU'),
+    url: 'https://www.youtube.com/watch?v=p37Lt-v4XUU',
+    category: 'piernas',
+    relatedExercises: [],
+  },
+  {
+    id: 'como-entrenar-pocos-dias-a-la-semana',
+    title: 'Cómo entrenar POCOS DÍAS a la semana',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=Z9-kYB3-lDE'),
+    url: 'https://www.youtube.com/watch?v=Z9-kYB3-lDE',
+    category: 'nutricion',
+    relatedExercises: [],
+  },
+  {
+    id: 'como-saber-si-entrenas-lo-suficiente',
+    title: 'Cómo saber si entrenas lo SUFICIENTE',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=jYurF17vVSY'),
+    url: 'https://www.youtube.com/watch?v=jYurF17vVSY',
+    category: 'nutricion',
+    relatedExercises: [],
+  },
+  {
+    id: 'perder-grasa-y-ganar-musculo-a-la-vez',
+    title: 'Perder grasa y ganar músculo a la vez',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=1fOICaPgHxo'),
+    url: 'https://www.youtube.com/watch?v=1fOICaPgHxo',
+    category: 'nutricion',
+    relatedExercises: [],
+  },
 ];
 
 // Helper functions
