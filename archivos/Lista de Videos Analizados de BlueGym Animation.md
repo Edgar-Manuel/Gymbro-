@@ -181,3 +181,9 @@ A continuación, se presenta la lista completa de **28 videos** del canal de You
 | Mejora la técnica de tus FLEXIONES | pecho | [Ver Video](https://www.youtube.com/watch?v=tLLtcwumEbY) |
 | Cómo hacer Flexiones | pecho | [Ver Video](https://www.youtube.com/watch?v=zrDwwnY5GBc) |
 | Cómo entrenar solo con FLEXIONES | pecho | [Ver Video](https://www.youtube.com/watch?v=UibWbEl6FUk) |
+
+| Rutina de Pierna MINIMALISTA 💪 | piernas | [Ver Video](https://www.youtube.com/watch?v=zxX9V7hgRec) |
+| La Rutina de PIERNA más Simple y Efectiva | piernas | [Ver Video](https://www.youtube.com/watch?v=p37Lt-v4XUU) |
+| Cómo entrenar POCOS DÍAS a la semana | nutricion | [Ver Video](https://www.youtube.com/watch?v=Z9-kYB3-lDE) |
+| Cómo saber si entrenas lo SUFICIENTE | nutricion | [Ver Video](https://www.youtube.com/watch?v=jYurF17vVSY) |
+| Perder grasa y ganar músculo a la vez | nutricion | [Ver Video](https://www.youtube.com/watch?v=1fOICaPgHxo) |
