@@ -187,3 +187,8 @@ A continuación, se presenta la lista completa de **28 videos** del canal de You
 | Cómo entrenar POCOS DÍAS a la semana | nutricion | [Ver Video](https://www.youtube.com/watch?v=Z9-kYB3-lDE) |
 | Cómo saber si entrenas lo SUFICIENTE | nutricion | [Ver Video](https://www.youtube.com/watch?v=jYurF17vVSY) |
 | Perder grasa y ganar músculo a la vez | nutricion | [Ver Video](https://www.youtube.com/watch?v=1fOICaPgHxo) |
+
+| Así se entrena el Bíceps | general | [Ver Video](https://www.youtube.com/watch?v=xAixNtL0pXM) |
+| Así crece tu Bíceps | general | [Ver Video](https://www.youtube.com/watch?v=PGlBK6u0Wlc) |
+| Rutina de Pierna MINIMALISTA 💪 | piernas | [Ver Video](https://www.youtube.com/watch?v=8Al4TSaG29k) |
+| Rutina de Pierna MINIMALISTA 💪 | piernas | [Ver Video](https://www.youtube.com/watch?v=fzgKccVPipw) |
