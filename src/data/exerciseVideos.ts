@@ -711,6 +711,38 @@ export const exerciseVideos: ExerciseVideo[] = [
     category: 'nutricion',
     relatedExercises: [],
   },
+  {
+    id: 'asi-se-entrena-el-biceps',
+    title: 'Así se entrena el Bíceps',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=xAixNtL0pXM'),
+    url: 'https://www.youtube.com/watch?v=xAixNtL0pXM',
+    category: 'general',
+    relatedExercises: [],
+  },
+  {
+    id: 'asi-crece-tu-biceps',
+    title: 'Así crece tu Bíceps',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=PGlBK6u0Wlc'),
+    url: 'https://www.youtube.com/watch?v=PGlBK6u0Wlc',
+    category: 'general',
+    relatedExercises: [],
+  },
+  {
+    id: 'rutina-de-pierna-minimalista-',
+    title: 'Rutina de Pierna MINIMALISTA 💪',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=8Al4TSaG29k'),
+    url: 'https://www.youtube.com/watch?v=8Al4TSaG29k',
+    category: 'piernas',
+    relatedExercises: [],
+  },
+  {
+    id: 'rutina-de-pierna-minimalista-',
+    title: 'Rutina de Pierna MINIMALISTA 💪',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=fzgKccVPipw'),
+    url: 'https://www.youtube.com/watch?v=fzgKccVPipw',
+    category: 'piernas',
+    relatedExercises: [],
+  },
 ];
 
 // Helper functions
