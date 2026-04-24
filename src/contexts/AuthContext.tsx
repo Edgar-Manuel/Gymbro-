@@ -15,6 +15,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
+  loginWithGoogle: () => void;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -115,6 +116,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithGoogle = () => {
+    try {
+      // Para Appwrite web, redirige directamente
+      account.createOAuth2Session(
+        'google', // provider
+        `${window.location.origin}/`, // success URL
+        `${window.location.origin}/login?error=oauth` // failure URL
+      );
+    } catch (error) {
+      console.error('Error al iniciar con Google:', error);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await account.deleteSession('current');
@@ -130,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     login,
     register,
+    loginWithGoogle,
     logout,
     isAuthenticated: !!user
   };
