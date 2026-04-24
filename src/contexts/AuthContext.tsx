@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { account } from '@/services/appwrite';
-import { setStorageMode } from '@/db';
+import { setStorageMode, dbHelpers } from '@/db';
+import { useAppStore } from '@/store';
 import { OAuthProvider } from 'appwrite';
 
 // Tipo para el usuario de Appwrite
@@ -34,13 +35,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Cambiar modo de almacenamiento según autenticación
   useEffect(() => {
-    if (user) {
-      // Usuario autenticado: usar Appwrite (cloud)
-      setStorageMode('cloud');
-    } else {
-      // Sin autenticación: usar IndexedDB (local)
-      setStorageMode('local');
-    }
+    const handleUserChange = async () => {
+      if (user) {
+        // Usuario autenticado: usar Appwrite (cloud)
+        setStorageMode('cloud');
+        
+        try {
+          const store = useAppStore.getState();
+          const localUser = store.currentUser;
+          
+          // Si hay un usuario local y no es el usuario por defecto ('user-1')
+          // Y además el email es distinto al de la sesión actual de Appwrite
+          if (localUser && localUser.id !== 'user-1' && localUser.email && localUser.email !== user.email) {
+            console.log('🔄 Cambio de cuenta detectado. Limpiando base de datos local...');
+            
+            // Limpiar datos antiguos
+            await dbHelpers.clearAllData();
+            
+            // Limpiar estado
+            store.setCurrentUser(null);
+            store.setActiveRoutine(null);
+            store.setStatistics(null);
+            store.finishWorkout();
+            
+            // Recargar datos iniciales (ejercicios)
+            const { initializeDatabase } = await import('@/utils/seedData');
+            await initializeDatabase();
+          }
+
+          // Intentar obtener el perfil de la nube
+          const { appwriteDbHelpers } = await import('@/db/appwriteDb');
+          const cloudUser = await appwriteDbHelpers.getCurrentUser();
+          
+          if (cloudUser) {
+            // Guardar localmente
+            await dbHelpers.createOrUpdateUser(cloudUser);
+            store.setCurrentUser(cloudUser);
+          }
+        } catch (error) {
+          console.error('Error sincronizando usuario tras login:', error);
+        }
+      } else {
+        // Sin autenticación: usar IndexedDB (local)
+        setStorageMode('local');
+      }
+    };
+
+    handleUserChange();
   }, [user]);
 
   const checkSession = async () => {
@@ -135,6 +176,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await account.deleteSession('current');
       setUser(null);
+      
+      console.log('Cerrando sesión. Limpiando datos locales...');
+      // Limpiar base de datos local
+      await dbHelpers.clearAllData();
+      
+      // Volver a cargar ejercicios por defecto
+      const { initializeDatabase } = await import('@/utils/seedData');
+      await initializeDatabase();
+      
+      // Limpiar estado de Zustand
+      const store = useAppStore.getState();
+      store.setCurrentUser(null);
+      store.setActiveRoutine(null);
+      store.setStatistics(null);
+      store.finishWorkout();
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
       throw error;
