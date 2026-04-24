@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { appwriteDbHelpers } from '@/db/appwriteDb';
 import { dbHelpers } from '@/db';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAppStore } from '@/store';
+
 import type { SharedRoutine } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,7 @@ export default function SharedRoutineView() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { currentUser } = useAppStore();
+
 
   const [shared, setShared] = useState<SharedRoutine | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,7 +50,7 @@ export default function SharedRoutineView() {
         fechaCreacion: new Date(),
         nombre: `${shared!.datos.nombre} (importada)`,
       };
-      await dbHelpers.saveRoutine(rutina);
+      await dbHelpers.createRoutine(rutina);
       setImported(true);
     } catch (e) {
       console.error(e);
