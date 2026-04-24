@@ -48,6 +48,8 @@ function FrontBody({
   const isFemale = sexo === 'femenino';
   const tSx = TORSO_SX[somatotipo] ?? 1;
   const lSx = LEG_SX[somatotipo] ?? 1;
+  const outlineColor = isFemale ? '#f472b6' : '#60a5fa';
+  const hairColor = '#4a3728';
 
   const headGrad = `${uid}-fhg`;
   const hlGrad   = `${uid}-fhl`;
@@ -68,11 +70,31 @@ function FrontBody({
       </defs>
 
       {/* ── HEAD (no somatotipo transform) ── */}
-      <ellipse cx="60" cy="18" rx="13" ry="15" fill={`url(#${headGrad})`} />
+      <ellipse cx="60" cy="18" rx="13" ry="15" fill={`url(#${headGrad})`} stroke={outlineColor} strokeWidth="0.8" />
       <ellipse cx="57" cy="14" rx="7" ry="8" fill={`url(#${hlGrad})`} />
       {/* Ears */}
       <ellipse cx="46.5" cy="18" rx="2.5" ry="4" fill={skinDark} />
       <ellipse cx="73.5" cy="18" rx="2.5" ry="4" fill={skinDark} />
+
+      {/* ── FEMALE: coleta (ponytail) ── */}
+      {isFemale && (
+        <>
+          {/* Hair on top of head */}
+          <path d="M 48,8 C 52,2 68,2 72,8 C 74,12 73,18 73,18 C 68,14 52,14 47,18 C 47,18 46,12 48,8 Z"
+            fill={hairColor} />
+          {/* Ponytail base band */}
+          <ellipse cx="60" cy="5" rx="8" ry="3.5" fill={hairColor} />
+          {/* Ponytail strand */}
+          <path d="M 56,3 C 54,-2 58,-10 60,-14 C 62,-10 66,-2 64,3"
+            fill={hairColor} stroke={hairColor} strokeWidth="0.5" />
+          {/* Ponytail end tapered */}
+          <path d="M 56,3 C 55,-4 58,-12 60,-16 C 62,-12 65,-4 64,3 C 62,5 58,5 56,3 Z"
+            fill={hairColor} />
+          {/* Hair tie/band */}
+          <ellipse cx="60" cy="3" rx="5" ry="2" fill={outlineColor} opacity="0.85" />
+        </>
+      )}
+
       {/* Neck connector to torso group */}
       <path d="M 55,33 L 65,33 L 65,43 L 55,43 Z" fill={skinMid} />
 
@@ -84,11 +106,11 @@ function FrontBody({
 
         {/* Left shoulder (deltoid) */}
         <path d="M 36,43 C 26,42 21,49 21,63 C 21,74 33,77 37,70 C 38,62 37,50 36,43 Z"
-          fill={col(sets, 'hombros')} stroke="rgba(0,0,0,0.18)" strokeWidth="0.5" />
+          fill={col(sets, 'hombros')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="26" cy="55" rx="3.5" ry="6" fill="rgba(255,255,255,0.25)" />
         {/* Right shoulder */}
         <path d="M 84,43 C 94,42 99,49 99,63 C 99,74 87,77 83,70 C 82,62 83,50 84,43 Z"
-          fill={col(sets, 'hombros')} stroke="rgba(0,0,0,0.18)" strokeWidth="0.5" />
+          fill={col(sets, 'hombros')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="94" cy="55" rx="3.5" ry="6" fill="rgba(255,255,255,0.25)" />
 
         {/* CHEST — male or female */}
@@ -96,22 +118,22 @@ function FrontBody({
           <>
             {/* Left breast */}
             <path d="M 60,44 C 52,42 37,48 37,65 C 37,80 50,92 60,88 Z"
-              fill={col(sets, 'pecho')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+              fill={col(sets, 'pecho')} stroke={outlineColor} strokeWidth="0.7" />
             <ellipse cx="48" cy="68" rx="8" ry="12" fill="rgba(255,255,255,0.2)" />
             {/* Right breast */}
             <path d="M 60,44 C 68,42 83,48 83,65 C 83,80 70,92 60,88 Z"
-              fill={col(sets, 'pecho')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+              fill={col(sets, 'pecho')} stroke={outlineColor} strokeWidth="0.7" />
             <ellipse cx="72" cy="68" rx="8" ry="12" fill="rgba(255,255,255,0.2)" />
           </>
         ) : (
           <>
             {/* Left pec */}
             <path d="M 60,44 C 52,41 37,47 37,64 C 37,76 48,84 60,80 Z"
-              fill={col(sets, 'pecho')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+              fill={col(sets, 'pecho')} stroke={outlineColor} strokeWidth="0.7" />
             <ellipse cx="48" cy="62" rx="8" ry="9" fill="rgba(255,255,255,0.22)" />
             {/* Right pec */}
             <path d="M 60,44 C 68,41 83,47 83,64 C 83,76 72,84 60,80 Z"
-              fill={col(sets, 'pecho')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+              fill={col(sets, 'pecho')} stroke={outlineColor} strokeWidth="0.7" />
             <ellipse cx="72" cy="62" rx="8" ry="9" fill="rgba(255,255,255,0.22)" />
             {/* Sternal line */}
             <line x1="60" y1="44" x2="60" y2="80" stroke="rgba(0,0,0,0.14)" strokeWidth="0.7" />
@@ -120,32 +142,32 @@ function FrontBody({
 
         {/* Left bicep */}
         <path d="M 37,57 C 23,61 20,84 23,108 C 24,114 37,114 38,108 C 38,84 38,61 37,57 Z"
-          fill={col(sets, 'biceps')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'biceps')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="23.5" cy="80" rx="3" ry="9" fill="rgba(255,255,255,0.28)" />
         {/* Right bicep */}
         <path d="M 83,57 C 97,61 100,84 97,108 C 96,114 83,114 82,108 C 82,84 82,61 83,57 Z"
-          fill={col(sets, 'biceps')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'biceps')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="96.5" cy="80" rx="3" ry="9" fill="rgba(255,255,255,0.28)" />
 
         {/* Left forearm */}
         <path d="M 22,109 C 20,118 20,136 23,150 C 24,155 37,155 37,150 C 38,136 38,118 37,109 Z"
-          fill={col(sets, 'antebrazos')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'antebrazos')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="22" cy="128" rx="2.5" ry="10" fill="rgba(255,255,255,0.2)" />
         {/* Right forearm */}
         <path d="M 98,109 C 100,118 100,136 97,150 C 96,155 83,155 83,150 C 82,136 82,118 83,109 Z"
-          fill={col(sets, 'antebrazos')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'antebrazos')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="98" cy="128" rx="2.5" ry="10" fill="rgba(255,255,255,0.2)" />
 
         {/* Hands */}
-        <ellipse cx="29" cy="159" rx="6" ry="7.5" fill={skinDark} />
-        <ellipse cx="91" cy="159" rx="6" ry="7.5" fill={skinDark} />
+        <ellipse cx="29" cy="159" rx="6" ry="7.5" fill={skinDark} stroke={outlineColor} strokeWidth="0.5" />
+        <ellipse cx="91" cy="159" rx="6" ry="7.5" fill={skinDark} stroke={outlineColor} strokeWidth="0.5" />
         {/* Knuckle hints */}
         <ellipse cx="27" cy="156" rx="4" ry="2" fill="rgba(255,255,255,0.15)" />
         <ellipse cx="93" cy="156" rx="4" ry="2" fill="rgba(255,255,255,0.15)" />
 
         {/* ABS (torso body) */}
         <path d="M 37,80 C 36,100 48,124 48,148 L 72,148 C 72,124 84,100 83,80 Z"
-          fill={col(sets, 'abdominales')} stroke="rgba(0,0,0,0.12)" strokeWidth="0.5" />
+          fill={col(sets, 'abdominales')} stroke={outlineColor} strokeWidth="0.7" />
         {/* Linea alba */}
         <line x1="60" y1="80" x2="60" y2="147" stroke="rgba(0,0,0,0.16)" strokeWidth="0.9" />
         {/* Horizontal ab lines */}
@@ -175,13 +197,13 @@ function FrontBody({
       <g transform={legTx(lSx)}>
         {/* Left quad */}
         <path d="M 44,175 C 39,187 33,218 38,250 C 40,257 56,258 57,250 C 59,218 60,187 60,175 Z"
-          fill={col(sets, 'piernas')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'piernas')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="38" cy="210" rx="5" ry="15" fill="rgba(255,255,255,0.18)" />
         {/* Quad separation line */}
         <path d="M 48,182 Q 47,210 48,244" stroke="rgba(0,0,0,0.09)" strokeWidth="0.5" fill="none" />
         {/* Right quad */}
         <path d="M 76,175 C 81,187 87,218 82,250 C 80,257 64,258 63,250 C 61,218 60,187 60,175 Z"
-          fill={col(sets, 'piernas')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'piernas')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="82" cy="210" rx="5" ry="15" fill="rgba(255,255,255,0.18)" />
         <path d="M 72,182 Q 73,210 72,244" stroke="rgba(0,0,0,0.09)" strokeWidth="0.5" fill="none" />
 
@@ -193,11 +215,11 @@ function FrontBody({
 
         {/* Left shin */}
         <path d="M 38,258 C 34,270 35,286 39,294 C 41,298 54,298 56,294 C 58,286 57,268 57,258 Z"
-          fill={col(sets, 'piernas')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'piernas')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="36.5" cy="274" rx="3" ry="10" fill="rgba(255,255,255,0.18)" />
         {/* Right shin */}
         <path d="M 82,258 C 86,270 85,286 81,294 C 79,298 66,298 64,294 C 62,286 63,268 63,258 Z"
-          fill={col(sets, 'piernas')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'piernas')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="83.5" cy="274" rx="3" ry="10" fill="rgba(255,255,255,0.18)" />
 
         {/* Feet */}
@@ -227,6 +249,8 @@ function BackBody({
   const isFemale = sexo === 'femenino';
   const tSx = TORSO_SX[somatotipo] ?? 1;
   const lSx = LEG_SX[somatotipo] ?? 1;
+  const outlineColor = isFemale ? '#f472b6' : '#60a5fa';
+  const hairColor = '#4a3728';
 
   const headGrad = `${uid}-bhg`;
 
@@ -240,10 +264,31 @@ function BackBody({
       </defs>
 
       {/* ── HEAD (no transform) ── */}
-      <ellipse cx="60" cy="18" rx="13" ry="15" fill={`url(#${headGrad})`} />
+      <ellipse cx="60" cy="18" rx="13" ry="15" fill={`url(#${headGrad})`} stroke={outlineColor} strokeWidth="0.8" />
       {/* Ears */}
       <ellipse cx="46.5" cy="18" rx="2.5" ry="4" fill={skinDark} />
       <ellipse cx="73.5" cy="18" rx="2.5" ry="4" fill={skinDark} />
+
+      {/* ── FEMALE: coleta visible desde atrás ── */}
+      {isFemale && (
+        <>
+          {/* Hair covering back of head */}
+          <path d="M 48,6 C 52,1 68,1 72,6 C 75,10 74,20 73,24 C 68,20 52,20 47,24 C 46,20 45,10 48,6 Z"
+            fill={hairColor} />
+          {/* Ponytail hanging down from top */}
+          <path d="M 55,4 C 54,-2 57,-8 60,-12 C 63,-8 66,-2 65,4 C 63,6 57,6 55,4 Z"
+            fill={hairColor} />
+          {/* Ponytail strand going down */}
+          <path d="M 57,3 C 55,8 54,18 56,28 C 58,34 62,34 64,28 C 66,18 65,8 63,3 C 61,5 59,5 57,3 Z"
+            fill={hairColor} />
+          {/* Hair tie */}
+          <ellipse cx="60" cy="4" rx="5" ry="2" fill={outlineColor} opacity="0.85" />
+          {/* Ponytail end */}
+          <path d="M 57,26 C 55,32 56,40 60,44 C 64,40 65,32 63,26 Z"
+            fill={hairColor} opacity="0.85" />
+        </>
+      )}
+
       {/* Neck */}
       <path d="M 55,33 L 65,33 L 65,43 L 55,43 Z" fill={skinMid} />
 
@@ -255,20 +300,20 @@ function BackBody({
 
         {/* Rear shoulders */}
         <path d="M 36,43 C 26,42 21,49 21,63 C 21,74 33,77 37,70 C 38,62 37,50 36,43 Z"
-          fill={col(sets, 'hombros')} stroke="rgba(0,0,0,0.18)" strokeWidth="0.5" />
+          fill={col(sets, 'hombros')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="26" cy="55" rx="3.5" ry="6" fill="rgba(255,255,255,0.2)" />
         <path d="M 84,43 C 94,42 99,49 99,63 C 99,74 87,77 83,70 C 82,62 83,50 84,43 Z"
-          fill={col(sets, 'hombros')} stroke="rgba(0,0,0,0.18)" strokeWidth="0.5" />
+          fill={col(sets, 'hombros')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="94" cy="55" rx="3.5" ry="6" fill="rgba(255,255,255,0.2)" />
 
         {/* BACK — upper traps block */}
         <path d="M 38,44 C 38,44 60,40 60,40 C 60,40 82,44 82,44 L 83,70 C 75,67 60,66 45,67 Z"
-          fill={col(sets, 'espalda')} stroke="rgba(0,0,0,0.14)" strokeWidth="0.5" />
+          fill={col(sets, 'espalda')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="60" cy="52" rx="14" ry="8" fill="rgba(255,255,255,0.18)" />
 
         {/* Lats */}
         <path d="M 38,68 C 34,80 33,115 39,142 L 81,142 C 87,115 86,80 82,68 C 74,65 46,65 38,68 Z"
-          fill={col(sets, 'espalda')} stroke="rgba(0,0,0,0.14)" strokeWidth="0.5" />
+          fill={col(sets, 'espalda')} stroke={outlineColor} strokeWidth="0.7" />
         {/* Spine line */}
         <line x1="60" y1="68" x2="60" y2="140" stroke="rgba(0,0,0,0.16)" strokeWidth="0.9" />
         {/* Horizontal back lines (rhomboids / mid trap) */}
@@ -281,29 +326,29 @@ function BackBody({
 
         {/* Left tricep */}
         <path d="M 37,57 C 23,61 20,84 23,108 C 24,114 37,114 38,108 C 38,84 38,61 37,57 Z"
-          fill={col(sets, 'triceps')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'triceps')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="25" cy="82" rx="3" ry="8" fill="rgba(255,255,255,0.22)" />
         {/* Right tricep */}
         <path d="M 83,57 C 97,61 100,84 97,108 C 96,114 83,114 82,108 C 82,84 82,61 83,57 Z"
-          fill={col(sets, 'triceps')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'triceps')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="95" cy="82" rx="3" ry="8" fill="rgba(255,255,255,0.22)" />
 
         {/* Left forearm (back view) */}
         <path d="M 22,109 C 20,118 20,136 23,150 C 24,155 37,155 37,150 C 38,136 38,118 37,109 Z"
-          fill={col(sets, 'antebrazos')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'antebrazos')} stroke={outlineColor} strokeWidth="0.7" />
         {/* Right forearm */}
         <path d="M 98,109 C 100,118 100,136 97,150 C 96,155 83,155 83,150 C 82,136 82,118 83,109 Z"
-          fill={col(sets, 'antebrazos')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'antebrazos')} stroke={outlineColor} strokeWidth="0.7" />
 
         {/* Hands */}
-        <ellipse cx="29" cy="159" rx="6" ry="7.5" fill={skinDark} />
-        <ellipse cx="91" cy="159" rx="6" ry="7.5" fill={skinDark} />
+        <ellipse cx="29" cy="159" rx="6" ry="7.5" fill={skinDark} stroke={outlineColor} strokeWidth="0.5" />
+        <ellipse cx="91" cy="159" rx="6" ry="7.5" fill={skinDark} stroke={outlineColor} strokeWidth="0.5" />
 
         {/* Glutes */}
         {isFemale ? (
           <>
             <path d="M 39,142 C 35,152 34,168 37,178 L 83,178 C 86,168 85,152 81,142 Z"
-              fill={col(sets, 'femorales_gluteos')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+              fill={col(sets, 'femorales_gluteos')} stroke={outlineColor} strokeWidth="0.7" />
             <line x1="60" y1="143" x2="60" y2="177" stroke="rgba(0,0,0,0.13)" strokeWidth="0.8" />
             <ellipse cx="47" cy="162" rx="8" ry="10" fill="rgba(255,255,255,0.16)" />
             <ellipse cx="73" cy="162" rx="8" ry="10" fill="rgba(255,255,255,0.16)" />
@@ -311,7 +356,7 @@ function BackBody({
         ) : (
           <>
             <path d="M 41,142 C 37,152 36,168 40,178 L 80,178 C 84,168 83,152 79,142 Z"
-              fill={col(sets, 'femorales_gluteos')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+              fill={col(sets, 'femorales_gluteos')} stroke={outlineColor} strokeWidth="0.7" />
             <line x1="60" y1="143" x2="60" y2="177" stroke="rgba(0,0,0,0.13)" strokeWidth="0.8" />
             <path d="M 43,170 Q 60,176 77,170" stroke="rgba(0,0,0,0.10)" strokeWidth="0.6" fill="none" />
             <ellipse cx="49" cy="160" rx="7" ry="8" fill="rgba(255,255,255,0.15)" />
@@ -325,11 +370,11 @@ function BackBody({
       <g transform={legTx(lSx)}>
         {/* Left hamstring */}
         <path d="M 44,175 C 39,187 33,220 38,250 C 40,257 56,258 57,250 C 59,218 60,187 60,175 Z"
-          fill={col(sets, 'femorales_gluteos')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'femorales_gluteos')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="38" cy="212" rx="5" ry="14" fill="rgba(255,255,255,0.15)" />
         {/* Right hamstring */}
         <path d="M 76,175 C 81,187 87,220 82,250 C 80,257 64,258 63,250 C 61,218 60,187 60,175 Z"
-          fill={col(sets, 'femorales_gluteos')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'femorales_gluteos')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="82" cy="212" rx="5" ry="14" fill="rgba(255,255,255,0.15)" />
 
         {/* Knees back */}
@@ -338,7 +383,7 @@ function BackBody({
 
         {/* Left calf */}
         <path d="M 38,258 C 33,270 34,284 39,293 C 41,298 55,298 57,293 C 58,284 57,266 57,258 Z"
-          fill={col(sets, 'piernas')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'piernas')} stroke={outlineColor} strokeWidth="0.7" />
         {/* Calf highlight (gastrocnemius bulge) */}
         <ellipse cx="37" cy="273" rx="3.5" ry="9" fill="rgba(255,255,255,0.22)" />
         <ellipse cx="47" cy="271" rx="3.5" ry="9" fill="rgba(255,255,255,0.16)" />
@@ -346,7 +391,7 @@ function BackBody({
         <path d="M 47,262 Q 47,275 48,288" stroke="rgba(0,0,0,0.09)" strokeWidth="0.5" fill="none" />
         {/* Right calf */}
         <path d="M 82,258 C 87,270 86,284 81,293 C 79,298 65,298 63,293 C 62,284 63,266 63,258 Z"
-          fill={col(sets, 'piernas')} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+          fill={col(sets, 'piernas')} stroke={outlineColor} strokeWidth="0.7" />
         <ellipse cx="83" cy="273" rx="3.5" ry="9" fill="rgba(255,255,255,0.22)" />
         <ellipse cx="73" cy="271" rx="3.5" ry="9" fill="rgba(255,255,255,0.16)" />
         <path d="M 73,262 Q 73,275 72,288" stroke="rgba(0,0,0,0.09)" strokeWidth="0.5" fill="none" />

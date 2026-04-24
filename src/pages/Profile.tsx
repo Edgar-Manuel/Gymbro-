@@ -731,6 +731,8 @@ export default function Profile() {
             )}
           </div>
         </CardContent>
+      </Card>
+
       {/* Guía de Instalación PWA */}
       <Card className="mt-6 border-primary/20 bg-primary/5 dark:bg-primary/10">
         <CardHeader>
