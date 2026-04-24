@@ -20,6 +20,7 @@ export const COLLECTIONS = {
   STATISTICS: 'statistics',
   BODY_MEASUREMENTS: 'bodyMeasurements',
   PROGRESS_PHOTOS: 'progressPhotos',
+  SHARED_ROUTINES: 'shared_routines',
 } as const;
 
 /**

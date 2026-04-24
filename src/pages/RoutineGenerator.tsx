@@ -10,6 +10,7 @@ import { dbHelpers } from '@/db';
 import { generarRutinaPersonalizada, obtenerResumenRutina, SPLITS_CONFIG } from '@/utils/routineGenerator';
 import type { RutinaSemanal, ExerciseKnowledge } from '@/types';
 import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check } from 'lucide-react';
+import ShareRoutineButton from '@/components/ShareRoutineButton';
 
 export default function RoutineGenerator() {
   const navigate = useNavigate();
@@ -378,6 +379,13 @@ export default function RoutineGenerator() {
               Guardar y Comenzar
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
+            {generatedRoutine && currentUser && (
+              <ShareRoutineButton
+                rutina={generatedRoutine}
+                userName={currentUser.nombre}
+                size="default"
+              />
+            )}
           </div>
         </>
       )}

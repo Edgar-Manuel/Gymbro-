@@ -7,16 +7,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dbHelpers } from '@/db';
 import type { ExerciseKnowledge } from '@/types';
 import { GrupoMuscular, type Tier } from '@/types';
-import { Search, X, Youtube } from 'lucide-react';
+import { Search, X, Youtube, TrendingUp } from 'lucide-react';
 import { getVideosByExercise, exerciseVideos } from '@/data/exerciseVideos';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useAppStore } from '@/store';
+
+interface HistoryPoint { date: string; maxPeso: number; }
 
 export default function ExerciseLibrary() {
+  const { currentUser } = useAppStore();
   const [exercises, setExercises] = useState<ExerciseKnowledge[]>([]);
   const [filteredExercises, setFilteredExercises] = useState<ExerciseKnowledge[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<GrupoMuscular | null>(null);
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseKnowledge | null>(null);
+  const [exerciseHistory, setExerciseHistory] = useState<HistoryPoint[]>([]);
 
   const loadExercises = async () => {
     const allExercises = await dbHelpers.getAllExercises();
@@ -58,6 +64,25 @@ export default function ExerciseLibrary() {
   useEffect(() => {
     loadExercises();
   }, []);
+
+  useEffect(() => {
+    if (!currentUser || !selectedExercise) { setExerciseHistory([]); return; }
+    (async () => {
+      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 60);
+      const history: HistoryPoint[] = [];
+      for (const w of [...workouts].reverse()) {
+        const exLog = w.ejercicios.find(e => e.ejercicioId === selectedExercise.id);
+        if (exLog && exLog.series.length > 0) {
+          const maxPeso = Math.max(...exLog.series.map(s => s.peso));
+          history.push({
+            date: new Date(w.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
+            maxPeso,
+          });
+        }
+      }
+      setExerciseHistory(history);
+    })();
+  }, [selectedExercise, currentUser]);
 
   useEffect(() => {
     filterExercises();
@@ -427,6 +452,54 @@ export default function ExerciseLibrary() {
                   </div>
                 );
               })()}
+
+              {/* Historial de progreso */}
+              {exerciseHistory.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-primary" />
+                    Tu Progreso
+                    <span className="text-xs text-muted-foreground font-normal">
+                      (últimas {exerciseHistory.length} sesiones)
+                    </span>
+                  </h3>
+                  <div className="h-48 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={exerciseHistory} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                        <YAxis tick={{ fontSize: 10 }} unit="kg" />
+                        <Tooltip
+                          contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
+                          formatter={(v: number) => [`${v} kg`, 'Peso máx']}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="maxPeso"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          dot={{ r: 3, fill: 'hsl(var(--primary))' }}
+                          activeDot={{ r: 5 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  {exerciseHistory.length >= 2 && (() => {
+                    const diff = exerciseHistory[exerciseHistory.length - 1].maxPeso - exerciseHistory[0].maxPeso;
+                    return diff !== 0 ? (
+                      <p className={`text-xs mt-1 text-center ${diff > 0 ? 'text-green-500' : 'text-red-400'}`}>
+                        {diff > 0 ? '▲' : '▼'} {Math.abs(diff).toFixed(1)} kg desde tu primera sesión registrada
+                      </p>
+                    ) : null;
+                  })()}
+                </div>
+              )}
+              {currentUser && exerciseHistory.length === 0 && (
+                <div className="text-center py-4 rounded-lg bg-muted/30">
+                  <TrendingUp className="w-6 h-6 mx-auto mb-1 text-muted-foreground/40" />
+                  <p className="text-xs text-muted-foreground">Aún no has registrado este ejercicio</p>
+                </div>
+              )}
 
               <Button
                 onClick={() => setSelectedExercise(null)}
