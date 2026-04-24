@@ -227,6 +227,37 @@ export const appwriteDbHelpers = {
     }
   },
 
+  /**
+   * Actualizar rutina existente
+   */
+  async updateRoutine(rutina: RutinaSemanal): Promise<string> {
+    try {
+      const rutinaData = {
+        nombre: rutina.nombre,
+        activa: rutina.activa,
+        datos: JSON.stringify({
+          objetivo: rutina.objetivo,
+          nivel: rutina.nivel,
+          diasPorSemana: rutina.diasPorSemana,
+          diasRutina: rutina.diasRutina || rutina.dias,
+          duracionTotal: rutina.duracionTotal,
+        }),
+      };
+
+      await databases.updateDocument(
+        APPWRITE_DATABASE_ID,
+        COLLECTIONS.ROUTINES,
+        rutina.id,
+        rutinaData
+      );
+
+      return rutina.id;
+    } catch (error) {
+      console.error('Error actualizando rutina:', error);
+      throw error;
+    }
+  },
+
   // ==================== WORKOUTS ====================
 
   /**

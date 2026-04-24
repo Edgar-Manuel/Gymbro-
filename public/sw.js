@@ -168,14 +168,15 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Background Sync (para sincronizar datos offline)
+// Background Sync — notifica a los clientes para que corran SyncManager
 self.addEventListener('sync', (event) => {
   console.log('[SW] Background sync:', event.tag);
 
-  if (event.tag === 'sync-workouts') {
+  if (event.tag === 'gymbro-sync') {
     event.waitUntil(
-      // Aquí se implementaría la sincronización de workouts
-      Promise.resolve()
+      self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then((clients) => {
+        clients.forEach((client) => client.postMessage({ type: 'BACKGROUND_SYNC' }));
+      })
     );
   }
 });

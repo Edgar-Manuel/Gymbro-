@@ -6,37 +6,51 @@ import { getStorageMode } from '../config';
 
 export const RoutineRepository = {
     async getActiveRoutine(userId: string): Promise<WithSync<RutinaSemanal> | undefined> {
+        const local = await db.rutinas.where('userId').equals(userId).and(r => r.activa === true).first();
+
         if (navigator.onLine && getStorageMode() === 'cloud') {
-            try {
-                const routine = await appwriteDbHelpers.getActiveRoutine(userId);
-                if (routine) {
-                    // Cache it
-                    await db.rutinas.put({ ...routine, syncStatus: 'synced', lastUpdated: Date.now() });
-                    return { ...routine, syncStatus: 'synced' };
+            if (!local) {
+                try {
+                    const routine = await appwriteDbHelpers.getActiveRoutine(userId);
+                    if (routine) {
+                        await db.rutinas.put({ ...routine, syncStatus: 'synced', lastUpdated: Date.now() });
+                        return { ...routine, syncStatus: 'synced' };
+                    }
+                } catch (error) {
+                    console.warn('[Repo] Error fetching active routine from cloud:', error);
                 }
-            } catch (error) {
-                console.warn('Error fetching active routine from cloud:', error);
+            } else {
+                appwriteDbHelpers.getActiveRoutine(userId)
+                    .then(routine => {
+                        if (routine) db.rutinas.put({ ...routine, syncStatus: 'synced', lastUpdated: Date.now() });
+                    })
+                    .catch(err => console.warn('[Repo] background routine refresh failed', err));
             }
         }
 
-        return await db.rutinas
-            .where('userId').equals(userId)
-            .and(r => r.activa === true)
-            .first();
+        return local;
     },
 
     async getUserRoutines(userId: string) {
+        const local = await db.rutinas.where('userId').equals(userId).toArray();
+
         if (navigator.onLine) {
-            try {
-                const routines = await appwriteDbHelpers.getUserRoutines(userId);
-                // Cache all
-                await db.rutinas.bulkPut(routines.map(r => ({ ...r, syncStatus: 'synced' as const, lastUpdated: Date.now() })));
-                return routines;
-            } catch (error) {
-                console.warn('Error fetching routines from cloud:', error);
+            if (local.length === 0) {
+                try {
+                    const routines = await appwriteDbHelpers.getUserRoutines(userId);
+                    await db.rutinas.bulkPut(routines.map(r => ({ ...r, syncStatus: 'synced' as const, lastUpdated: Date.now() })));
+                    return routines;
+                } catch (error) {
+                    console.warn('[Repo] Error fetching routines from cloud:', error);
+                }
+            } else {
+                appwriteDbHelpers.getUserRoutines(userId)
+                    .then(routines => db.rutinas.bulkPut(routines.map(r => ({ ...r, syncStatus: 'synced' as const, lastUpdated: Date.now() }))))
+                    .catch(err => console.warn('[Repo] background routines refresh failed', err));
             }
         }
-        return await db.rutinas.where('userId').equals(userId).toArray();
+
+        return local;
     },
 
     async createRoutine(rutina: RutinaSemanal) {

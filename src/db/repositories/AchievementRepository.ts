@@ -15,7 +15,7 @@ export const AchievementRepository = {
   },
 
   async awardAchievement(achievement: Achievement): Promise<string> {
-    await db.achievements.add({ ...achievement, syncStatus: 'pending' } as any);
+    await db.achievements.add({ ...achievement, syncStatus: 'pending_create' } as any);
     return achievement.id;
   },
 };
