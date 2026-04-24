@@ -3,7 +3,6 @@ import { RoutineRepository } from '../repositories/RoutineRepository';
 import { WorkoutRepository } from '../repositories/WorkoutRepository';
 import { StatisticsRepository } from '../repositories/StatisticsRepository';
 import { BodyTrackingRepository } from '../repositories/BodyTrackingRepository';
-import { AchievementRepository } from '../repositories/AchievementRepository';
 import { appwriteDbHelpers } from '../appwriteDb';
 import { db } from '../schema';
 
