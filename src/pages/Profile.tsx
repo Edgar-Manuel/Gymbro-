@@ -6,14 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, Scale, TrendingUp, Target, Moon, Sun, Info, CheckCircle, Cloud, CloudOff, Mail, Flame, Camera, Bell, BellOff, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import MuscleHeatMap from '@/components/MuscleHeatMap';
+import BodyMuscleMap from '@/components/BodyMuscleMap';
 import { useState, useEffect, useRef } from 'react';
 import { dbHelpers } from '@/db';
 import type { Somatotipo, ProgressPhoto } from '@/types';
 import { notificationManager } from '@/utils/notificationManager';
 import { ID } from 'appwrite';
 import { PERFILES_SOMATOTIPO, calcularPlanNutricional } from '@/utils/nutritionCalculator';
-import SomatotipoImage from '@/components/SomatotipoImage';
 
 export default function Profile() {
   const { currentUser, setCurrentUser, isDarkMode, toggleDarkMode } = useAppStore();
@@ -436,7 +435,7 @@ export default function Profile() {
         </Card>
       </div>
 
-      {/* Mapa de Calor Muscular */}
+      {/* Mapa Muscular + Somatotipo unificado */}
       {currentUser && (
         <Card className="mb-6">
           <CardHeader>
@@ -445,11 +444,15 @@ export default function Profile() {
               <CardTitle>Mapa Muscular Semanal</CardTitle>
             </div>
             <CardDescription>
-              Volumen de entrenamiento por grupo muscular en los últimos 7 días
+              Volumen de entrenamiento por grupo muscular · silueta según tu tipo de cuerpo
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <MuscleHeatMap userId={currentUser.id} />
+            <BodyMuscleMap
+              userId={currentUser.id}
+              somatotipo={formData.somatotipo}
+              sexo={formData.sexo}
+            />
           </CardContent>
         </Card>
       )}
@@ -603,7 +606,7 @@ export default function Profile() {
         </CardContent>
       </Card>
 
-      {/* Información de Perfil - Somatotipo */}
+      {/* Tu Tipo de Cuerpo — características del somatotipo */}
       <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -613,11 +616,6 @@ export default function Profile() {
           <CardDescription>{perfilSomatotipo.descripcion}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
-          {/* Imagen del somatotipo */}
-          <div className="flex justify-center py-4">
-            <SomatotipoImage somatotipo={formData.somatotipo} size="lg" />
-          </div>
-
           <div>
             <p className="font-semibold mb-2">Características:</p>
             <ul className="space-y-1">
