@@ -287,6 +287,18 @@ export default function RoutineGenerator() {
               <CardDescription>{generatedRoutine.descripcion}</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="bg-primary/10 border border-primary/20 text-primary-foreground p-3 rounded-lg mb-6 flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-primary" />
+                <div className="text-sm">
+                  <span className="font-semibold text-primary">Días recomendados para entrenar: </span>
+                  <span className="text-foreground font-medium">
+                    {diasDisponibles === 3 ? 'Lunes, Miércoles y Viernes' : 
+                     diasDisponibles === 4 ? 'Lunes, Martes, Jueves y Viernes' :
+                     diasDisponibles === 5 ? 'Lunes a Viernes (Descanso fines de semana)' :
+                     'Lunes a Sábado (Descanso Domingo)'}
+                  </span>
+                </div>
+              </div>
               {resumen && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-3 rounded-lg bg-accent/50">

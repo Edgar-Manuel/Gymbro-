@@ -18,8 +18,8 @@ export const SPLITS_CONFIG = {
   4: [
     { nombre: 'Pecho y Tríceps', grupos: [GM.PECHO, GM.TRICEPS] },
     { nombre: 'Espalda y Bíceps', grupos: [GM.ESPALDA, GM.BICEPS] },
-    { nombre: 'Descanso', grupos: [] },
-    { nombre: 'Pierna y Hombros', grupos: [GM.PIERNAS, GM.FEMORALES_GLUTEOS, GM.HOMBROS, GM.ABDOMINALES] }
+    { nombre: 'Piernas y Abs', grupos: [GM.PIERNAS, GM.FEMORALES_GLUTEOS, GM.ABDOMINALES] },
+    { nombre: 'Hombros y Brazos Extra', grupos: [GM.HOMBROS, GM.BICEPS, GM.TRICEPS] }
   ],
   5: [
     { nombre: 'Pecho', grupos: [GM.PECHO] },
@@ -36,6 +36,13 @@ export const SPLITS_CONFIG = {
     { nombre: 'Brazos (Bíceps y Tríceps)', grupos: [GM.BICEPS, GM.TRICEPS] },
     { nombre: 'Pierna (Femorales y Glúteos)', grupos: [GM.FEMORALES_GLUTEOS, GM.PIERNAS] }
   ]
+};
+
+export const DIAS_SEMANA_RECOMENDADOS: Record<number, string> = {
+  3: 'Lunes, Miércoles y Viernes',
+  4: 'Lunes, Martes, Jueves y Viernes',
+  5: 'Lunes a Viernes (Descanso fines de semana)',
+  6: 'Lunes a Sábado (Descanso Domingo)'
 };
 
 // Configuración de volumen según objetivo
@@ -127,13 +134,13 @@ export function generarRutinaPersonalizada(
       duracionEstimada,
       orden: index + 1
     };
-  });
+  }).filter(dia => dia.ejercicios.length > 0); // Remover días vacíos (descanso) por si acaso
 
   const rutina: RutinaSemanal = {
     id: `rutina-${Date.now()}`,
     userId: user.id,
     nombre: `Rutina ${dias} Días - ${user.objetivo.charAt(0).toUpperCase() + user.objetivo.slice(1)}`,
-    descripcion: `Rutina personalizada para ${user.nivel} enfocada en ${user.objetivo}`,
+    descripcion: `Rutina personalizada para ${user.nivel} enfocada en ${user.objetivo}. Días recomendados: ${DIAS_SEMANA_RECOMENDADOS[dias as keyof typeof DIAS_SEMANA_RECOMENDADOS]}.`,
     dias: diasRutina,
     fechaCreacion: new Date(),
     activa: true
