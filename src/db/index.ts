@@ -43,7 +43,25 @@ export const dbHelpers = {
 // Auto-sync on online
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
-    console.log('Online detected, syncing...');
+    console.log('[Sync] Online detected, syncing...');
     SyncManager.syncAll();
+    // Register background sync tag for service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((reg) => {
+        if ('sync' in reg) {
+          (reg as any).sync.register('gymbro-sync').catch(() => {});
+        }
+      });
+    }
   });
+
+  // Listen for background sync triggered by service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data?.type === 'BACKGROUND_SYNC') {
+        console.log('[Sync] SW background sync triggered');
+        SyncManager.syncAll();
+      }
+    });
+  }
 }

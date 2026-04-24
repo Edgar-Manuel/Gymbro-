@@ -5,24 +5,26 @@ import { getStorageMode } from '../config';
 
 export const WorkoutRepository = {
     async getWorkoutsByUser(userId: string, limit?: number) {
+        const local = await db.workouts.where('userId').equals(userId).reverse().sortBy('fecha');
+        const localResult = limit ? local.slice(0, limit) : local;
+
         if (navigator.onLine && getStorageMode() === 'cloud') {
-            try {
-                const workouts = await appwriteDbHelpers.getWorkoutsByUser(userId, limit);
-                // Cache
-                await db.workouts.bulkPut(workouts.map(w => ({ ...w, syncStatus: 'synced' as const, lastUpdated: Date.now() })));
-                return workouts;
-            } catch (error) {
-                console.warn('Error fetching workouts from cloud:', error);
+            if (localResult.length === 0) {
+                try {
+                    const workouts = await appwriteDbHelpers.getWorkoutsByUser(userId, limit);
+                    await db.workouts.bulkPut(workouts.map(w => ({ ...w, syncStatus: 'synced' as const, lastUpdated: Date.now() })));
+                    return workouts;
+                } catch (error) {
+                    console.warn('[Repo] Error fetching workouts from cloud:', error);
+                }
+            } else {
+                appwriteDbHelpers.getWorkoutsByUser(userId, limit)
+                    .then(workouts => db.workouts.bulkPut(workouts.map(w => ({ ...w, syncStatus: 'synced' as const, lastUpdated: Date.now() }))))
+                    .catch(err => console.warn('[Repo] background workout refresh failed', err));
             }
         }
 
-        const query = db.workouts
-            .where('userId').equals(userId)
-            .reverse()
-            .sortBy('fecha');
-
-        const workouts = await query;
-        return limit ? workouts.slice(0, limit) : workouts;
+        return localResult;
     },
 
     async logWorkout(workout: WorkoutLog) {
