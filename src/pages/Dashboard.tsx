@@ -46,24 +46,27 @@ function WeeklyTimeline({ workouts, routine }: { workouts: WorkoutLog[]; routine
     // Map routine day to calendar position
     const routineDay = routine?.dias?.[i % (routine.dias.length || 1)];
 
-    let mainMuscle = '';
+    let dailyMuscles: string[] = [];
     if (workoutDelDia?.diaRutinaId) {
       const rd = routine?.dias?.find(d => d.id === workoutDelDia.diaRutinaId);
-      if (rd && rd.grupos && rd.grupos.length > 0) mainMuscle = rd.grupos[0];
+      if (rd && rd.grupos) dailyMuscles = rd.grupos;
     }
     
-    if (!mainMuscle && routineDay?.grupos && routineDay.grupos.length > 0) {
-      mainMuscle = routineDay.grupos[0];
+    if (dailyMuscles.length === 0 && routineDay?.grupos) {
+      dailyMuscles = routineDay.grupos;
     }
 
-    const muscleImage = mainMuscle ? MUSCLE_IMAGES[mainMuscle] : null;
+    const muscleImages = dailyMuscles
+      .map(m => MUSCLE_IMAGES[m])
+      .filter(Boolean)
+      .slice(0, 4);
 
-    return { label, date, isToday, isPast, trained, routineDay, muscleImage };
+    return { label, date, isToday, isPast, trained, routineDay, muscleImages };
   });
 
   return (
     <div className="flex gap-1.5 justify-between mt-4">
-      {week.map(({ label, isToday, isPast, trained, routineDay, muscleImage }) => (
+      {week.map(({ label, isToday, isPast, trained, routineDay, muscleImages }) => (
         <div key={label} className="flex-1 flex flex-col items-center gap-1">
           <span className={`text-xs font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
             {label}
@@ -79,22 +82,35 @@ function WeeklyTimeline({ workouts, routine }: { workouts: WorkoutLog[]; routine
                 : 'bg-muted/50'
             }`}
           >
-            {muscleImage ? (
-              <>
-                <img 
-                  src={muscleImage} 
-                  alt="Muscle" 
-                  className={`w-full h-full object-cover p-0.5 ${
-                    trained ? 'opacity-100 scale-110 drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]' :
-                    isPast ? 'opacity-30 grayscale' : 'opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all'
-                  }`}
-                />
+            {muscleImages.length > 0 ? (
+              <div className={`w-full h-full p-0.5 grid gap-0.5 ${
+                muscleImages.length === 1 ? 'grid-cols-1' : 'grid-cols-2 grid-rows-2'
+              }`}>
+                {muscleImages.map((img, idx) => (
+                  <img 
+                    key={idx}
+                    src={img} 
+                    alt="Muscle" 
+                    className={`w-full h-full object-cover ${
+                      trained ? 'opacity-100 scale-105 drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]' :
+                      isPast ? 'opacity-30 grayscale' : 'opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all'
+                    } ${
+                      muscleImages.length === 3 && idx === 2 
+                        ? 'row-span-2 col-start-2 row-start-1' 
+                        : ''
+                    } ${
+                      muscleImages.length === 2 && idx === 0 ? 'row-span-2' : ''
+                    } ${
+                      muscleImages.length === 2 && idx === 1 ? 'row-span-2' : ''
+                    }`}
+                  />
+                ))}
                 {trained && (
-                  <div className="absolute inset-0 bg-green-500/20 flex items-end justify-end p-1">
-                    <CheckCircle className="w-3.5 h-3.5 text-green-500 drop-shadow-md bg-white rounded-full" />
+                  <div className="absolute inset-0 bg-green-500/10 flex items-end justify-end p-0.5">
+                    <CheckCircle className="w-2.5 h-2.5 text-green-500 drop-shadow-md bg-white rounded-full" />
                   </div>
                 )}
-              </>
+              </div>
             ) : (
               <span className={trained ? 'text-green-500' : isToday ? 'text-primary' : 'text-muted-foreground/50'}>
                 {trained ? '✓' : isToday ? '→' : '·'}
