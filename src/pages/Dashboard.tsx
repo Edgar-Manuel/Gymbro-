@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { RutinaSemanal, WorkoutLog, ProgressPhoto } from '@/types';
-import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera } from 'lucide-react';
+import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw } from 'lucide-react';
 import StatsShareCard from '@/components/StatsShareCard';
 import { ID } from 'appwrite';
 
@@ -227,10 +227,20 @@ export default function Dashboard() {
                   <Badge key={g} variant="secondary" className="capitalize">{g}</Badge>
                 ))}
               </div>
-              <Button onClick={() => navigate('/workout-session')} size="lg" className="w-full">
-                Comenzar Entrenamiento
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button onClick={() => navigate('/workout-session')} size="lg" className="w-full">
+                  Comenzar Entrenamiento
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/routine-generator')} 
+                  className="w-full text-muted-foreground"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Cambiar o generar nueva rutina
+                </Button>
+              </div>
             </>
           ) : (
             <Button onClick={() => navigate('/routine-generator')} size="lg" className="w-full">
