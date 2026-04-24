@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Scale, TrendingUp, Target, Moon, Sun, Info, CheckCircle, Cloud, CloudOff, Mail, Flame, Camera, Bell, BellOff, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User, Scale, TrendingUp, Target, Moon, Sun, Info, CheckCircle, Cloud, CloudOff, Mail, Flame, Camera, Bell, BellOff, X, ChevronLeft, ChevronRight, Smartphone } from 'lucide-react';
 import BodyMuscleMap from '@/components/BodyMuscleMap';
 import { useState, useEffect, useRef } from 'react';
 import { dbHelpers } from '@/db';
@@ -729,6 +729,42 @@ export default function Profile() {
                 />
               </div>
             )}
+          </div>
+        </CardContent>
+      {/* Guía de Instalación PWA */}
+      <Card className="mt-6 border-primary/20 bg-primary/5 dark:bg-primary/10">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-5 h-5 text-primary" />
+            <CardTitle>Instalar App en tu Móvil</CardTitle>
+          </div>
+          <CardDescription>Instala GymBro en tu pantalla de inicio para una experiencia a pantalla completa y sin conexión</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6 text-sm">
+          {/* iOS Instructions */}
+          <div>
+            <h3 className="font-bold flex items-center gap-2 mb-2">
+              🍎 iPhone (iOS)
+            </h3>
+            <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground ml-1">
+              <li>Abre esta página exclusivamente desde el navegador <strong>Safari</strong>.</li>
+              <li>Toca el botón de <strong>Compartir</strong> (el cuadrado con la flecha hacia arriba, abajo al centro).</li>
+              <li>Desliza hacia abajo en el menú y selecciona <strong>"Añadir a la pantalla de inicio"</strong>.</li>
+              <li>Toca <strong>"Añadir"</strong> en la esquina superior derecha.</li>
+            </ol>
+          </div>
+
+          {/* Android Instructions */}
+          <div>
+            <h3 className="font-bold flex items-center gap-2 mb-2">
+              🤖 Android
+            </h3>
+            <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground ml-1">
+              <li>Abre esta página desde <strong>Google Chrome</strong>.</li>
+              <li>Toca el botón de menú (los <strong>tres puntitos</strong> arriba a la derecha).</li>
+              <li>Selecciona <strong>"Añadir a la pantalla de inicio"</strong> o "Instalar aplicación".</li>
+              <li>Toca <strong>"Añadir"</strong> o "Instalar" y confirma.</li>
+            </ol>
           </div>
         </CardContent>
       </Card>
