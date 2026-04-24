@@ -42,7 +42,6 @@ function FrontBody({
   sexo?: 'masculino' | 'femenino';
   uid: string;
 }) {
-  const skin = '#d4a876';
   const skinDark = '#b8895a';
   const skinMid = '#c49a68';
   const isFemale = sexo === 'femenino';
