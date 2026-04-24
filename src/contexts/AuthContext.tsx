@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { account } from '@/services/appwrite';
 import { setStorageMode } from '@/db';
+import { OAuthProvider } from 'appwrite';
 
 // Tipo para el usuario de Appwrite
 interface AppwriteUser {
@@ -120,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Para Appwrite web, redirige directamente
       account.createOAuth2Session(
-        'google', // provider
+        OAuthProvider.Google, // provider
         `${window.location.origin}/`, // success URL
         `${window.location.origin}/login?error=oauth` // failure URL
       );
