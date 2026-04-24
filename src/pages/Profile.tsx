@@ -38,6 +38,7 @@ export default function Profile() {
     edad: currentUser?.edad || 0,
     sexo: currentUser?.sexo || 'masculino' as 'masculino' | 'femenino',
     somatotipo: currentUser?.somatotipo || 'mesomorfo' as Somatotipo,
+    nivel: currentUser?.nivel || 'principiante' as 'principiante' | 'intermedio' | 'avanzado',
   });
 
   // Sincronizar formData cuando cambia currentUser
@@ -50,6 +51,7 @@ export default function Profile() {
         edad: currentUser.edad,
         sexo: currentUser.sexo || 'masculino',
         somatotipo: currentUser.somatotipo || 'mesomorfo',
+        nivel: currentUser.nivel || 'principiante',
       });
     }
   }, [currentUser, refreshKey]);
@@ -121,6 +123,7 @@ export default function Profile() {
         edad: Number(formData.edad),
         sexo: formData.sexo,
         somatotipo: formData.somatotipo,
+        nivel: formData.nivel,
       };
 
       console.log('Guardando usuario:', updatedUser);
@@ -139,6 +142,7 @@ export default function Profile() {
         edad: updatedUser.edad,
         sexo: updatedUser.sexo || 'masculino',
         somatotipo: updatedUser.somatotipo || 'mesomorfo',
+        nivel: updatedUser.nivel || 'principiante',
       });
 
       setIsEditing(false);
@@ -161,6 +165,7 @@ export default function Profile() {
         edad: currentUser.edad,
         sexo: currentUser.sexo || 'masculino',
         somatotipo: currentUser.somatotipo || 'mesomorfo',
+        nivel: currentUser.nivel || 'principiante',
       });
     }
     setIsEditing(false);
@@ -345,7 +350,7 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="sexo">Sexo</Label>
               <Select
@@ -363,19 +368,36 @@ export default function Profile() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="somatotipo">Tipo de Cuerpo (Somatotipo)</Label>
+              <Label htmlFor="somatotipo">Tipo de Cuerpo</Label>
               <Select
                 value={formData.somatotipo}
                 onValueChange={(value) => setFormData({ ...formData, somatotipo: value as Somatotipo })}
                 disabled={!isEditing}
               >
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Selecciona tu tipo de cuerpo" />
+                  <SelectValue placeholder="Tipo de cuerpo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ectomorfo">Ectomorfo - Delgado, metabolismo rápido</SelectItem>
-                  <SelectItem value="mesomorfo">Mesomorfo - Atlético, gana músculo fácil</SelectItem>
-                  <SelectItem value="endomorfo">Endomorfo - Robusto, metabolismo lento</SelectItem>
+                  <SelectItem value="ectomorfo">Ectomorfo - Delgado, rápido</SelectItem>
+                  <SelectItem value="mesomorfo">Mesomorfo - Atlético</SelectItem>
+                  <SelectItem value="endomorfo">Endomorfo - Robusto, lento</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="nivel">Nivel de Experiencia</Label>
+              <Select
+                value={formData.nivel}
+                onValueChange={(value) => setFormData({ ...formData, nivel: value as 'principiante' | 'intermedio' | 'avanzado' })}
+                disabled={!isEditing}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Selecciona tu nivel" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="principiante">Principiante (0-1 años)</SelectItem>
+                  <SelectItem value="intermedio">Intermedio (1-3 años)</SelectItem>
+                  <SelectItem value="avanzado">Avanzado (+3 años)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
