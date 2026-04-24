@@ -68,11 +68,13 @@ export default function RestTimer({
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const progress = ((duration - timeLeft) / duration) * 100;
+  const isAlmostDone = isRunning && timeLeft <= 5 && timeLeft > 0;
 
   return (
     <Card className={cn(
-      "fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 shadow-lg z-50",
+      "fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 shadow-lg z-50 transition-colors duration-500",
       hasCompleted && "border-primary",
+      isAlmostDone && "border-red-500 shadow-red-500/20 bg-red-50/50 dark:bg-red-950/20",
       className
     )}>
       <div className="p-4">
@@ -98,8 +100,9 @@ export default function RestTimer({
 
         {/* Timer Display */}
         <div className={cn(
-          "text-center mb-3",
-          hasCompleted && "text-primary"
+          "text-center mb-3 transition-colors duration-300",
+          hasCompleted && "text-primary",
+          isAlmostDone && "text-red-500 animate-pulse"
         )}>
           <div className="text-5xl font-bold tabular-nums">
             {minutes}:{seconds.toString().padStart(2, '0')}
@@ -112,7 +115,11 @@ export default function RestTimer({
         </div>
 
         {/* Progress Bar */}
-        <Progress value={progress} className="mb-4" />
+        <Progress 
+          value={progress} 
+          className="mb-4" 
+          indicatorClassName={isAlmostDone ? "bg-red-500" : undefined}
+        />
 
         {/* Controls */}
         <div className="flex gap-2">
