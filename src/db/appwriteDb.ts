@@ -12,6 +12,7 @@ import type {
   BodyMeasurement,
   ProgressPhoto,
   ExerciseKnowledge,
+  SharedRoutine,
 } from '@/types';
 
 /**
@@ -88,6 +89,8 @@ export const appwriteDbHelpers = {
         preferencias: JSON.stringify({
           preferencias: user.preferencias || {},
           restricciones: user.restricciones || [],
+          sexo: user.sexo || 'masculino',
+          somatotipo: user.somatotipo || 'mesomorfo',
         }),
       };
 
@@ -877,6 +880,8 @@ export const appwriteDbHelpers = {
       equipamiento: doc.equipamiento,
       preferencias: preferenciasData.preferencias || {},
       restricciones: preferenciasData.restricciones || [],
+      sexo: preferenciasData.sexo || 'masculino',
+      somatotipo: preferenciasData.somatotipo || 'mesomorfo',
     };
   },
 
@@ -1021,6 +1026,86 @@ export const appwriteDbHelpers = {
       url: datos.url,
       peso: datos.peso,
       notas: datos.notas,
+    };
+  },
+
+  // ==================== RUTINAS COMPARTIDAS ====================
+
+  async shareRoutine(rutina: RutinaSemanal, userName: string): Promise<SharedRoutine> {
+    const userId = await this.getCurrentUserId();
+    const slug = `${userName.toLowerCase().replace(/\s+/g, '-')}-${rutina.nombre.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+
+    const existing = await databases.listDocuments(
+      APPWRITE_DATABASE_ID,
+      COLLECTIONS.SHARED_ROUTINES,
+      [Query.equal('routineId', rutina.id), Query.equal('userId', userId), Query.limit(1)]
+    );
+
+    if (existing.documents.length > 0) {
+      return this.mapSharedRoutineDocument(existing.documents[0]);
+    }
+
+    const doc = await databases.createDocument(
+      APPWRITE_DATABASE_ID,
+      COLLECTIONS.SHARED_ROUTINES,
+      ID.unique(),
+      {
+        userId,
+        userName,
+        routineId: rutina.id,
+        slug,
+        nombre: rutina.nombre,
+        datos: JSON.stringify(rutina),
+        createdAt: new Date().toISOString(),
+      }
+    );
+
+    return this.mapSharedRoutineDocument(doc);
+  },
+
+  async getSharedRoutineBySlug(slug: string): Promise<SharedRoutine | undefined> {
+    try {
+      const response = await databases.listDocuments(
+        APPWRITE_DATABASE_ID,
+        COLLECTIONS.SHARED_ROUTINES,
+        [Query.equal('slug', slug), Query.limit(1)]
+      );
+
+      if (response.documents.length === 0) return undefined;
+      return this.mapSharedRoutineDocument(response.documents[0]);
+    } catch {
+      return undefined;
+    }
+  },
+
+  async getMySharedRoutines(): Promise<SharedRoutine[]> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const response = await databases.listDocuments(
+        APPWRITE_DATABASE_ID,
+        COLLECTIONS.SHARED_ROUTINES,
+        [Query.equal('userId', userId), Query.orderDesc('createdAt')]
+      );
+      return response.documents.map(this.mapSharedRoutineDocument);
+    } catch {
+      return [];
+    }
+  },
+
+  async deleteSharedRoutine(id: string): Promise<void> {
+    await databases.deleteDocument(APPWRITE_DATABASE_ID, COLLECTIONS.SHARED_ROUTINES, id);
+  },
+
+  mapSharedRoutineDocument(doc: any): SharedRoutine {
+    return {
+      id: doc.$id,
+      userId: doc.userId,
+      userName: doc.userName,
+      routineId: doc.routineId,
+      slug: doc.slug,
+      nombre: doc.nombre,
+      datos: JSON.parse(doc.datos),
+      createdAt: new Date(doc.createdAt),
     };
   },
 };

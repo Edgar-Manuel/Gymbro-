@@ -5,6 +5,7 @@ import { WorkoutRepository } from './repositories/WorkoutRepository';
 import { StatisticsRepository } from './repositories/StatisticsRepository';
 import { ExerciseRepository } from './repositories/ExerciseRepository';
 import { BodyTrackingRepository } from './repositories/BodyTrackingRepository';
+import { AchievementRepository } from './repositories/AchievementRepository';
 import { SyncManager } from './sync/SyncManager';
 export { setStorageMode, getStorageMode } from './config';
 
@@ -19,6 +20,7 @@ export const dbHelpers = {
   ...StatisticsRepository,
   ...ExerciseRepository,
   ...BodyTrackingRepository,
+  ...AchievementRepository,
 
   // Utilities
   clearAllData: async () => {

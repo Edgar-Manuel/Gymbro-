@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Scale, TrendingUp, Target, Moon, Sun, Info, CheckCircle, Cloud, CloudOff, Mail } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { User, Scale, TrendingUp, Target, Moon, Sun, Info, CheckCircle, Cloud, CloudOff, Mail, Flame, Camera, Bell, BellOff, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import MuscleHeatMap from '@/components/MuscleHeatMap';
+import { useState, useEffect, useRef } from 'react';
 import { dbHelpers } from '@/db';
-import type { Somatotipo } from '@/types';
+import type { Somatotipo, ProgressPhoto } from '@/types';
+import { notificationManager } from '@/utils/notificationManager';
+import { ID } from 'appwrite';
 import { PERFILES_SOMATOTIPO, calcularPlanNutricional } from '@/utils/nutritionCalculator';
 import SomatotipoImage from '@/components/SomatotipoImage';
 
@@ -16,7 +19,18 @@ export default function Profile() {
   const { currentUser, setCurrentUser, isDarkMode, toggleDarkMode } = useAppStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0); // Forzar re-render
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Progress photos
+  const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
+  const [selectedPhoto, setSelectedPhoto] = useState<ProgressPhoto | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [pendingPhotoUrl, setPendingPhotoUrl] = useState<string | null>(null);
+  const [photoType, setPhotoType] = useState<ProgressPhoto['tipo']>('frontal');
+
+  // Notifications
+  const [notifSettings, setNotifSettings] = useState(notificationManager.getSettings());
+  const [notifPermission, setNotifPermission] = useState(notificationManager.getPermission());
   const [formData, setFormData] = useState({
     nombre: currentUser?.nombre || '',
     peso: currentUser?.peso || 0,
@@ -40,6 +54,59 @@ export default function Profile() {
     }
   }, [currentUser, refreshKey]);
 
+  useEffect(() => {
+    if (currentUser) {
+      dbHelpers.getProgressPhotos(currentUser.id).then(p =>
+        setPhotos(p.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()))
+      );
+    }
+  }, [currentUser]);
+
+  const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setPendingPhotoUrl(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleSavePhoto = async () => {
+    if (!currentUser || !pendingPhotoUrl) return;
+    const photo: ProgressPhoto = {
+      id: ID.unique(),
+      userId: currentUser.id,
+      fecha: new Date(),
+      tipo: photoType,
+      url: pendingPhotoUrl,
+      peso: currentUser.pesoActual || currentUser.peso,
+    };
+    await dbHelpers.addProgressPhoto(photo);
+    setPhotos(prev => [photo, ...prev]);
+    setPendingPhotoUrl(null);
+  };
+
+  const handleDeletePhoto = async (id: string) => {
+    await dbHelpers.deleteProgressPhoto(id);
+    setPhotos(prev => prev.filter(p => p.id !== id));
+    if (selectedPhoto?.id === id) setSelectedPhoto(null);
+  };
+
+  const handleToggleNotifications = async () => {
+    if (notifSettings.enabled) {
+      notificationManager.disable();
+      setNotifSettings(notificationManager.getSettings());
+    } else {
+      const ok = await notificationManager.enable(notifSettings.reminderHour, notifSettings.reminderMinute);
+      if (ok) {
+        setNotifSettings(notificationManager.getSettings());
+        setNotifPermission(notificationManager.getPermission());
+      } else {
+        alert('Permiso de notificaciones denegado. Actívalo desde la configuración del navegador.');
+      }
+    }
+  };
+
   const handleSave = async () => {
     if (!currentUser) return;
 
@@ -49,6 +116,7 @@ export default function Profile() {
         ...currentUser,
         nombre: formData.nombre,
         peso: Number(formData.peso),
+        pesoActual: Number(formData.peso),
         altura: Number(formData.altura),
         edad: Number(formData.edad),
         sexo: formData.sexo,
@@ -346,6 +414,142 @@ export default function Profile() {
         </Card>
       </div>
 
+      {/* Mapa de Calor Muscular */}
+      {currentUser && (
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Flame className="w-5 h-5 text-orange-500" />
+              <CardTitle>Mapa Muscular Semanal</CardTitle>
+            </div>
+            <CardDescription>
+              Volumen de entrenamiento por grupo muscular en los últimos 7 días
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <MuscleHeatMap userId={currentUser.id} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Fotos de progreso */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Camera className="w-5 h-5 text-purple-500" />
+              <CardTitle>Fotos de Progreso</CardTitle>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => photoInputRef.current?.click()}
+            >
+              <Camera className="w-4 h-4" />
+              Nueva foto
+            </Button>
+          </div>
+          <CardDescription>Documenta tu transformación física con el tiempo</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handlePhotoSelected}
+          />
+
+          {/* Pending photo picker */}
+          {pendingPhotoUrl && (
+            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+              <div className="bg-card rounded-2xl p-5 w-full max-w-sm space-y-4">
+                <h3 className="font-bold text-center">Guardar foto de progreso</h3>
+                <img src={pendingPhotoUrl} alt="preview" className="w-full rounded-xl object-cover max-h-64" />
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Tipo de foto:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['frontal', 'lateral', 'trasera', 'frente', 'espalda', 'lado_derecho'] as ProgressPhoto['tipo'][]).map(t => (
+                      <button
+                        key={t}
+                        onClick={() => setPhotoType(t)}
+                        className={`py-1.5 rounded-lg text-sm border transition-all ${photoType === t ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-border'}`}
+                      >
+                        {t.replace('_', ' ')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="ghost" className="flex-1" onClick={() => setPendingPhotoUrl(null)}>Cancelar</Button>
+                  <Button className="flex-1" onClick={handleSavePhoto}>Guardar</Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Lightbox */}
+          {selectedPhoto && (
+            <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setSelectedPhoto(null)}>
+              <div className="relative max-w-lg w-full" onClick={e => e.stopPropagation()}>
+                <button onClick={() => setSelectedPhoto(null)} className="absolute -top-10 right-0 text-white/70 hover:text-white">
+                  <X className="w-6 h-6" />
+                </button>
+                <img src={selectedPhoto.url} alt={selectedPhoto.tipo} className="w-full rounded-xl object-contain max-h-[70vh]" />
+                <div className="mt-3 flex items-center justify-between text-white/70 text-sm">
+                  <span>{selectedPhoto.tipo.replace('_', ' ')} · {new Date(selectedPhoto.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  {selectedPhoto.peso && <span>{selectedPhoto.peso} kg</span>}
+                  <button onClick={() => handleDeletePhoto(selectedPhoto.id)} className="text-red-400 hover:text-red-300 ml-3">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex justify-between mt-2">
+                  <Button variant="ghost" size="icon" className="text-white/60" onClick={() => {
+                    const idx = photos.findIndex(p => p.id === selectedPhoto.id);
+                    if (idx > 0) setSelectedPhoto(photos[idx - 1]);
+                  }}>
+                    <ChevronLeft className="w-5 h-5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="text-white/60" onClick={() => {
+                    const idx = photos.findIndex(p => p.id === selectedPhoto.id);
+                    if (idx < photos.length - 1) setSelectedPhoto(photos[idx + 1]);
+                  }}>
+                    <ChevronRight className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {photos.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2">
+              {photos.map(photo => (
+                <div
+                  key={photo.id}
+                  className="aspect-square rounded-lg overflow-hidden cursor-pointer relative group"
+                  onClick={() => setSelectedPhoto(photo)}
+                >
+                  <img src={photo.url} alt={photo.tipo} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5">
+                    <span className="text-white text-[10px] font-medium capitalize">
+                      {new Date(photo.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 space-y-2">
+              <Camera className="w-10 h-10 mx-auto text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground">Sin fotos aún</p>
+              <p className="text-xs text-muted-foreground/60">Toma tu primera foto de progreso</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Objetivos */}
       <Card className="mb-6">
         <CardHeader>
@@ -461,6 +665,50 @@ export default function Profile() {
             <Button variant="outline" onClick={toggleDarkMode}>
               {isDarkMode ? 'Desactivar' : 'Activar'}
             </Button>
+          </div>
+
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {notifSettings.enabled ? <Bell className="w-5 h-5 text-primary" /> : <BellOff className="w-5 h-5 text-muted-foreground" />}
+                <div>
+                  <p className="font-semibold">Recordatorios de Entrenamiento</p>
+                  <p className="text-sm text-muted-foreground">
+                    {!notificationManager.isSupported()
+                      ? 'No disponible en este navegador'
+                      : notifPermission === 'denied'
+                      ? 'Permiso denegado — actívalo en el navegador'
+                      : notifSettings.enabled
+                      ? `Activo · ${String(notifSettings.reminderHour).padStart(2, '0')}:${String(notifSettings.reminderMinute).padStart(2, '0')}`
+                      : 'Recibe un aviso si no has entrenado'}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!notificationManager.isSupported() || notifPermission === 'denied'}
+                onClick={handleToggleNotifications}
+              >
+                {notifSettings.enabled ? 'Desactivar' : 'Activar'}
+              </Button>
+            </div>
+
+            {notifSettings.enabled && (
+              <div className="mt-3 flex items-center gap-3">
+                <label className="text-sm text-muted-foreground w-24 shrink-0">Hora del aviso:</label>
+                <input
+                  type="time"
+                  className="border rounded-lg px-3 py-1.5 text-sm bg-background"
+                  value={`${String(notifSettings.reminderHour).padStart(2, '0')}:${String(notifSettings.reminderMinute).padStart(2, '0')}`}
+                  onChange={e => {
+                    const [h, m] = e.target.value.split(':').map(Number);
+                    notificationManager.updateTime(h, m);
+                    setNotifSettings(notificationManager.getSettings());
+                  }}
+                />
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

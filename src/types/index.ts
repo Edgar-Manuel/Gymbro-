@@ -133,6 +133,17 @@ export interface RutinaSemanal {
   activa: boolean;
 }
 
+export interface SharedRoutine {
+  id: string;
+  userId: string;
+  userName: string;
+  routineId: string;
+  slug: string;
+  nombre: string;
+  datos: RutinaSemanal;
+  createdAt: Date;
+}
+
 // Workout Logging
 export interface SerieLog {
   numero: number;

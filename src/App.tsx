@@ -18,7 +18,9 @@ import Progress from '@/pages/Progress';
 import Education from '@/pages/Education';
 import Nutrition from '@/pages/Nutrition';
 import Profile from '@/pages/Profile';
+import SharedRoutineView from '@/pages/SharedRoutineView';
 import { Dumbbell } from 'lucide-react';
+import { notificationManager } from '@/utils/notificationManager';
 
 function App() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -35,6 +37,8 @@ function App() {
 
   const initApp = async () => {
     try {
+      notificationManager.init();
+
       // Inicializar base de datos
       await initializeDatabase();
 
@@ -74,6 +78,7 @@ function App() {
           {/* Rutas públicas */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/split/:slug" element={<SharedRoutineView />} />
 
           {/* Rutas protegidas */}
           <Route

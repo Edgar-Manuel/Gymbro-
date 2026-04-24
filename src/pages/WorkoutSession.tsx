@@ -9,6 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import RestTimer from '@/components/RestTimer';
 import DaySelector from '@/components/DaySelector';
+import SwapExerciseModal from '@/components/SwapExerciseModal';
+import AchievementUnlocked from '@/components/AchievementUnlocked';
+import { checkAndAwardAchievements, type EarnedAchievement } from '@/utils/achievementChecker';
+import { notificationManager } from '@/utils/notificationManager';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
 import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina } from '@/types';
@@ -18,7 +22,8 @@ import {
   ArrowLeft,
   X,
   Save,
-  Lightbulb
+  Lightbulb,
+  ArrowLeftRight
 } from 'lucide-react';
 
 export default function WorkoutSession() {
@@ -44,6 +49,12 @@ export default function WorkoutSession() {
 
   // Sugerencias de peso basadas en historial
   const [pesoSugerido, setPesoSugerido] = useState<number | null>(null);
+
+  const [showSwapModal, setShowSwapModal] = useState(false);
+  const [estimated1RM, setEstimated1RM] = useState<number | null>(null);
+  const [earnedAchievements, setEarnedAchievements] = useState<EarnedAchievement[]>([]);
+  const [showWellnessCheck, setShowWellnessCheck] = useState(false);
+  const [wellnessScore, setWellnessScore] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
 
   useEffect(() => {
     if (!currentUser || !activeRoutine) {
@@ -90,10 +101,9 @@ export default function WorkoutSession() {
     setSelectedDay(dia);
   };
 
-  const handleStartWorkout = () => {
+  const handleStartWorkout = (score: 1 | 2 | 3 | 4 | 5 = 3) => {
     if (!currentUser || !selectedDay) return;
 
-    // Inicializar workout log
     const workoutLog: WorkoutLog = {
       id: `workout-${Date.now()}`,
       userId: currentUser.id,
@@ -102,13 +112,14 @@ export default function WorkoutSession() {
       diaRutinaId: selectedDay.id,
       ejercicios: [],
       duracionReal: 0,
-      sensacionGeneral: 3,
+      sensacionGeneral: score,
       completado: false
     };
 
     startWorkout(workoutLog);
     setStartTime(new Date());
     setHasStarted(true);
+    setShowWellnessCheck(false);
   };
 
   if (!activeRoutine || !currentUser) {
@@ -117,6 +128,12 @@ export default function WorkoutSession() {
 
   // Si no ha seleccionado día o no ha empezado, mostrar selector
   if (!selectedDay || !hasStarted) {
+    const wellnessOptions: { score: 1 | 2 | 3 | 4 | 5; emoji: string; label: string; hint: string; color: string }[] = [
+      { score: 2, emoji: '😴', label: 'Cansado', hint: 'Considera bajar el peso un 10%', color: 'border-orange-400 bg-orange-50 dark:bg-orange-950/30' },
+      { score: 3, emoji: '😐', label: 'Normal', hint: '¡Listo para entrenar!', color: 'border-blue-400 bg-blue-50 dark:bg-blue-950/30' },
+      { score: 5, emoji: '💪', label: 'Con energía', hint: '¡Día perfecto para superar marcas!', color: 'border-green-400 bg-green-50 dark:bg-green-950/30' },
+    ];
+
     return (
       <>
         <DaySelector
@@ -131,11 +148,65 @@ export default function WorkoutSession() {
               <Button
                 size="lg"
                 className="w-full h-14 text-lg"
-                onClick={handleStartWorkout}
+                onClick={() => setShowWellnessCheck(true)}
               >
                 <Check className="w-5 h-5 mr-2" />
                 Comenzar Entrenamiento: {selectedDay.nombre}
               </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Wellness check-in modal */}
+        {showWellnessCheck && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-card border rounded-2xl p-6 w-full max-w-sm space-y-5">
+              <div className="text-center">
+                <p className="text-xs uppercase tracking-widest text-muted-foreground font-bold mb-1">
+                  Check-in
+                </p>
+                <h2 className="text-xl font-bold">¿Cómo te sientes hoy?</h2>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                {wellnessOptions.map(opt => (
+                  <button
+                    key={opt.score}
+                    onClick={() => setWellnessScore(opt.score)}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
+                      wellnessScore === opt.score
+                        ? opt.color + ' scale-105'
+                        : 'border-border hover:border-primary/40'
+                    }`}
+                  >
+                    <span className="text-3xl">{opt.emoji}</span>
+                    <span className="text-xs font-medium">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {wellnessScore && (
+                <p className="text-center text-sm text-muted-foreground">
+                  {wellnessOptions.find(o => o.score === wellnessScore)?.hint}
+                </p>
+              )}
+
+              <div className="flex gap-3">
+                <Button
+                  variant="ghost"
+                  className="flex-1"
+                  onClick={() => setShowWellnessCheck(false)}
+                >
+                  Volver
+                </Button>
+                <Button
+                  className="flex-1"
+                  disabled={!wellnessScore}
+                  onClick={() => handleStartWorkout(wellnessScore!)}
+                >
+                  Empezar →
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -183,6 +254,13 @@ export default function WorkoutSession() {
 
     setEjercicioLogs(prev => new Map(prev.set(ejercicioActual.ejercicioId, logActualizado)));
 
+    // Calcular 1RM estimado (fórmula de Epley)
+    const repsNum = parseInt(reps);
+    const pesoNum = parseFloat(peso);
+    if (repsNum > 0 && repsNum <= 12 && pesoNum > 0) {
+      setEstimated1RM(Math.round(pesoNum * (1 + repsNum / 30)));
+    }
+
     // Limpiar formulario
     setReps('');
     setRir(2);
@@ -207,7 +285,8 @@ export default function WorkoutSession() {
       setCurrentExerciseIndex(prev => prev + 1);
       setCurrentSetNumber(1);
       setShowTimer(false);
-      setPeso(''); // Limpiar peso para cargar nueva sugerencia
+      setPeso('');
+      setEstimated1RM(null);
     } else {
       // Último ejercicio, finalizar entrenamiento
       handleFinalizarEntrenamiento();
@@ -237,6 +316,7 @@ export default function WorkoutSession() {
 
     try {
       await dbHelpers.logWorkout(workoutFinal);
+      notificationManager.markTrained();
 
       // Actualizar estadísticas
       const stats = await dbHelpers.getUserStatistics(currentUser.id);
@@ -255,8 +335,23 @@ export default function WorkoutSession() {
         });
       }
 
+      // Comprobar logros
+      const updatedStats = await dbHelpers.getUserStatistics(currentUser.id);
+      if (updatedStats) {
+        const newAchievements = await checkAndAwardAchievements(
+          currentUser.id,
+          workoutFinal,
+          updatedStats,
+        );
+        if (newAchievements.length > 0) {
+          setEarnedAchievements(newAchievements);
+          // La navegación ocurrirá tras cerrar el modal de logros
+          finishWorkout();
+          return;
+        }
+      }
+
       finishWorkout();
-      // Navegar al resumen con el workout como state
       navigate('/workout/summary', { state: { workout: workoutFinal } });
     } catch (error) {
       console.error('Error guardando entrenamiento:', error);
@@ -269,6 +364,18 @@ export default function WorkoutSession() {
       finishWorkout();
       navigate('/');
     }
+  };
+
+  const handleSwap = (nuevo: typeof ejercicioActual) => {
+    if (!selectedDay) return;
+    const ejerciciosActualizados = selectedDay.ejercicios.map((ej, idx) =>
+      idx === currentExerciseIndex ? nuevo : ej
+    );
+    setSelectedDay({ ...selectedDay, ejercicios: ejerciciosActualizados });
+    setCurrentSetNumber(1);
+    setPesoSugerido(null);
+    setPeso('');
+    setReps('');
   };
 
   const progreso = ((currentExerciseIndex + 1) / ejerciciosDelDia.length) * 100;
@@ -314,9 +421,20 @@ export default function WorkoutSession() {
                   {ejercicioActual.ejercicio?.grupoMuscular} • {ejercicioActual.ejercicio?.categoria}
                 </CardDescription>
               </div>
-              <Badge variant={ejercicioActual.ejercicio?.tier === 'S' ? 'success' : 'default'} className="text-lg px-3 py-1">
-                Tier {ejercicioActual.ejercicio?.tier}
-              </Badge>
+              <div className="flex flex-col items-end gap-2">
+                <Badge variant={ejercicioActual.ejercicio?.tier === 'S' ? 'success' : 'default'} className="text-lg px-3 py-1">
+                  Tier {ejercicioActual.ejercicio?.tier}
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSwapModal(true)}
+                  className="text-xs h-7 px-2 text-orange-600 border-orange-300 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-700 dark:hover:bg-orange-950"
+                >
+                  <ArrowLeftRight className="w-3 h-3 mr-1" />
+                  Máquina ocupada
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -333,6 +451,18 @@ export default function WorkoutSession() {
               <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg mb-4 border border-blue-200 dark:border-blue-800">
                 <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
                   💡 Última vez usaste: <span className="font-bold">{pesoSugerido}kg</span>
+                </p>
+              </div>
+            )}
+
+            {/* 1RM estimado */}
+            {estimated1RM !== null && (
+              <div className="bg-purple-50 dark:bg-purple-950/30 p-3 rounded-lg mb-4 border border-purple-200 dark:border-purple-800 flex items-center justify-between">
+                <p className="text-sm font-medium text-purple-900 dark:text-purple-100">
+                  ⚡ 1RM estimado: <span className="font-bold text-lg">{estimated1RM} kg</span>
+                </p>
+                <p className="text-xs text-purple-600 dark:text-purple-300">
+                  Hipertrofia: ~{Math.round(estimated1RM * 0.75)}kg
                 </p>
               </div>
             )}
@@ -483,6 +613,25 @@ export default function WorkoutSession() {
           onClose={() => setShowTimer(false)}
         />
       )}
+
+      {/* Modal de logros */}
+      {earnedAchievements.length > 0 && (
+        <AchievementUnlocked
+          achievements={earnedAchievements}
+          onClose={() => {
+            setEarnedAchievements([]);
+            navigate('/workout/summary', { state: { workout: activeWorkout } });
+          }}
+        />
+      )}
+
+      {/* Modal de swap */}
+      <SwapExerciseModal
+        open={showSwapModal}
+        onClose={() => setShowSwapModal(false)}
+        ejercicioActual={ejercicioActual}
+        onSwap={handleSwap}
+      />
     </div>
   );
 }
