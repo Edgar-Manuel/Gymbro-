@@ -92,23 +92,33 @@ export function generarRutinaPersonalizada(
       };
     }
 
+    // Adaptar ejercicios por nivel
+    let nivelEjercicios = config.ejerciciosPorGrupo;
+    if (user.nivel === 'avanzado') nivelEjercicios += 1;
+    if (user.nivel === 'principiante') nivelEjercicios = Math.max(1, nivelEjercicios - 1);
+
     const ejercicios = seleccionarEjerciciosParaDia(
       dia.grupos,
       exercises,
       user,
-      config.ejerciciosPorGrupo
+      nivelEjercicios
     );
 
     const ejerciciosEnRutina: EjercicioEnRutina[] = ejercicios.map(ex => ({
       ejercicioId: ex.id,
       ejercicio: ex,
-      seriesObjetivo: determinarSeries(ex, user.objetivo),
-      repsObjetivo: determinarReps(ex, user.objetivo),
-      pesoSugerido: undefined as number | undefined, // Se determinará en base al historial
-      notas: ex.tecnica.consejosClave[0]
+      seriesObjetivo: determinarSeries(ex, user.objetivo, user.somatotipo),
+      repsObjetivo: determinarReps(ex, user.objetivo, user.somatotipo),
+      pesoSugerido: undefined as number | undefined, 
+      notas: ex.tecnica.consejosClave[0] || 'Enfócate en la técnica'
     }));
 
-    const duracionEstimada = calcularDuracionEstimada(ejerciciosEnRutina, config.descanso);
+    // Adaptar descanso según somatotipo
+    let descansoAdaptado = config.descanso;
+    if (user.somatotipo === 'ectomorfo') descansoAdaptado += 30; // Más descanso para recuperación ATP
+    if (user.somatotipo === 'endomorfo') descansoAdaptado = Math.max(30, descansoAdaptado - 15); // Más estrés metabólico
+
+    const duracionEstimada = calcularDuracionEstimada(ejerciciosEnRutina, descansoAdaptado);
 
     return {
       nombre: dia.nombre,
@@ -170,7 +180,7 @@ function seleccionarEjerciciosParaDia(
       return true;
     });
 
-    // Ordenar por tier (S > A > B > C)
+    // Ordenar por tier y mezclar los del mismo tier para dar variedad
     const ordenados = disponibles.sort((a, b) => {
       const tierOrder = { 'S': 0, 'A': 1, 'B': 2, 'C': 3, 'F': 4 };
       const diff = tierOrder[a.tier] - tierOrder[b.tier];
@@ -180,7 +190,8 @@ function seleccionarEjerciciosParaDia(
       if (a.categoria === 'compuesto' && b.categoria === 'aislamiento') return -1;
       if (a.categoria === 'aislamiento' && b.categoria === 'compuesto') return 1;
 
-      return 0;
+      // Añadir algo de aleatoriedad para evitar rutinas clónicas (shuffle determinístico)
+      return Math.random() - 0.5;
     });
 
     // Seleccionar ejercicios para este grupo
@@ -216,11 +227,20 @@ function seleccionarEjerciciosParaDia(
 }
 
 /**
- * Determina el número de series según el ejercicio y objetivo
+ * Determina el número de series según el ejercicio, objetivo y somatotipo
  */
-function determinarSeries(ejercicio: ExerciseKnowledge, objetivo: string): number {
+function determinarSeries(ejercicio: ExerciseKnowledge, objetivo: string, somatotipo?: string): number {
   const config = OBJETIVO_CONFIG[objetivo as keyof typeof OBJETIVO_CONFIG];
-  const [min, max] = config.series;
+  let [min, max] = config.series;
+
+  // Ectomorfos responden mejor a menos volumen y más intensidad
+  if (somatotipo === 'ectomorfo') {
+    max = Math.max(min, max - 1);
+  }
+  // Endomorfos toleran y necesitan más volumen
+  if (somatotipo === 'endomorfo') {
+    min = Math.min(max, min + 1);
+  }
 
   // Ejercicios tier S y compuestos: más series
   if (ejercicio.tier === 'S' || ejercicio.categoria === 'compuesto') {
@@ -232,11 +252,19 @@ function determinarSeries(ejercicio: ExerciseKnowledge, objetivo: string): numbe
 }
 
 /**
- * Determina el rango de repeticiones según el ejercicio y objetivo
+ * Determina el rango de repeticiones según el ejercicio, objetivo y somatotipo
  */
-function determinarReps(_ejercicio: ExerciseKnowledge, objetivo: string): [number, number] {
+function determinarReps(_ejercicio: ExerciseKnowledge, objetivo: string, somatotipo?: string): [number, number] {
   const config = OBJETIVO_CONFIG[objetivo as keyof typeof OBJETIVO_CONFIG];
-  return config.reps as [number, number];
+  const reps = [...config.reps] as [number, number];
+
+  // Ectomorfos se benefician de reps ligeramente más bajas (más peso)
+  if (somatotipo === 'ectomorfo') {
+    reps[0] = Math.max(1, reps[0] - 1);
+    reps[1] = Math.max(reps[0], reps[1] - 1);
+  }
+  
+  return reps;
 }
 
 /**

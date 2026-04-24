@@ -212,52 +212,55 @@ export default function RoutineGenerator() {
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Generar Rutina Personalizada
+                    Generar Rutina con IA (10x)
                   </>
                 )}
               </Button>
             </CardContent>
           </Card>
 
-          {/* Beneficios */}
+          {/* Beneficios - Updated for 10x */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">¿Cómo funciona?</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-yellow-500" />
+                Motor Inteligente 10x
+              </CardTitle>
+              <CardDescription>
+                Esta no es una plantilla genérica. La IA de GymBro analiza tu perfil completo:
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               <div className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <div className="bg-primary/10 p-2 rounded-full mt-0.5">
+                  <Check className="w-4 h-4 text-primary" />
+                </div>
                 <div>
-                  <p className="font-medium">Selección inteligente de ejercicios</p>
+                  <p className="font-medium">Adaptación Biológica ({currentUser.somatotipo})</p>
                   <p className="text-sm text-muted-foreground">
-                    Prioriza ejercicios tier S y A basados en evidencia científica
+                    Ajustamos el volumen (series/reps) y los tiempos de descanso específicamente para metabolismos {currentUser.somatotipo}s.
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <div className="bg-primary/10 p-2 rounded-full mt-0.5">
+                  <Check className="w-4 h-4 text-primary" />
+                </div>
                 <div>
-                  <p className="font-medium">Personalización total</p>
+                  <p className="font-medium">Escalado por Experiencia ({currentUser.nivel})</p>
                   <p className="text-sm text-muted-foreground">
-                    Adapta ejercicios según tu equipamiento y evita lesiones
+                    Seleccionamos la cantidad exacta de ejercicios por grupo muscular para no sobreentrenar ni quedarte corto según tu nivel.
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium">Balance muscular</p>
-                  <p className="text-sm text-muted-foreground">
-                    Incluye tirones verticales y horizontales para desarrollo completo
-                  </p>
+                <div className="bg-primary/10 p-2 rounded-full mt-0.5">
+                  <Check className="w-4 h-4 text-primary" />
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium">Volumen optimizado</p>
+                  <p className="font-medium">Anti-Estancamiento (Shuffle Dinámico)</p>
                   <p className="text-sm text-muted-foreground">
-                    Series y reps ajustadas según tu objetivo
+                    Incluso si generas la misma rutina dos veces, la IA mezclará ejercicios del mismo Tier para darte variedad sin perder eficacia.
                   </p>
                 </div>
               </div>
