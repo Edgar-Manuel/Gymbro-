@@ -6,11 +6,23 @@ import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { RutinaSemanal, WorkoutLog, ProgressPhoto } from '@/types';
-import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw } from 'lucide-react';
+import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw, CheckCircle } from 'lucide-react';
 import StatsShareCard from '@/components/StatsShareCard';
 import { ID } from 'appwrite';
 
 // ─── Weekly Timeline ──────────────────────────────────────────────────────────
+
+const MUSCLE_IMAGES: Record<string, string> = {
+  pecho: '/images/muscles/chest.png',
+  espalda: '/images/muscles/back.png',
+  piernas: '/images/muscles/legs.png',
+  hombros: '/images/muscles/shoulders.png',
+  biceps: '/images/muscles/biceps.png',
+  triceps: '/images/muscles/triceps.png',
+  abdominales: '/images/muscles/abs.png',
+  femorales_gluteos: '/images/muscles/glutes.png',
+  antebrazos: '/images/muscles/forearms.png',
+};
 
 function WeeklyTimeline({ workouts, routine }: { workouts: WorkoutLog[]; routine: RutinaSemanal | null }) {
   const today = new Date();
@@ -27,33 +39,67 @@ function WeeklyTimeline({ workouts, routine }: { workouts: WorkoutLog[]; routine
     const dateStr = date.toDateString();
     const isToday = date.toDateString() === today.toDateString();
     const isPast = date < today && !isToday;
-    const trained = workouts.some(w => new Date(w.fecha).toDateString() === dateStr);
+    
+    const workoutDelDia = workouts.find(w => new Date(w.fecha).toDateString() === dateStr);
+    const trained = !!workoutDelDia;
 
     // Map routine day to calendar position
     const routineDay = routine?.dias?.[i % (routine.dias.length || 1)];
 
-    return { label, date, isToday, isPast, trained, routineDay };
+    let mainMuscle = '';
+    if (workoutDelDia?.diaRutinaId) {
+      const rd = routine?.dias?.find(d => d.id === workoutDelDia.diaRutinaId);
+      if (rd && rd.grupos && rd.grupos.length > 0) mainMuscle = rd.grupos[0];
+    }
+    
+    if (!mainMuscle && routineDay?.grupos && routineDay.grupos.length > 0) {
+      mainMuscle = routineDay.grupos[0];
+    }
+
+    const muscleImage = mainMuscle ? MUSCLE_IMAGES[mainMuscle] : null;
+
+    return { label, date, isToday, isPast, trained, routineDay, muscleImage };
   });
 
   return (
     <div className="flex gap-1.5 justify-between mt-4">
-      {week.map(({ label, isToday, isPast, trained, routineDay }) => (
+      {week.map(({ label, isToday, isPast, trained, routineDay, muscleImage }) => (
         <div key={label} className="flex-1 flex flex-col items-center gap-1">
           <span className={`text-xs font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
             {label}
           </span>
           <div
-            className={`w-full aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all ${
-              isToday
-                ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2'
+            className={`relative w-full aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all overflow-hidden ${
+              isToday && !trained
+                ? 'ring-2 ring-primary ring-offset-2 bg-primary/10'
                 : trained
-                ? 'bg-green-500/20 text-green-600 dark:text-green-400'
+                ? 'bg-green-500/20'
                 : isPast
-                ? 'bg-muted/50 text-muted-foreground/50'
-                : 'bg-muted text-muted-foreground'
+                ? 'bg-muted/50'
+                : 'bg-muted/50'
             }`}
           >
-            {trained ? '✓' : isToday ? '→' : '·'}
+            {muscleImage ? (
+              <>
+                <img 
+                  src={muscleImage} 
+                  alt="Muscle" 
+                  className={`w-full h-full object-cover p-0.5 ${
+                    trained ? 'opacity-100 scale-110 drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]' :
+                    isPast ? 'opacity-30 grayscale' : 'opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all'
+                  }`}
+                />
+                {trained && (
+                  <div className="absolute inset-0 bg-green-500/20 flex items-end justify-end p-1">
+                    <CheckCircle className="w-3.5 h-3.5 text-green-500 drop-shadow-md bg-white rounded-full" />
+                  </div>
+                )}
+              </>
+            ) : (
+              <span className={trained ? 'text-green-500' : isToday ? 'text-primary' : 'text-muted-foreground/50'}>
+                {trained ? '✓' : isToday ? '→' : '·'}
+              </span>
+            )}
           </div>
           {routineDay && (
             <span className="text-[9px] text-muted-foreground text-center leading-tight truncate w-full text-center">

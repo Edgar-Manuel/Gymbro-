@@ -25,7 +25,8 @@
       "Bash(uvx --version)",
       "Bash(where uvx *)",
       "Read(//c/Users/user/.claude/**)",
-      "Bash(APPWRITE_PROJECT_ID=691929680010fd17a2a7 APPWRITE_API_KEY=standard_4ed3d875c1181c1ad23a859da69057f7d25dd31493bf226c3db38715b77ddf4cb80b2a1b078e447d6b8116a8d7adf1b795c06eddea02627e06af4fd674d944aa502c2c98a693bf27a533dec49134e42314f344b0a7c481428ed1d5da98cc23f7acd707022d7a868ccb3f920eecc1486087985c857b3517af09c4b0598a4bd7fb APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1 uvx mcp-server-appwrite --help)"
+      "Bash(APPWRITE_PROJECT_ID=691929680010fd17a2a7 APPWRITE_API_KEY=standard_4ed3d875c1181c1ad23a859da69057f7d25dd31493bf226c3db38715b77ddf4cb80b2a1b078e447d6b8116a8d7adf1b795c06eddea02627e06af4fd674d944aa502c2c98a693bf27a533dec49134e42314f344b0a7c481428ed1d5da98cc23f7acd707022d7a868ccb3f920eecc1486087985c857b3517af09c4b0598a4bd7fb APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1 uvx mcp-server-appwrite --help)",
+      "Bash(xargs grep *)"
     ],
     "deny": [],
     "ask": []
