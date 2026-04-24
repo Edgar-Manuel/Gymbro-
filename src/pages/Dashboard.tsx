@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
-import type { RutinaSemanal, WorkoutLog, ProgressPhoto } from '@/types';
+import type { RutinaSemanal, WorkoutLog, ProgressPhoto, DiaRutina } from '@/types';
 import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw, CheckCircle } from 'lucide-react';
 import StatsShareCard from '@/components/StatsShareCard';
 import { ID } from 'appwrite';
@@ -24,35 +24,81 @@ const MUSCLE_IMAGES: Record<string, string> = {
   antebrazos: '/images/muscles/forearms.png',
 };
 
-function WeeklyTimeline({ workouts, routine }: { workouts: WorkoutLog[]; routine: RutinaSemanal | null }) {
+const isTrainingDay = (dayOfWeek: number, totalDays: number) => {
+  switch (totalDays) {
+    case 3: return [0, 2, 4].includes(dayOfWeek); // L, X, V
+    case 4: return [0, 1, 3, 4].includes(dayOfWeek); // L, M, J, V
+    case 5: return [0, 1, 2, 3, 4].includes(dayOfWeek); // L-V
+    case 6: return [0, 1, 2, 3, 4, 5].includes(dayOfWeek); // L-S
+    default: return true;
+  }
+};
+
+function WeeklyTimeline({
+  workouts,
+  routine,
+  nextDay,
+}: {
+  workouts: WorkoutLog[];
+  routine: RutinaSemanal | null;
+  nextDay: DiaRutina | null;
+}) {
   const today = new Date();
+  const todayWeekIndex = (today.getDay() + 6) % 7; // 0=Mon … 6=Sun
   const days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
   const dayMs = 24 * 60 * 60 * 1000;
 
-  // Get Monday of current week
   const monday = new Date(today);
   monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
   monday.setHours(0, 0, 0, 0);
 
+  const totalDays = routine?.diasPorSemana || routine?.dias?.length || 4;
+  const diasRutina = routine?.dias ?? [];
+
+  // Anchor: today's training slot = nextDay's index in the routine.
+  // This ensures today's column always matches the "Próximo Entrenamiento" card.
+  const todayRoutineIdx = nextDay
+    ? diasRutina.findIndex(d => d.id === nextDay.id)
+    : -1;
+
   const week = days.map((label, i) => {
     const date = new Date(monday.getTime() + i * dayMs);
     const dateStr = date.toDateString();
-    const isToday = date.toDateString() === today.toDateString();
-    const isPast = date < today && !isToday;
-    
+    const isToday = i === todayWeekIndex;
+    const isPast = !isToday && date < today;
+
     const workoutDelDia = workouts.find(w => new Date(w.fecha).toDateString() === dateStr);
     const trained = !!workoutDelDia;
+    const isRest = !isTrainingDay(i, totalDays);
 
-    // Map routine day to calendar position
-    const routineDay = routine?.dias?.[i % (routine.dias.length || 1)];
-
-    let dailyMuscles: string[] = [];
-    if (workoutDelDia?.diaRutinaId) {
-      const rd = routine?.dias?.find(d => d.id === workoutDelDia.diaRutinaId);
-      if (rd && rd.grupos) dailyMuscles = rd.grupos;
+    // Compute the routine slot for this day by counting training-day steps
+    // from the anchor (today) and offsetting todayRoutineIdx accordingly.
+    let routineDay: DiaRutina | null = null;
+    if (!isRest && todayRoutineIdx !== -1 && diasRutina.length > 0) {
+      let offset = 0;
+      if (i < todayWeekIndex) {
+        for (let j = i; j < todayWeekIndex; j++) {
+          if (isTrainingDay(j, totalDays)) offset--;
+        }
+      } else if (i > todayWeekIndex) {
+        for (let j = todayWeekIndex + 1; j <= i; j++) {
+          if (isTrainingDay(j, totalDays)) offset++;
+        }
+      }
+      const len = diasRutina.length;
+      routineDay = diasRutina[((todayRoutineIdx + offset) % len + len) % len];
     }
-    
-    if (dailyMuscles.length === 0 && routineDay?.grupos) {
+
+    // Muscles: real workout muscles take priority, then scheduled routine
+    let dailyMuscles: string[] = [];
+    if (trained && workoutDelDia) {
+      const rd = diasRutina.find(d => d.id === workoutDelDia.diaRutinaId);
+      if (rd?.grupos) {
+        dailyMuscles = rd.grupos;
+      } else if (workoutDelDia.ejercicios?.[0]?.ejercicio?.grupoMuscular) {
+        dailyMuscles = [workoutDelDia.ejercicios[0].ejercicio.grupoMuscular];
+      }
+    } else if (routineDay?.grupos) {
       dailyMuscles = routineDay.grupos;
     }
 
@@ -61,12 +107,12 @@ function WeeklyTimeline({ workouts, routine }: { workouts: WorkoutLog[]; routine
       .filter(Boolean)
       .slice(0, 4);
 
-    return { label, date, isToday, isPast, trained, routineDay, muscleImages };
+    return { label, date, isToday, isPast, trained, isRest, routineDay, muscleImages };
   });
 
   return (
     <div className="flex gap-1.5 justify-between mt-4">
-      {week.map(({ label, isToday, isPast, trained, routineDay, muscleImages }) => (
+      {week.map(({ label, isToday, isPast, trained, isRest, routineDay, muscleImages }) => (
         <div key={label} className="flex-1 flex flex-col items-center gap-1">
           <span className={`text-xs font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
             {label}
@@ -77,15 +123,17 @@ function WeeklyTimeline({ workouts, routine }: { workouts: WorkoutLog[]; routine
                 ? 'ring-2 ring-primary ring-offset-2 bg-primary/10'
                 : trained
                 ? 'bg-green-500/20'
+                : isRest
+                ? 'bg-muted/30 border-dashed border border-muted-foreground/20'
                 : isPast
                 ? 'bg-muted/50'
                 : 'bg-muted/50'
             }`}
           >
-            {muscleImages.length > 0 ? (
-              <div className={`w-full h-full p-0.5 grid gap-0.5 ${
-                muscleImages.length === 1 ? 'grid-cols-1' : 'grid-cols-2 grid-rows-2'
-              }`}>
+            {isRest && !trained ? (
+              <span className="text-[10px] text-muted-foreground/40 font-normal">Zzz</span>
+            ) : muscleImages.length > 0 ? (
+              <div className={`w-full h-full p-0.5 grid gap-0.5 ${muscleImages.length === 1 ? 'grid-cols-1' : 'grid-cols-2 grid-rows-2'}`}>
                 {muscleImages.map((img, idx) => (
                   <img 
                     key={idx}
@@ -99,9 +147,7 @@ function WeeklyTimeline({ workouts, routine }: { workouts: WorkoutLog[]; routine
                         ? 'row-span-2 col-start-2 row-start-1' 
                         : ''
                     } ${
-                      muscleImages.length === 2 && idx === 0 ? 'row-span-2' : ''
-                    } ${
-                      muscleImages.length === 2 && idx === 1 ? 'row-span-2' : ''
+                      muscleImages.length === 2 && (idx === 0 || idx === 1) ? 'row-span-2' : ''
                     }`}
                   />
                 ))}
@@ -117,8 +163,10 @@ function WeeklyTimeline({ workouts, routine }: { workouts: WorkoutLog[]; routine
               </span>
             )}
           </div>
-          {routineDay && (
-            <span className="text-[9px] text-muted-foreground text-center leading-tight truncate w-full text-center">
+          {isRest && !trained ? (
+            <span className="text-[9px] text-muted-foreground/60 italic">Descanso</span>
+          ) : routineDay && (
+            <span className="text-[9px] text-muted-foreground text-center leading-tight truncate w-full">
               {routineDay.nombre.split(' ')[0]}
             </span>
           )}
@@ -312,7 +360,7 @@ export default function Dashboard() {
           )}
 
           {/* Timeline semanal */}
-          <WeeklyTimeline workouts={recentWorkouts} routine={activeRoutine} />
+          <WeeklyTimeline workouts={recentWorkouts} routine={activeRoutine} nextDay={nextDay ?? null} />
         </CardContent>
       </Card>
 
