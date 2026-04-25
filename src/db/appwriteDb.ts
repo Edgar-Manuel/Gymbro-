@@ -13,6 +13,7 @@ import type {
   ProgressPhoto,
   ExerciseKnowledge,
   SharedRoutine,
+  Lesion,
 } from '@/types';
 
 /**
@@ -1058,6 +1059,52 @@ export const appwriteDbHelpers = {
       peso: datos.peso,
       notas: datos.notas,
     };
+  },
+
+  // ==================== LESIONES ====================
+
+  async addLesion(lesion: Lesion): Promise<string> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const response = await databases.createDocument(
+        APPWRITE_DATABASE_ID,
+        COLLECTIONS.LESIONES,
+        lesion.id,
+        {
+          userId,
+          zona: lesion.zona,
+          severidad: lesion.severidad,
+          fechaInicio: new Date(lesion.fechaInicio).toISOString(),
+          activa: lesion.activa,
+          dolorActual: lesion.dolorActual ?? 5,
+          notas: lesion.notas ?? '',
+        }
+      );
+      return response.$id;
+    } catch (error) {
+      console.error('Error adding lesion:', error);
+      throw error;
+    }
+  },
+
+  async updateLesion(lesion: Lesion): Promise<string> {
+    try {
+      await databases.updateDocument(
+        APPWRITE_DATABASE_ID,
+        COLLECTIONS.LESIONES,
+        lesion.id,
+        {
+          activa: lesion.activa,
+          dolorActual: lesion.dolorActual ?? 5,
+          notas: lesion.notas ?? '',
+          ...(lesion.fechaFin && { fechaFin: new Date(lesion.fechaFin).toISOString() }),
+        }
+      );
+      return lesion.id;
+    } catch (error) {
+      console.error('Error updating lesion:', error);
+      throw error;
+    }
   },
 
   // ==================== RUTINAS COMPARTIDAS ====================

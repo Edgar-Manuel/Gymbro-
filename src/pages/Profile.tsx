@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, Scale, TrendingUp, Target, Moon, Sun, Info, CheckCircle, Cloud, CloudOff, Mail, Flame, Camera, Bell, BellOff, X, ChevronLeft, ChevronRight, Smartphone } from 'lucide-react';
 import BodyMuscleMap from '@/components/BodyMuscleMap';
+import InjuryPanel from '@/components/InjuryPanel';
 import { useState, useEffect, useRef } from 'react';
 import { dbHelpers } from '@/db';
 import type { Somatotipo, ProgressPhoto } from '@/types';
@@ -574,6 +575,9 @@ export default function Profile() {
           )}
         </CardContent>
       </Card>
+
+      {/* Lesiones */}
+      {currentUser && <InjuryPanel userId={currentUser.id} />}
 
       {/* Objetivos */}
       <Card className="mb-6">

@@ -321,6 +321,30 @@ export interface BodyMeasurement {
   notas?: string;
 }
 
+// Injury Management
+export type LesionZona =
+  | 'hombro_derecho' | 'hombro_izquierdo'
+  | 'rodilla_derecha' | 'rodilla_izquierda'
+  | 'muneca_derecha' | 'muneca_izquierda'
+  | 'codo_derecho' | 'codo_izquierdo'
+  | 'lumbar' | 'cervical'
+  | 'tobillo_derecho' | 'tobillo_izquierdo'
+  | 'cadera';
+
+export type LesionSeveridad = 'leve' | 'moderada' | 'grave';
+
+export interface Lesion {
+  id: string;
+  userId: string;
+  zona: LesionZona;
+  severidad: LesionSeveridad;
+  fechaInicio: Date;
+  fechaFin?: Date;
+  activa: boolean;
+  dolorActual?: number; // 0-10
+  notas?: string;
+}
+
 export interface ProgressPhoto {
   id: string;
   userId: string;

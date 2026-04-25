@@ -21,6 +21,7 @@ export const COLLECTIONS = {
   BODY_MEASUREMENTS: 'bodyMeasurements',
   PROGRESS_PHOTOS: 'progressPhotos',
   SHARED_ROUTINES: 'shared_routines',
+  LESIONES: 'lesiones',
 } as const;
 
 /**

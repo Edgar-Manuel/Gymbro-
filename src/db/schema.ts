@@ -8,7 +8,8 @@ import type {
     NutritionTracker,
     UserStatistics,
     BodyMeasurement,
-    ProgressPhoto
+    ProgressPhoto,
+    Lesion,
 } from '@/types';
 import type { WithSync } from './types';
 
@@ -22,6 +23,7 @@ export class GymBroDatabase extends Dexie {
     statistics!: Table<WithSync<UserStatistics>, string>;
     bodyMeasurements!: Table<WithSync<BodyMeasurement>, string>;
     progressPhotos!: Table<WithSync<ProgressPhoto>, string>;
+    lesiones!: Table<WithSync<Lesion>, string>;
 
     constructor() {
         super('GymBroDatabase');
@@ -60,6 +62,20 @@ export class GymBroDatabase extends Dexie {
             statistics: 'userId, syncStatus',
             bodyMeasurements: 'id, userId, fecha, syncStatus',
             progressPhotos: 'id, userId, fecha, tipo, syncStatus'
+        });
+
+        // Versión 4: Injury Management
+        this.version(4).stores({
+            exercises: 'id, grupoMuscular, categoria, tier, dificultad, *equipamiento, *tags, syncStatus',
+            users: 'id, nombre, syncStatus',
+            rutinas: 'id, userId, activa, syncStatus',
+            workouts: 'id, userId, fecha, diaRutinaId, completado, syncStatus',
+            achievements: 'id, userId, tipo, fecha, syncStatus',
+            nutrition: '[userId+fecha], userId, fecha, syncStatus',
+            statistics: 'userId, syncStatus',
+            bodyMeasurements: 'id, userId, fecha, syncStatus',
+            progressPhotos: 'id, userId, fecha, tipo, syncStatus',
+            lesiones: 'id, userId, zona, activa, syncStatus',
         });
     }
 }
