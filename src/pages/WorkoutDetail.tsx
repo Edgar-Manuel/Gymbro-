@@ -15,7 +15,23 @@ import {
   Trophy,
   ChevronDown,
   ChevronUp,
+  Zap,
 } from 'lucide-react';
+
+// Epley 1RM estimate — most reliable for 1-15 reps
+const epley = (peso: number, reps: number): number => {
+  if (reps <= 0) return peso;
+  if (reps === 1) return peso;
+  return Math.round(peso * (1 + reps / 30));
+};
+
+const fmtVol = (kg: number): { value: string; unit: string } => {
+  if (kg >= 1000) {
+    const t = kg / 1000;
+    return { value: t % 1 === 0 ? `${t}` : t.toFixed(2), unit: 't' };
+  }
+  return { value: kg.toLocaleString(), unit: 'kg' };
+};
 
 export default function WorkoutDetail() {
   const { id } = useParams<{ id: string }>();
@@ -49,15 +65,23 @@ export default function WorkoutDetail() {
   const totalReps = workout.ejercicios.reduce((t, ej) =>
     t + ej.series.reduce((s, sr) => s + sr.repeticiones, 0), 0);
 
-  let mejorSerie = { ejercicio: '', peso: 0, reps: 0 };
+  // Best set by 1RM estimate across the whole session
+  let mejorSerie = { ejercicio: '', peso: 0, reps: 0, rm1: 0 };
   workout.ejercicios.forEach(ej => {
     ej.series.forEach(sr => {
-      if (sr.peso > mejorSerie.peso) {
-        mejorSerie = { ejercicio: ej.ejercicio?.nombre || '', peso: sr.peso, reps: sr.repeticiones };
+      const rm = epley(sr.peso, sr.repeticiones);
+      if (rm > mejorSerie.rm1) {
+        mejorSerie = {
+          ejercicio: ej.ejercicio?.nombre || '',
+          peso: sr.peso,
+          reps: sr.repeticiones,
+          rm1: rm,
+        };
       }
     });
   });
 
+  const vol = fmtVol(volumenTotal);
   const fecha = new Date(workout.fecha);
   const fechaLabel = fecha.toLocaleDateString('es-ES', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -83,10 +107,10 @@ export default function WorkoutDetail() {
         {/* Stats rápidas */}
         <div className="grid grid-cols-4 gap-2">
           {[
-            { icon: Clock, value: `${workout.duracionReal}`, unit: 'min', color: 'text-blue-500' },
-            { icon: Dumbbell, value: volumenTotal >= 1000 ? `${(volumenTotal/1000).toFixed(1)}t` : `${volumenTotal.toLocaleString()}`, unit: 'kg vol', color: 'text-green-500' },
-            { icon: Target, value: `${totalSeries}`, unit: 'series', color: 'text-purple-500' },
-            { icon: TrendingUp, value: `${totalReps}`, unit: 'reps', color: 'text-orange-500' },
+            { icon: Clock,      value: `${workout.duracionReal}`, unit: 'min',      color: 'text-blue-500'   },
+            { icon: Dumbbell,   value: vol.value,                  unit: vol.unit,   color: 'text-green-500'  },
+            { icon: Target,     value: `${totalSeries}`,           unit: 'series',   color: 'text-purple-500' },
+            { icon: TrendingUp, value: `${totalReps}`,             unit: 'reps',     color: 'text-orange-500' },
           ].map(({ icon: Icon, value, unit, color }) => (
             <Card key={unit}>
               <CardContent className="pt-4 pb-3 text-center px-2">
@@ -98,17 +122,25 @@ export default function WorkoutDetail() {
           ))}
         </div>
 
-        {/* Mejor serie */}
-        {mejorSerie.peso > 0 && (
+        {/* Mejor esfuerzo (por 1RM Epley) */}
+        {mejorSerie.rm1 > 0 && (
           <Card className="border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20">
             <CardContent className="py-3 flex items-center gap-3">
-              <Trophy className="w-7 h-7 text-yellow-500 shrink-0" />
-              <div>
-                <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 uppercase tracking-wide">Serie más pesada</p>
-                <p className="font-bold">{mejorSerie.ejercicio}</p>
+              <Trophy className="w-8 h-8 text-yellow-500 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-yellow-700 dark:text-yellow-300 uppercase tracking-widest mb-0.5">
+                  Mejor esfuerzo del día
+                </p>
+                <p className="font-bold truncate">{mejorSerie.ejercicio}</p>
                 <p className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
                   {mejorSerie.peso} kg × {mejorSerie.reps} reps
                 </p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Zap className="w-3 h-3 text-yellow-500" />
+                  <span className="text-xs text-yellow-700 dark:text-yellow-300 font-medium">
+                    1RM estimado: ~{mejorSerie.rm1} kg
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -119,13 +151,16 @@ export default function WorkoutDetail() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Flame className="w-4 h-4 text-orange-500" />
-              {workout.ejercicios.length} ejercicios
+              {workout.ejercicios.length} ejercicio{workout.ejercicios.length !== 1 ? 's' : ''}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-0">
             {workout.ejercicios.map((ej, idx) => {
               const volEj = ej.series.reduce((s, sr) => s + sr.peso * sr.repeticiones, 0);
-              const pesoMax = Math.max(...ej.series.map(s => s.peso));
+              const volEjFmt = fmtVol(volEj);
+
+              // Best set of this exercise by 1RM
+              const best1RM = Math.max(...ej.series.map(s => epley(s.peso, s.repeticiones)));
               const isOpen = expandedEx === idx;
 
               return (
@@ -136,15 +171,24 @@ export default function WorkoutDetail() {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm">{ej.ejercicio?.nombre || `Ejercicio ${idx + 1}`}</span>
+                        <span className="font-semibold text-sm">
+                          {ej.ejercicio?.nombre || `Ejercicio ${idx + 1}`}
+                        </span>
                         {ej.ejercicio?.tier && (
-                          <Badge variant={ej.ejercicio.tier === 'S' ? 'success' : 'outline'} className="text-[10px] h-4">
+                          <Badge
+                            variant={ej.ejercicio.tier === 'S' ? 'success' : 'outline'}
+                            className="text-[10px] h-4"
+                          >
                             {ej.ejercicio.tier}
                           </Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {ej.series.length} series · {pesoMax} kg máx · {volEj.toLocaleString()} kg vol
+                        {ej.series.length} series
+                        {' · '}
+                        <span className="font-medium">1RM ~{best1RM} kg</span>
+                        {' · '}
+                        {volEjFmt.value} {volEjFmt.unit} vol
                       </p>
                     </div>
                     {isOpen
@@ -155,18 +199,31 @@ export default function WorkoutDetail() {
 
                   {isOpen && (
                     <div className="border-t bg-muted/30 divide-y">
-                      {ej.series.map((sr, si) => (
-                        <div key={si} className="flex items-center justify-between px-4 py-2 text-sm">
-                          <span className="text-muted-foreground w-14">Serie {sr.numero}</span>
-                          <span className={`font-semibold ${sr.peso === pesoMax ? 'text-primary' : ''}`}>
-                            {sr.peso} kg
-                          </span>
-                          <span className="text-muted-foreground">×</span>
-                          <span className="font-medium">{sr.repeticiones} reps</span>
-                          <span className="text-xs text-muted-foreground">RIR {sr.RIR}</span>
-                          {sr.peso === pesoMax && <Trophy className="w-3 h-3 text-yellow-500" />}
-                        </div>
-                      ))}
+                      {ej.series.map((sr, si) => {
+                        const rm = epley(sr.peso, sr.repeticiones);
+                        const isBest = rm === best1RM;
+                        return (
+                          <div
+                            key={si}
+                            className={`flex items-center gap-2 px-4 py-2 text-sm ${isBest ? 'bg-yellow-50/60 dark:bg-yellow-950/20' : ''}`}
+                          >
+                            <span className="text-muted-foreground w-12 shrink-0">Serie {sr.numero}</span>
+                            <span className={`font-bold w-16 ${isBest ? 'text-primary' : ''}`}>
+                              {sr.peso} kg
+                            </span>
+                            <span className="text-muted-foreground">×</span>
+                            <span className="font-medium w-14">{sr.repeticiones} reps</span>
+                            <span className="text-xs text-muted-foreground flex-1">RIR {sr.RIR}</span>
+                            <span className="text-xs text-muted-foreground">~{rm} kg</span>
+                            {isBest && <Trophy className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
+                          </div>
+                        );
+                      })}
+                      {/* Resumen del ejercicio */}
+                      <div className="px-4 py-2 bg-muted/50 flex justify-between text-xs text-muted-foreground">
+                        <span>Volumen total</span>
+                        <span className="font-semibold">{volEjFmt.value} {volEjFmt.unit}</span>
+                      </div>
                     </div>
                   )}
                 </div>
