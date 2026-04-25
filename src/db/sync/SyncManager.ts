@@ -3,6 +3,7 @@ import { RoutineRepository } from '../repositories/RoutineRepository';
 import { WorkoutRepository } from '../repositories/WorkoutRepository';
 import { StatisticsRepository } from '../repositories/StatisticsRepository';
 import { BodyTrackingRepository } from '../repositories/BodyTrackingRepository';
+import { InjuryRepository } from '../repositories/InjuryRepository';
 import { appwriteDbHelpers } from '../appwriteDb';
 import { db } from '../schema';
 
@@ -109,6 +110,23 @@ export const SyncManager = {
             } catch (e) { console.error('[Sync] achievement error', e); }
         }
 
+        // ── Lesiones ──────────────────────────────────────────────────────────
+        const pendingLesiones = await InjuryRepository.getPendingSync();
+        for (const lesion of pendingLesiones) {
+            try {
+                if (lesion.syncStatus === 'pending_create') {
+                    try {
+                        await appwriteDbHelpers.addLesion(lesion);
+                    } catch (err) {
+                        if ((err as { code?: number }).code !== 409) throw err;
+                    }
+                } else if (lesion.syncStatus === 'pending_update') {
+                    await appwriteDbHelpers.updateLesion(lesion);
+                }
+                await db.lesiones.update(lesion.id, { syncStatus: 'synced' });
+            } catch (e) { console.error('[Sync] lesion error', e); }
+        }
+
         console.log('[Sync] Complete');
     },
 
@@ -120,6 +138,7 @@ export const SyncManager = {
         const m = await db.bodyMeasurements.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
         const p = await db.progressPhotos.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
         const a = await db.achievements.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
-        return u + r + w + s + m + p + a;
+        const l = await db.lesiones.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
+        return u + r + w + s + m + p + a + l;
     }
 };
