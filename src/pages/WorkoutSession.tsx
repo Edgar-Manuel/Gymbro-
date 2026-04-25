@@ -31,6 +31,9 @@ import {
   Heart,
   ChevronDown,
   ChevronUp,
+  Info,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 
 export default function WorkoutSession() {
@@ -62,6 +65,8 @@ export default function WorkoutSession() {
   const [earnedAchievements, setEarnedAchievements] = useState<EarnedAchievement[]>([]);
   const [showWellnessCheck, setShowWellnessCheck] = useState(false);
   const [wellnessScore, setWellnessScore] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
+
+  const [showTechModal, setShowTechModal] = useState(false);
 
   // Injury awareness
   const [activeInjuries, setActiveInjuries] = useState<Lesion[]>([]);
@@ -358,6 +363,7 @@ export default function WorkoutSession() {
       setShowTimer(false);
       setPeso('');
       setEstimated1RM(null);
+      setShowTechModal(false);
     } else {
       // Último ejercicio, finalizar entrenamiento
       handleFinalizarEntrenamiento();
@@ -485,9 +491,20 @@ export default function WorkoutSession() {
           <CardHeader>
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <CardTitle className="text-2xl mb-1">
-                  {ejercicioActual.ejercicio?.nombre}
-                </CardTitle>
+                <div className="flex items-center gap-2 mb-1">
+                  <CardTitle className="text-2xl">
+                    {ejercicioActual.ejercicio?.nombre}
+                  </CardTitle>
+                  {ejercicioActual.ejercicio?.tecnica && (
+                    <button
+                      onClick={() => setShowTechModal(true)}
+                      className="w-7 h-7 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center shrink-0 transition-colors"
+                      title="Ver técnica"
+                    >
+                      <Info className="w-4 h-4 text-primary" />
+                    </button>
+                  )}
+                </div>
                 <CardDescription className="text-base">
                   {ejercicioActual.ejercicio?.grupoMuscular} • {ejercicioActual.ejercicio?.categoria}
                 </CardDescription>
@@ -768,6 +785,117 @@ export default function WorkoutSession() {
           </div>
         );
       })()}
+
+      {/* Modal técnica del ejercicio */}
+      {showTechModal && ejercicioActual.ejercicio?.tecnica && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card w-full max-w-lg rounded-t-2xl max-h-[85vh] flex flex-col shadow-xl">
+            {/* Handle + header */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b shrink-0">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-0.5">Técnica</p>
+                <h2 className="font-bold text-lg leading-tight">{ejercicioActual.ejercicio.nombre}</h2>
+              </div>
+              <button
+                onClick={() => setShowTechModal(false)}
+                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
+              {/* Posición inicial */}
+              {ejercicioActual.ejercicio.tecnica.posicionInicial && (
+                <div>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
+                    Posición inicial
+                  </p>
+                  <p className="text-sm leading-relaxed">{ejercicioActual.ejercicio.tecnica.posicionInicial}</p>
+                </div>
+              )}
+
+              {/* Ejecución paso a paso */}
+              {ejercicioActual.ejercicio.tecnica.ejecucion?.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
+                    Ejecución
+                  </p>
+                  <ol className="space-y-2">
+                    {ejercicioActual.ejercicio.tecnica.ejecucion.map((paso, i) => (
+                      <li key={i} className="flex gap-3 text-sm">
+                        <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          {i + 1}
+                        </span>
+                        <span className="leading-relaxed">{paso}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {/* Errores comunes */}
+              {ejercicioActual.ejercicio.tecnica.erroresComunes?.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
+                    Errores comunes
+                  </p>
+                  <ul className="space-y-1.5">
+                    {ejercicioActual.ejercicio.tecnica.erroresComunes.map((err, i) => (
+                      <li key={i} className="flex gap-2 text-sm">
+                        <XCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                        <span className="leading-relaxed text-muted-foreground">{err}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Consejos clave */}
+              {ejercicioActual.ejercicio.tecnica.consejosClave?.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
+                    Consejos clave
+                  </p>
+                  <ul className="space-y-1.5">
+                    {ejercicioActual.ejercicio.tecnica.consejosClave.map((tip, i) => (
+                      <li key={i} className="flex gap-2 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Músculos enfocados */}
+              {ejercicioActual.ejercicio.enfoqueMuscular?.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
+                    Músculos trabajados
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ejercicioActual.ejercicio.enfoqueMuscular.map(m => (
+                      <span key={m} className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium capitalize">
+                        {m}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-5 pb-5 pt-3 border-t shrink-0">
+              <button
+                onClick={() => setShowTechModal(false)}
+                className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
+              >
+                Entendido, a entrenar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Timer de descanso */}
       {showTimer && (
