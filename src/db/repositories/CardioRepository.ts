@@ -1,17 +1,18 @@
 import { db } from '../schema';
 import type { CardioSession } from '@/types';
+import type { WithSync } from '../types';
 
 export const CardioRepository = {
-  async getByUser(userId: string): Promise<CardioSession[]> {
+  async getByUser(userId: string): Promise<WithSync<CardioSession>[]> {
     const all = await db.cardioSessions.where('userId').equals(userId).toArray();
     return all.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
   },
 
-  async getByWorkout(workoutId: string): Promise<CardioSession[]> {
+  async getByWorkout(workoutId: string): Promise<WithSync<CardioSession>[]> {
     return db.cardioSessions.where('workoutId').equals(workoutId).toArray();
   },
 
-  async getRecent(userId: string, limit = 10): Promise<CardioSession[]> {
+  async getRecent(userId: string, limit = 10): Promise<WithSync<CardioSession>[]> {
     const all = await db.cardioSessions
       .where('userId').equals(userId)
       .toArray();
@@ -37,7 +38,7 @@ export const CardioRepository = {
     await db.cardioSessions.delete(id);
   },
 
-  async getPendingSync(): Promise<CardioSession[]> {
+  async getPendingSync(): Promise<WithSync<CardioSession>[]> {
     return db.cardioSessions
       .filter(s => s.syncStatus === 'pending_create' || s.syncStatus === 'pending_update')
       .toArray();
