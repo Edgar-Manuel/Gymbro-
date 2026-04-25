@@ -7,6 +7,7 @@ import { ExerciseRepository } from './repositories/ExerciseRepository';
 import { BodyTrackingRepository } from './repositories/BodyTrackingRepository';
 import { AchievementRepository } from './repositories/AchievementRepository';
 import { InjuryRepository } from './repositories/InjuryRepository';
+import { CardioRepository } from './repositories/CardioRepository';
 import { SyncManager } from './sync/SyncManager';
 export { setStorageMode, getStorageMode } from './config';
 
@@ -23,6 +24,7 @@ export const dbHelpers = {
   ...BodyTrackingRepository,
   ...AchievementRepository,
   ...InjuryRepository,
+  ...CardioRepository,
 
   // Utilities
   clearAllData: async () => {
@@ -36,6 +38,7 @@ export const dbHelpers = {
     await db.bodyMeasurements.clear();
     await db.progressPhotos.clear();
     await db.lesiones.clear();
+    await db.cardioSessions.clear();
   },
 
   // Sync

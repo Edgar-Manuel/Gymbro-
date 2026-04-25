@@ -10,6 +10,7 @@ import type {
     BodyMeasurement,
     ProgressPhoto,
     Lesion,
+    CardioSession,
 } from '@/types';
 import type { WithSync } from './types';
 
@@ -24,6 +25,7 @@ export class GymBroDatabase extends Dexie {
     bodyMeasurements!: Table<WithSync<BodyMeasurement>, string>;
     progressPhotos!: Table<WithSync<ProgressPhoto>, string>;
     lesiones!: Table<WithSync<Lesion>, string>;
+    cardioSessions!: Table<WithSync<CardioSession>, string>;
 
     constructor() {
         super('GymBroDatabase');
@@ -76,6 +78,21 @@ export class GymBroDatabase extends Dexie {
             bodyMeasurements: 'id, userId, fecha, syncStatus',
             progressPhotos: 'id, userId, fecha, tipo, syncStatus',
             lesiones: 'id, userId, zona, activa, syncStatus',
+        });
+
+        // Versión 5: Cardio Sessions
+        this.version(5).stores({
+            exercises: 'id, grupoMuscular, categoria, tier, dificultad, *equipamiento, *tags, syncStatus',
+            users: 'id, nombre, syncStatus',
+            rutinas: 'id, userId, activa, syncStatus',
+            workouts: 'id, userId, fecha, diaRutinaId, completado, syncStatus',
+            achievements: 'id, userId, tipo, fecha, syncStatus',
+            nutrition: '[userId+fecha], userId, fecha, syncStatus',
+            statistics: 'userId, syncStatus',
+            bodyMeasurements: 'id, userId, fecha, syncStatus',
+            progressPhotos: 'id, userId, fecha, tipo, syncStatus',
+            lesiones: 'id, userId, zona, activa, syncStatus',
+            cardioSessions: 'id, userId, fecha, workoutId, completado, syncStatus',
         });
     }
 }

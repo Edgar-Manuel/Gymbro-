@@ -17,6 +17,8 @@ import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
 import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular } from '@/types';
 import { INJURY_AFFECTS, LESION_ZONA_LABELS, REHAB_EXERCISES } from '@/utils/injuryData';
+import { CARDIO_RECOMENDACIONES } from '@/utils/cardioData';
+import CardioPanel from '@/components/CardioPanel';
 import {
   Check,
   ArrowRight,
@@ -195,6 +197,21 @@ export default function WorkoutSession() {
             </div>
           </div>
         )}
+
+        {selectedDay && !hasStarted && currentUser && (() => {
+          const somatotipo = currentUser.somatotipo ?? 'mesomorfo';
+          const rec = CARDIO_RECOMENDACIONES[somatotipo];
+          if (rec.momento !== 'antes') return null;
+          return (
+            <div className="mx-4 mt-4">
+              <CardioPanel
+                userId={currentUser.id}
+                somatotipo={somatotipo}
+                momento="antes"
+              />
+            </div>
+          );
+        })()}
 
         {selectedDay && !hasStarted && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg">
@@ -734,6 +751,23 @@ export default function WorkoutSession() {
           )}
         </div>
       )}
+
+      {/* Cardio post-entreno */}
+      {currentUser && (() => {
+        const somatotipo = currentUser.somatotipo ?? 'mesomorfo';
+        const rec = CARDIO_RECOMENDACIONES[somatotipo];
+        if (rec.momento !== 'despues') return null;
+        return (
+          <div className="mt-4">
+            <CardioPanel
+              userId={currentUser.id}
+              workoutId={activeWorkout?.id}
+              somatotipo={somatotipo}
+              momento="despues"
+            />
+          </div>
+        );
+      })()}
 
       {/* Timer de descanso */}
       {showTimer && (

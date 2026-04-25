@@ -345,6 +345,25 @@ export interface Lesion {
   notas?: string;
 }
 
+// Cardio
+export type CardioTipo = 'hiit' | 'liss' | 'moderado';
+export type CardioEquipo = 'cinta' | 'bici' | 'eliptica' | 'remo' | 'sin_equipo';
+export type CardioMomento = 'antes' | 'despues';
+
+export interface CardioSession {
+  id: string;
+  userId: string;
+  workoutId?: string;
+  tipo: CardioTipo;
+  equipo: CardioEquipo;
+  momento: CardioMomento;
+  duracionObjetivo: number; // minutos
+  duracionReal: number; // minutos completados
+  fecha: Date;
+  completado: boolean;
+  notas?: string;
+}
+
 export interface ProgressPhoto {
   id: string;
   userId: string;

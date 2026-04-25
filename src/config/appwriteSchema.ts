@@ -22,6 +22,7 @@ export const COLLECTIONS = {
   PROGRESS_PHOTOS: 'progressPhotos',
   SHARED_ROUTINES: 'shared_routines',
   LESIONES: 'lesiones',
+  CARDIO: 'cardioSessions',
 } as const;
 
 /**

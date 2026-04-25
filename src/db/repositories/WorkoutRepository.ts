@@ -63,6 +63,10 @@ export const WorkoutRepository = {
         }
     },
 
+    async getWorkoutById(id: string): Promise<WorkoutLog | undefined> {
+        return db.workouts.get(id);
+    },
+
     async getPendingSync() {
         return await db.workouts
             .filter(w => w.syncStatus !== 'synced' && w.syncStatus !== undefined)

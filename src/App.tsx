@@ -19,6 +19,7 @@ import Education from '@/pages/Education';
 import Nutrition from '@/pages/Nutrition';
 import Profile from '@/pages/Profile';
 import SharedRoutineView from '@/pages/SharedRoutineView';
+import WorkoutDetail from '@/pages/WorkoutDetail';
 import { Dumbbell } from 'lucide-react';
 import { notificationManager } from '@/utils/notificationManager';
 
@@ -94,7 +95,7 @@ function App() {
             <Route path="workout" element={<WorkoutHub />} />
             <Route path="workout-session" element={<WorkoutSession />} />
             <Route path="workout/summary" element={<WorkoutSummary />} />
-            <Route path="workout/:id" element={<div className="p-8">Detalle de entrenamiento (próximamente)</div>} />
+            <Route path="workout/:id" element={<WorkoutDetail />} />
             <Route path="routine-generator" element={<RoutineGenerator />} />
             <Route path="progress" element={<Progress />} />
             <Route path="education" element={<Education />} />
