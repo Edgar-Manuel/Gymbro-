@@ -14,6 +14,7 @@ import type {
   ExerciseKnowledge,
   SharedRoutine,
   Lesion,
+  CardioSession,
 } from '@/types';
 
 /**
@@ -1103,6 +1104,54 @@ export const appwriteDbHelpers = {
       return lesion.id;
     } catch (error) {
       console.error('Error updating lesion:', error);
+      throw error;
+    }
+  },
+
+  // ==================== CARDIO ====================
+
+  async addCardioSession(session: CardioSession): Promise<string> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const response = await databases.createDocument(
+        APPWRITE_DATABASE_ID,
+        COLLECTIONS.CARDIO,
+        session.id,
+        {
+          userId,
+          workoutId: session.workoutId ?? null,
+          tipo: session.tipo,
+          equipo: session.equipo,
+          momento: session.momento,
+          duracionObjetivo: session.duracionObjetivo,
+          duracionReal: session.duracionReal,
+          fecha: new Date(session.fecha).toISOString(),
+          completado: session.completado,
+          notas: session.notas ?? '',
+        }
+      );
+      return response.$id;
+    } catch (error) {
+      console.error('Error adding cardio session:', error);
+      throw error;
+    }
+  },
+
+  async updateCardioSession(session: CardioSession): Promise<string> {
+    try {
+      await databases.updateDocument(
+        APPWRITE_DATABASE_ID,
+        COLLECTIONS.CARDIO,
+        session.id,
+        {
+          duracionReal: session.duracionReal,
+          completado: session.completado,
+          notas: session.notas ?? '',
+        }
+      );
+      return session.id;
+    } catch (error) {
+      console.error('Error updating cardio session:', error);
       throw error;
     }
   },

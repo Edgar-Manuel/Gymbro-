@@ -8,6 +8,7 @@ import { useAppStore } from '@/store';
 import type { RutinaSemanal, WorkoutLog, ProgressPhoto, DiaRutina } from '@/types';
 import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw, CheckCircle } from 'lucide-react';
 import StatsShareCard from '@/components/StatsShareCard';
+import InjuryPanel from '@/components/InjuryPanel';
 import { ID } from 'appwrite';
 
 // ─── Weekly Timeline ──────────────────────────────────────────────────────────
@@ -439,6 +440,9 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Lesiones activas */}
+      {currentUser && <InjuryPanel userId={currentUser.id} />}
 
       {/* Acciones rápidas */}
       <div className="grid grid-cols-2 gap-3">

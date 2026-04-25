@@ -405,6 +405,9 @@ export default function Profile() {
         </CardContent>
       </Card>
 
+      {/* Lesiones */}
+      {currentUser && <InjuryPanel userId={currentUser.id} />}
+
       {/* Métricas calculadas */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card>
@@ -575,9 +578,6 @@ export default function Profile() {
           )}
         </CardContent>
       </Card>
-
-      {/* Lesiones */}
-      {currentUser && <InjuryPanel userId={currentUser.id} />}
 
       {/* Objetivos */}
       <Card className="mb-6">
