@@ -26,3 +26,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code local settings (may contain API keys / credentials)
+.claude/settings.local.json
+.claude/
