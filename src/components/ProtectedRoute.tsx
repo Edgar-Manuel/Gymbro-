@@ -22,9 +22,9 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Redirigir a login si no está autenticado
+  // Redirigir a landing si no está autenticado
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/landing" replace />;
   }
 
   // Renderizar contenido protegido
