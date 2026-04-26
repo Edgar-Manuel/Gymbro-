@@ -177,7 +177,7 @@ function Hero({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
       <div className="lp-parallax-blob" style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none', width:'600px', height:'600px', top:'-100px', left:'-150px', background: ac.hex, opacity:.07 }} />
       <div className="lp-parallax-blob" style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none', width:'400px', height:'400px', bottom:'-50px', right:'-100px', background:'#a855f7', opacity:.06 }} />
 
-      <div style={{ position:'relative', zIndex:2, textAlign:'center', padding:'0 24px', maxWidth:'1000px', margin:'0 auto' }}>
+      <div style={{ position:'relative', zIndex:2, textAlign:'center', padding:'0 20px', maxWidth:'1000px', width:'100%', margin:'0 auto', boxSizing:'border-box' as const }}>
         <div className="lp-fade-up" style={{ animationDelay:'.1s', marginBottom:'24px' }}>
           <span style={{ display:'inline-flex', alignItems:'center', gap:'8px', background: ac.dim, border:`1px solid ${ac.mid}`, color: ac.hex, padding:'6px 16px', borderRadius:'999px', fontSize:'13px', fontWeight:600, letterSpacing:'.5px', textTransform:'uppercase' as const }}>
             <span className="lp-glow-dot" style={{ width:'6px', height:'6px', borderRadius:'50%', background: ac.hex, display:'inline-block' }} />
@@ -185,33 +185,34 @@ function Hero({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
           </span>
         </div>
 
-        <h1 className="lp-fade-up" style={{ animationDelay:'.2s', fontFamily:"'Barlow Condensed',sans-serif", fontSize:'clamp(72px,14vw,160px)', lineHeight:.9, fontWeight:900, letterSpacing:'-2px', color: th.text, marginBottom:'12px', textTransform:'uppercase' as const }}>
+        <h1 className="lp-fade-up" style={{ animationDelay:'.2s', fontFamily:"'Barlow Condensed',sans-serif", fontSize:'clamp(64px,14vw,160px)', lineHeight:.9, fontWeight:900, letterSpacing:'-2px', color: th.text, marginBottom:'12px', textTransform:'uppercase' as const }}>
           {c.hero.line1}
         </h1>
-        <h1 className="lp-fade-up lp-gradient-text" style={{ animationDelay:'.3s', fontFamily:"'Barlow Condensed',sans-serif", fontSize:'clamp(72px,14vw,160px)', lineHeight:.9, fontWeight:900, letterSpacing:'-2px', marginBottom:'40px', textTransform:'uppercase' as const }}>
+        <h1 className="lp-fade-up lp-gradient-text" style={{ animationDelay:'.3s', fontFamily:"'Barlow Condensed',sans-serif", fontSize:'clamp(64px,14vw,160px)', lineHeight:.9, fontWeight:900, letterSpacing:'-2px', marginBottom:'32px', textTransform:'uppercase' as const }}>
           {c.hero.line2}
         </h1>
 
-        <p className="lp-fade-up" style={{ animationDelay:'.4s', fontSize:'clamp(16px,2.5vw,22px)', color: th.text2, maxWidth:'560px', margin:'0 auto 48px', lineHeight:1.6, fontWeight:400 }}>
+        <p className="lp-fade-up" style={{ animationDelay:'.4s', fontSize:'clamp(15px,2.5vw,22px)', color: th.text2, maxWidth:'560px', width:'100%', margin:'0 auto 36px', lineHeight:1.6, fontWeight:400 }}>
           {c.hero.sub}
         </p>
 
-        <div className="lp-fade-up" style={{ animationDelay:'.5s', display:'flex', gap:'16px', justifyContent:'center', flexWrap:'wrap' as const }}>
-          <Link to="/login" style={{ background: ac.hex, color:'#fff', padding:'16px 36px', borderRadius:'14px', fontWeight:700, fontSize:'16px', textDecoration:'none', boxShadow:`0 0 40px ${ac.mid}`, display:'inline-block', transition:'transform .2s, box-shadow .2s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='scale(1.04)'; }}
+        <div className="lp-fade-up" style={{ animationDelay:'.5s', display:'flex', flexDirection: isMobile ? 'column' : 'row' as const, gap:'12px', justifyContent:'center', alignItems:'stretch' }}>
+          <Link to="/login" style={{ background: ac.hex, color:'#fff', padding: isMobile ? '14px 20px' : '16px 36px', borderRadius:'14px', fontWeight:700, fontSize:'16px', textDecoration:'none', boxShadow:`0 0 40px ${ac.mid}`, textAlign:'center' as const, transition:'transform .2s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='scale(1.02)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform='scale(1)'; }}>
             {c.hero.cta}
           </Link>
-          <a href="https://github.com/Edgar-Manuel/Gymbro-" target="_blank" rel="noreferrer" style={{ background:'transparent', color: th.text, padding:'16px 36px', borderRadius:'14px', fontWeight:600, fontSize:'16px', textDecoration:'none', border:`1px solid ${th.borderMid}`, transition:'background .2s', display:'inline-block' }}
+          <a href="https://github.com/Edgar-Manuel/Gymbro-" target="_blank" rel="noreferrer"
+            style={{ background:'transparent', color: th.text, padding: isMobile ? '14px 20px' : '16px 36px', borderRadius:'14px', fontWeight:600, fontSize:'16px', textDecoration:'none', border:`1px solid ${th.borderMid}`, textAlign:'center' as const, transition:'background .2s' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = th.bg2; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
             {c.hero.cta2}
           </a>
         </div>
 
-        {/* Floating mock cards — desktop: absolutely positioned; mobile: horizontal scroll row */}
+        {/* Floating mock cards — desktop: absolutely positioned; mobile: horizontal scroll */}
         {isMobile ? (
-          <div style={{ marginTop:'40px', display:'flex', gap:'12px', overflowX:'auto', paddingBottom:'8px', scrollbarWidth:'none' as const }}>
+          <div style={{ marginTop:'36px', marginLeft:'-20px', marginRight:'-20px', display:'flex', gap:'12px', overflowX:'auto', paddingLeft:'20px', paddingRight:'20px', paddingBottom:'8px', scrollbarWidth:'none' as const }}>
             {/* Streak */}
             <div className="lp-float" style={{ flexShrink:0, background: th.bg2, border:`1px solid ${th.borderMid}`, borderRadius:'16px', padding:'14px 16px', minWidth:'150px', boxShadow:'0 12px 32px rgba(0,0,0,.4)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
