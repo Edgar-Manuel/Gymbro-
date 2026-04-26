@@ -73,6 +73,16 @@ const COPY = {
 };
 
 // ── Hooks ──────────────────────────────────────────────────────────────
+function useIsMobile() {
+  const [mob, setMob] = useState(() => window.innerWidth < 640);
+  useEffect(() => {
+    const fn = () => setMob(window.innerWidth < 640);
+    window.addEventListener('resize', fn);
+    return () => window.removeEventListener('resize', fn);
+  }, []);
+  return mob;
+}
+
 function useReveal() {
   useEffect(() => {
     const sel = '.lp-reveal,.lp-reveal-left,.lp-reveal-right,.lp-reveal-scale,.lp-reveal-tilt,.lp-reveal-tilt-r';
@@ -132,27 +142,28 @@ function Nav({ c, ac, th, lang, mode, setLang, setMode }: {
   setLang: (v: LangKey) => void; setMode: (v: ModeKey) => void;
 }) {
   const [scrolled, setScrolled] = useState(false);
+  const isMobile = useIsMobile();
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', fn);
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const btnStyle: CSSProperties = { background: th.bg3, border: `1px solid ${th.borderMid}`, color: th.text2, padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 };
+  const btnStyle: CSSProperties = { background: th.bg3, border: `1px solid ${th.borderMid}`, color: th.text2, padding: '6px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, flexShrink: 0 };
 
   return (
-    <nav style={{ position:'fixed', top:0, left:0, right:0, zIndex:100, padding:'0 24px', height:'64px', display:'flex', alignItems:'center', justifyContent:'space-between', background: scrolled ? th.bg2+'ee' : 'transparent', backdropFilter: scrolled ? 'blur(16px)' : 'none', borderBottom: scrolled ? `1px solid ${th.border}` : 'none', transition:'all .3s ease' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:'10px', fontFamily:"'Barlow Condensed',sans-serif", fontSize:'22px', fontWeight:900, letterSpacing:'.5px', color: th.text }}>
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+    <nav style={{ position:'fixed', top:0, left:0, right:0, zIndex:100, padding:'0 16px', height:'56px', display:'flex', alignItems:'center', justifyContent:'space-between', background: scrolled ? th.bg2+'ee' : 'transparent', backdropFilter: scrolled ? 'blur(16px)' : 'none', borderBottom: scrolled ? `1px solid ${th.border}` : 'none', transition:'all .3s ease' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:"'Barlow Condensed',sans-serif", fontSize:'20px', fontWeight:900, letterSpacing:'.5px', color: th.text, flexShrink:0 }}>
+        <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
           <rect width="28" height="28" rx="8" fill={ac.hex}/>
           <path d="M6 14h4M18 14h4M10 10v8M18 10v8M10 14h8" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
         </svg>
         GymBro
       </div>
-      <div style={{ display:'flex', gap:'10px', alignItems:'center' }}>
-        <button style={btnStyle} onClick={() => setLang(lang === 'es' ? 'en' : 'es')}>{lang === 'es' ? 'EN' : 'ES'}</button>
-        <button style={{ ...btnStyle, padding:'6px 10px', fontSize:'15px' }} onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')}>{mode === 'dark' ? '☀️' : '🌙'}</button>
-        <Link to="/login" style={{ background: ac.hex, color:'#fff', padding:'9px 20px', borderRadius:'10px', fontWeight:700, fontSize:'14px', textDecoration:'none', letterSpacing:'.3px' }}>{c.nav}</Link>
+      <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+        {!isMobile && <button style={btnStyle} onClick={() => setLang(lang === 'es' ? 'en' : 'es')}>{lang === 'es' ? 'EN' : 'ES'}</button>}
+        {!isMobile && <button style={{ ...btnStyle, fontSize:'15px' }} onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')}>{mode === 'dark' ? '☀️' : '🌙'}</button>}
+        <Link to="/login" style={{ background: ac.hex, color:'#fff', padding: isMobile ? '8px 16px' : '9px 20px', borderRadius:'10px', fontWeight:700, fontSize: isMobile ? '13px' : '14px', textDecoration:'none', letterSpacing:'.3px', whiteSpace:'nowrap' as const }}>{c.nav}</Link>
       </div>
     </nav>
   );
@@ -160,8 +171,9 @@ function Nav({ c, ac, th, lang, mode, setLang, setMode }: {
 
 // ── Hero ───────────────────────────────────────────────────────────────
 function Hero({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
+  const isMobile = useIsMobile();
   return (
-    <section className="lp-grid-bg" style={{ position:'relative', minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', paddingTop:'80px' }}>
+    <section className="lp-grid-bg" style={{ position:'relative', minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', paddingTop:'56px' }}>
       <div className="lp-parallax-blob" style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none', width:'600px', height:'600px', top:'-100px', left:'-150px', background: ac.hex, opacity:.07 }} />
       <div className="lp-parallax-blob" style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none', width:'400px', height:'400px', bottom:'-50px', right:'-100px', background:'#a855f7', opacity:.06 }} />
 
@@ -197,37 +209,70 @@ function Hero({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
           </a>
         </div>
 
-        {/* Floating mock cards */}
-        <div style={{ marginTop:'80px', position:'relative', height:'280px' }}>
-          {/* Streak card */}
-          <div className="lp-float" style={{ position:'absolute', left:'50%', top:'0', transform:'translateX(-50%) rotate(-3deg)', background: th.bg2, border:`1px solid ${th.borderMid}`, borderRadius:'18px', padding:'16px 20px', width:'200px', boxShadow:'0 20px 60px rgba(0,0,0,.4)', marginLeft:'-160px' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
-              <span style={{ fontSize:'20px' }}>🔥</span>
-              <span style={{ fontSize:'12px', fontWeight:600, color: th.text2, letterSpacing:'.5px', textTransform:'uppercase' as const }}>Racha actual</span>
+        {/* Floating mock cards — desktop: absolutely positioned; mobile: horizontal scroll row */}
+        {isMobile ? (
+          <div style={{ marginTop:'40px', display:'flex', gap:'12px', overflowX:'auto', paddingBottom:'8px', WebkitOverflowScrolling:'touch' as unknown as string, scrollbarWidth:'none' as const }}>
+            {/* Streak */}
+            <div className="lp-float" style={{ flexShrink:0, background: th.bg2, border:`1px solid ${th.borderMid}`, borderRadius:'16px', padding:'14px 16px', minWidth:'150px', boxShadow:'0 12px 32px rgba(0,0,0,.4)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
+                <span style={{ fontSize:'16px' }}>🔥</span>
+                <span style={{ fontSize:'10px', fontWeight:600, color: th.text2, letterSpacing:'.5px', textTransform:'uppercase' as const }}>Racha</span>
+              </div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:'40px', fontWeight:900, color: ac.hex, lineHeight:1 }}>14</div>
+              <div style={{ fontSize:'10px', color: th.text2, marginTop:'2px' }}>días seguidos</div>
             </div>
-            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:'52px', fontWeight:900, color: ac.hex, lineHeight:1 }}>14</div>
-            <div style={{ fontSize:'11px', color: th.text2, marginTop:'4px' }}>días seguidos</div>
-          </div>
-          {/* Weekly timeline */}
-          <div className="lp-float2" style={{ position:'absolute', left:'50%', top:'20px', transform:'translateX(-50%) rotate(2deg)', background: th.bg2, border:`1px solid ${th.borderMid}`, borderRadius:'18px', padding:'16px 20px', width:'260px', boxShadow:'0 20px 60px rgba(0,0,0,.4)', marginLeft:'60px' }}>
-            <div style={{ fontSize:'12px', fontWeight:600, color: th.text2, marginBottom:'10px', letterSpacing:'.5px', textTransform:'uppercase' as const }}>Esta semana</div>
-            <div style={{ display:'flex', gap:'6px', justifyContent:'space-between' }}>
-              {['L','M','X','J','V','S','D'].map((d, i) => (
-                <div key={d} style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:'10px', color: i===3 ? ac.hex : th.text2, marginBottom:'4px', fontWeight:600 }}>{d}</div>
-                  <div style={{ width:'28px', height:'28px', borderRadius:'8px', background: i<3 ? ac.dim : i===3 ? ac.mid : th.bg3, border: i===3 ? `2px solid ${ac.hex}` : `1px solid ${th.border}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px' }}>
-                    {i < 3 ? '✓' : i === 3 ? '→' : ''}
+            {/* Timeline */}
+            <div className="lp-float2" style={{ flexShrink:0, background: th.bg2, border:`1px solid ${th.borderMid}`, borderRadius:'16px', padding:'14px 16px', minWidth:'220px', boxShadow:'0 12px 32px rgba(0,0,0,.4)' }}>
+              <div style={{ fontSize:'10px', fontWeight:600, color: th.text2, marginBottom:'8px', letterSpacing:'.5px', textTransform:'uppercase' as const }}>Esta semana</div>
+              <div style={{ display:'flex', gap:'5px' }}>
+                {['L','M','X','J','V','S','D'].map((d, i) => (
+                  <div key={d} style={{ textAlign:'center' }}>
+                    <div style={{ fontSize:'9px', color: i===3 ? ac.hex : th.text2, marginBottom:'3px', fontWeight:600 }}>{d}</div>
+                    <div style={{ width:'24px', height:'24px', borderRadius:'6px', background: i<3 ? ac.dim : i===3 ? ac.mid : th.bg3, border: i===3 ? `2px solid ${ac.hex}` : `1px solid ${th.border}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px' }}>
+                      {i < 3 ? '✓' : i === 3 ? '→' : ''}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+            {/* Volume */}
+            <div className="lp-float" style={{ animationDelay:'1s', flexShrink:0, background: th.bg2, border:`1px solid ${th.borderMid}`, borderRadius:'16px', padding:'14px 16px', minWidth:'130px', boxShadow:'0 12px 32px rgba(0,0,0,.4)' }}>
+              <div style={{ fontSize:'10px', color: th.text2, marginBottom:'4px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'.5px' }}>Volumen mes</div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:'30px', fontWeight:900, color: th.text, lineHeight:1 }}>8.4<span style={{ fontSize:'14px', color: th.text2 }}>t</span></div>
             </div>
           </div>
-          {/* Volume card */}
-          <div className="lp-float" style={{ animationDelay:'1s', position:'absolute', bottom:'0', left:'50%', transform:'translateX(-50%) rotate(1deg)', background: th.bg2, border:`1px solid ${th.borderMid}`, borderRadius:'18px', padding:'14px 18px', width:'170px', boxShadow:'0 20px 60px rgba(0,0,0,.4)', marginLeft:'-200px' }}>
-            <div style={{ fontSize:'11px', color: th.text2, marginBottom:'4px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'.5px' }}>Volumen mes</div>
-            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:'36px', fontWeight:900, color: th.text, lineHeight:1 }}>8.4<span style={{ fontSize:'18px', color: th.text2 }}>t</span></div>
+        ) : (
+          <div style={{ marginTop:'80px', position:'relative', height:'280px' }}>
+            {/* Streak card */}
+            <div className="lp-float" style={{ position:'absolute', left:'50%', top:'0', transform:'translateX(-50%) rotate(-3deg)', background: th.bg2, border:`1px solid ${th.borderMid}`, borderRadius:'18px', padding:'16px 20px', width:'200px', boxShadow:'0 20px 60px rgba(0,0,0,.4)', marginLeft:'-160px' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
+                <span style={{ fontSize:'20px' }}>🔥</span>
+                <span style={{ fontSize:'12px', fontWeight:600, color: th.text2, letterSpacing:'.5px', textTransform:'uppercase' as const }}>Racha actual</span>
+              </div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:'52px', fontWeight:900, color: ac.hex, lineHeight:1 }}>14</div>
+              <div style={{ fontSize:'11px', color: th.text2, marginTop:'4px' }}>días seguidos</div>
+            </div>
+            {/* Weekly timeline */}
+            <div className="lp-float2" style={{ position:'absolute', left:'50%', top:'20px', transform:'translateX(-50%) rotate(2deg)', background: th.bg2, border:`1px solid ${th.borderMid}`, borderRadius:'18px', padding:'16px 20px', width:'260px', boxShadow:'0 20px 60px rgba(0,0,0,.4)', marginLeft:'60px' }}>
+              <div style={{ fontSize:'12px', fontWeight:600, color: th.text2, marginBottom:'10px', letterSpacing:'.5px', textTransform:'uppercase' as const }}>Esta semana</div>
+              <div style={{ display:'flex', gap:'6px', justifyContent:'space-between' }}>
+                {['L','M','X','J','V','S','D'].map((d, i) => (
+                  <div key={d} style={{ textAlign:'center' }}>
+                    <div style={{ fontSize:'10px', color: i===3 ? ac.hex : th.text2, marginBottom:'4px', fontWeight:600 }}>{d}</div>
+                    <div style={{ width:'28px', height:'28px', borderRadius:'8px', background: i<3 ? ac.dim : i===3 ? ac.mid : th.bg3, border: i===3 ? `2px solid ${ac.hex}` : `1px solid ${th.border}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px' }}>
+                      {i < 3 ? '✓' : i === 3 ? '→' : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Volume card */}
+            <div className="lp-float" style={{ animationDelay:'1s', position:'absolute', bottom:'0', left:'50%', transform:'translateX(-50%) rotate(1deg)', background: th.bg2, border:`1px solid ${th.borderMid}`, borderRadius:'18px', padding:'14px 18px', width:'170px', boxShadow:'0 20px 60px rgba(0,0,0,.4)', marginLeft:'-200px' }}>
+              <div style={{ fontSize:'11px', color: th.text2, marginBottom:'4px', fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'.5px' }}>Volumen mes</div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:'36px', fontWeight:900, color: th.text, lineHeight:1 }}>8.4<span style={{ fontSize:'18px', color: th.text2 }}>t</span></div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div style={{ position:'absolute', bottom:'32px', left:'50%', transform:'translateX(-50%)', color: th.text2, fontSize:'12px', letterSpacing:'2px', textTransform:'uppercase' as const, display:'flex', flexDirection:'column' as const, alignItems:'center', gap:'8px' }}>
@@ -288,8 +333,9 @@ function Features({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
 
 // ── WorkoutSection ─────────────────────────────────────────────────────
 function WorkoutSection({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
+  const isMobile = useIsMobile();
   return (
-    <section style={{ padding:'120px 24px', background: th.bg2, position:'relative', overflow:'hidden' }}>
+    <section style={{ padding: isMobile ? '60px 20px' : '120px 24px', background: th.bg2, position:'relative', overflow:'hidden' }}>
       <div className="lp-parallax-blob" style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none', width:'600px', height:'600px', top:'-100px', left:'-200px', background: ac.hex, opacity:.06 }} />
       <div style={{ maxWidth:'1100px', margin:'0 auto', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:'80px', alignItems:'center', position:'relative', zIndex:1 }}>
         {/* Phone mock */}
@@ -349,6 +395,7 @@ function WorkoutSection({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
 
 // ── RoutineSection ─────────────────────────────────────────────────────
 function RoutineSection({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
+  const isMobile = useIsMobile();
   const days = ['Push','Pull','Legs','Upper','Lower'];
   const exs = [
     { name:'Press Banca',  tier:'S', sets:'4×8-10' },
@@ -356,9 +403,9 @@ function RoutineSection({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
     { name:'Press Militar',tier:'A', sets:'3×10-12' },
   ];
   return (
-    <section style={{ padding:'120px 24px', position:'relative', overflow:'hidden' }}>
+    <section style={{ padding: isMobile ? '60px 20px' : '120px 24px', position:'relative', overflow:'hidden' }}>
       <div className="lp-parallax-blob" style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none', width:'500px', height:'500px', bottom:'-100px', right:'-100px', background:'#a855f7', opacity:.07 }} />
-      <div style={{ maxWidth:'1100px', margin:'0 auto', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:'80px', alignItems:'center', position:'relative', zIndex:1 }}>
+      <div style={{ maxWidth:'1100px', margin:'0 auto', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap: isMobile ? '40px' : '80px', alignItems:'center', position:'relative', zIndex:1 }}>
         {/* Text */}
         <div className="lp-reveal-right">
           <div style={{ fontSize:'12px', fontWeight:700, letterSpacing:'3px', textTransform:'uppercase' as const, color: ac.hex, marginBottom:'20px' }}>{c.rtEyebrow}</div>
@@ -416,10 +463,11 @@ function RoutineSection({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
 
 // ── FreeSection ────────────────────────────────────────────────────────
 function FreeSection({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
+  const isMobile = useIsMobile();
   return (
-    <section style={{ padding:'120px 24px', position:'relative', overflow:'hidden' }}>
+    <section style={{ padding: isMobile ? '60px 16px' : '120px 24px', position:'relative', overflow:'hidden' }}>
       <div style={{ maxWidth:'1100px', margin:'0 auto', position:'relative', zIndex:1 }}>
-        <div className="lp-reveal-scale" style={{ background:`linear-gradient(135deg,${th.bg2} 0%,${th.bg3} 100%)`, border:`1px solid ${th.borderMid}`, borderRadius:'32px', padding:'80px 60px', textAlign:'center', position:'relative', overflow:'hidden' }}>
+        <div className="lp-reveal-scale" style={{ background:`linear-gradient(135deg,${th.bg2} 0%,${th.bg3} 100%)`, border:`1px solid ${th.borderMid}`, borderRadius: isMobile ? '20px' : '32px', padding: isMobile ? '48px 24px' : '80px 60px', textAlign:'center', position:'relative', overflow:'hidden' }}>
           <div className="lp-parallax-blob" style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none', width:'400px', height:'400px', top:'-100px', left:'50%', transform:'translateX(-50%)', background: ac.hex, opacity:.07 }} />
           <div style={{ position:'relative', zIndex:1 }}>
             <div style={{ fontSize:'12px', fontWeight:700, letterSpacing:'3px', textTransform:'uppercase' as const, color: ac.hex, marginBottom:'20px' }}>{c.frEyebrow}</div>
@@ -443,8 +491,9 @@ function FreeSection({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
 
 // ── FinalCTA ───────────────────────────────────────────────────────────
 function FinalCTA({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
+  const isMobile = useIsMobile();
   return (
-    <section className="lp-grid-bg" style={{ padding:'140px 24px', position:'relative', overflow:'hidden', textAlign:'center' }}>
+    <section className="lp-grid-bg" style={{ padding: isMobile ? '80px 20px' : '140px 24px', position:'relative', overflow:'hidden', textAlign:'center' }}>
       <div className="lp-parallax-blob" style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none', width:'700px', height:'700px', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background: ac.hex, opacity:.06 }} />
       <div className="lp-reveal-scale" style={{ position:'relative', zIndex:1 }}>
         <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:'clamp(64px,13vw,150px)', fontWeight:900, lineHeight:.9, textTransform:'uppercase' as const, marginBottom:0 }}>
@@ -474,11 +523,10 @@ function Footer({ c, th }: { c: typeof COPY.es; th: Th }) {
 
 // ── Main export ────────────────────────────────────────────────────────
 export default function LandingPage() {
-  const [accent, setAccent] = useState<AccentKey>('blue');
-  const [mode,   setMode]   = useState<ModeKey>('dark');
-  const [lang,   setLang]   = useState<LangKey>('es');
+  const [mode, setMode] = useState<ModeKey>('dark');
+  const [lang, setLang] = useState<LangKey>('es');
 
-  const ac = ACCENTS[accent];
+  const ac = ACCENTS['blue'];
   const th = THEMES[mode];
   const c  = COPY[lang];
 
@@ -496,14 +544,6 @@ export default function LandingPage() {
       <FreeSection     c={c} ac={ac} th={th} />
       <FinalCTA        c={c} ac={ac} th={th} />
       <Footer          c={c} th={th} />
-
-      {/* Accent color picker (bottom-right) */}
-      <div style={{ position:'fixed', bottom:'24px', right:'24px', zIndex:200, display:'flex', flexDirection:'column' as const, gap:'8px', alignItems:'center' }}>
-        {(Object.keys(ACCENTS) as AccentKey[]).map(k => (
-          <button key={k} onClick={() => setAccent(k)}
-            style={{ width:'20px', height:'20px', borderRadius:'50%', border: accent===k ? `2px solid ${th.text}` : '2px solid transparent', background: ACCENTS[k].hex, cursor:'pointer', padding:0, transition:'transform .15s', transform: accent===k ? 'scale(1.25)' : 'scale(1)' }} />
-        ))}
-      </div>
     </div>
   );
 }
