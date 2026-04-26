@@ -211,7 +211,7 @@ function Hero({ c, ac, th }: { c: typeof COPY.es; ac: Ac; th: Th }) {
 
         {/* Floating mock cards — desktop: absolutely positioned; mobile: horizontal scroll row */}
         {isMobile ? (
-          <div style={{ marginTop:'40px', display:'flex', gap:'12px', overflowX:'auto', paddingBottom:'8px', WebkitOverflowScrolling:'touch' as unknown as string, scrollbarWidth:'none' as const }}>
+          <div style={{ marginTop:'40px', display:'flex', gap:'12px', overflowX:'auto', paddingBottom:'8px', scrollbarWidth:'none' as const }}>
             {/* Streak */}
             <div className="lp-float" style={{ flexShrink:0, background: th.bg2, border:`1px solid ${th.borderMid}`, borderRadius:'16px', padding:'14px 16px', minWidth:'150px', boxShadow:'0 12px 32px rgba(0,0,0,.4)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
