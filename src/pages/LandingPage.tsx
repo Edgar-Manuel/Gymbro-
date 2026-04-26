@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, CSSProperties } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 
 type AccentKey = 'blue' | 'green' | 'orange' | 'violet';
