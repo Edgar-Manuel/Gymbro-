@@ -6,6 +6,7 @@ import { useAppStore } from '@/store';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
+import LandingPage from '@/pages/LandingPage';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import Dashboard from '@/pages/Dashboard';
@@ -77,6 +78,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           {/* Rutas públicas */}
+          <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/split/:slug" element={<SharedRoutineView />} />
