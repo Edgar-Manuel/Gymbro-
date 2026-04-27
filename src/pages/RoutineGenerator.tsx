@@ -9,9 +9,11 @@ import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
 import { generarRutinaPersonalizada, obtenerResumenRutina, SPLITS_CONFIG } from '@/utils/routineGenerator';
 import type { RutinaSemanal, ExerciseKnowledge } from '@/types';
+import type { FullWRoutine } from '@/data/fullwRoutines';
 import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check } from 'lucide-react';
 import ShareRoutineButton from '@/components/ShareRoutineButton';
 import FullWRoutineView from '@/components/training/FullWRoutineView';
+import { fullWToRutinaSemanal } from '@/utils/fullwConverter';
 
 type ModoEntrenamiento = 'basico' | 'fullw';
 
@@ -63,12 +65,17 @@ export default function RoutineGenerator() {
     try {
       await dbHelpers.createRoutine(generatedRoutine);
       setActiveRoutine(generatedRoutine);
-
-      // Navegar al dashboard
       navigate('/');
     } catch (error) {
       console.error('Error guardando rutina:', error);
     }
+  };
+
+  // Convierte la plantilla Full W a RutinaSemanal y la manda a la vista de previsualización
+  const handleUseFullW = (fullwRutina: FullWRoutine) => {
+    if (!currentUser) return;
+    const rutinaSemanal = fullWToRutinaSemanal(fullwRutina, currentUser.id);
+    setGeneratedRoutine(rutinaSemanal);
   };
 
   if (!currentUser) {
@@ -124,7 +131,7 @@ export default function RoutineGenerator() {
       </div>
 
       {/* ── Modo Full W ── */}
-      {modo === 'fullw' && <FullWRoutineView />}
+      {modo === 'fullw' && !generatedRoutine && <FullWRoutineView onUseRoutine={handleUseFullW} />}
 
       {/* ── Modo Básico IA ── */}
       {modo === 'basico' && (!generatedRoutine ? (
@@ -419,7 +426,7 @@ export default function RoutineGenerator() {
               onClick={() => setGeneratedRoutine(null)}
               className="flex-1"
             >
-              Generar Otra
+              {modo === 'fullw' ? 'Elegir otra plantilla' : 'Generar Otra'}
             </Button>
             <Button
               onClick={handleSaveRoutine}

@@ -5,9 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FULLW_ROUTINES, PROGRESION_SEMANAL } from '@/data/fullwRoutines';
 import type { FullWRoutine } from '@/data/fullwRoutines';
-import { ChevronDown, ChevronUp, Dumbbell, Calendar, TrendingUp, Clock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Dumbbell, Calendar, TrendingUp, Clock, ArrowRight } from 'lucide-react';
 
-export default function FullWRoutineView() {
+interface Props {
+  onUseRoutine: (rutina: FullWRoutine) => void;
+}
+
+export default function FullWRoutineView({ onUseRoutine }: Props) {
   const [dias, setDias] = useState<number>(4);
   const [openDay, setOpenDay] = useState<number | null>(0);
   const [semana, setSemana] = useState<number>(1);
@@ -165,12 +169,14 @@ export default function FullWRoutineView() {
         </CardContent>
       </Card>
 
+      {/* CTA principal */}
       <Button
-        variant="outline"
+        size="lg"
         className="w-full"
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        onClick={() => onUseRoutine(rutina)}
       >
-        Usar IA Básica en su lugar ↑
+        Usar esta Rutina Full W
+        <ArrowRight className="w-4 h-4 ml-2" />
       </Button>
     </div>
   );
