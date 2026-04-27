@@ -145,11 +145,11 @@ export default function RoutineGenerator() {
         </button>
       </div>
 
-      {/* ── Modo Full W ── */}
+      {/* ── Modo Full W: selector de plantilla ── */}
       {modo === 'fullw' && !generatedRoutine && <FullWRoutineView onUseRoutine={handleUseFullW} />}
 
-      {/* ── Modo Básico IA ── */}
-      {modo === 'basico' && (!generatedRoutine ? (
+      {/* ── Modo Básico IA: formulario ── */}
+      {modo === 'basico' && !generatedRoutine && (
         // Formulario de generación
         <>
           <div className="mb-8">
@@ -324,8 +324,10 @@ export default function RoutineGenerator() {
             </CardContent>
           </Card>
         </>
-      ) : (
-        // Vista previa de rutina generada
+      )}
+
+      {/* ── Previsualización (ambos modos) ── */}
+      {generatedRoutine && (
         <>
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2 flex items-center gap-2">
@@ -460,7 +462,7 @@ export default function RoutineGenerator() {
             )}
           </div>
         </>
-      ))}
+      )}
     </div>
   );
 }
