@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Cloud, CloudOff, RefreshCw } from 'lucide-react';
+import { Cloud, CloudOff, RefreshCw, AlertCircle } from 'lucide-react';
 import { dbHelpers } from '@/db';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -8,6 +8,7 @@ export function SyncIndicator() {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [pendingCount, setPendingCount] = useState(0);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [syncError, setSyncError] = useState(false);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -35,10 +36,16 @@ export function SyncIndicator() {
     const handleSync = async () => {
         if (!isOnline) return;
         setIsSyncing(true);
+        setSyncError(false);
         try {
-            await dbHelpers.sync();
+            const result = await dbHelpers.sync();
             const count = await dbHelpers.getPendingSyncCount();
             setPendingCount(count);
+            if (result && result.failed > 0 && result.synced === 0) {
+                setSyncError(true);
+            }
+        } catch {
+            setSyncError(true);
         } finally {
             setIsSyncing(false);
         }
@@ -66,6 +73,23 @@ export function SyncIndicator() {
             <Button variant="ghost" size="icon" disabled>
                 <RefreshCw className="h-5 w-5 animate-spin" />
             </Button>
+        );
+    }
+
+    if (syncError) {
+        return (
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={handleSync} className="text-destructive relative">
+                            <AlertCircle className="h-5 w-5" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Error al sincronizar. Comprueba tu conexión o vuelve a intentarlo.</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
         );
     }
 

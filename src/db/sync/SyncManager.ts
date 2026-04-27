@@ -9,10 +9,12 @@ import { appwriteDbHelpers } from '../appwriteDb';
 import { db } from '../schema';
 
 export const SyncManager = {
-    async syncAll() {
-        if (!navigator.onLine) return;
+    async syncAll(): Promise<{ synced: number; failed: number }> {
+        if (!navigator.onLine) return { synced: 0, failed: 0 };
 
         console.log('[Sync] Starting background sync...');
+        let synced = 0;
+        let failed = 0;
 
         // ── Users ─────────────────────────────────────────────────────────────
         const pendingUsers = await UserRepository.getPendingSync();
@@ -20,7 +22,8 @@ export const SyncManager = {
             try {
                 await appwriteDbHelpers.createOrUpdateUser(user);
                 await db.users.update(user.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] user error', e); }
+                synced++;
+            } catch (e) { console.error('[Sync] user error', e); failed++; }
         }
 
         // ── Routines ──────────────────────────────────────────────────────────
@@ -37,7 +40,8 @@ export const SyncManager = {
                     await appwriteDbHelpers.updateRoutine(routine);
                 }
                 await db.rutinas.update(routine.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] routine error', e); }
+                synced++;
+            } catch (e) { console.error('[Sync] routine error', e); failed++; }
         }
 
         // ── Workouts ──────────────────────────────────────────────────────────
@@ -54,7 +58,8 @@ export const SyncManager = {
                     await appwriteDbHelpers.updateWorkout(workout.id, workout);
                 }
                 await db.workouts.update(workout.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] workout error', e); }
+                synced++;
+            } catch (e) { console.error('[Sync] workout error', e); failed++; }
         }
 
         // ── Statistics ────────────────────────────────────────────────────────
@@ -63,7 +68,8 @@ export const SyncManager = {
             try {
                 await appwriteDbHelpers.updateStatistics(stat);
                 await db.statistics.update(stat.userId, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] stats error', e); }
+                synced++;
+            } catch (e) { console.error('[Sync] stats error', e); failed++; }
         }
 
         // ── Body Measurements ─────────────────────────────────────────────────
@@ -78,7 +84,8 @@ export const SyncManager = {
                     }
                 }
                 await db.bodyMeasurements.update(m.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] measurement error', e); }
+                synced++;
+            } catch (e) { console.error('[Sync] measurement error', e); failed++; }
         }
 
         // ── Progress Photos ───────────────────────────────────────────────────
@@ -93,7 +100,8 @@ export const SyncManager = {
                     }
                 }
                 await db.progressPhotos.update(photo.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] photo error', e); }
+                synced++;
+            } catch (e) { console.error('[Sync] photo error', e); failed++; }
         }
 
         // ── Achievements ──────────────────────────────────────────────────────
@@ -108,7 +116,8 @@ export const SyncManager = {
                     if ((err as { code?: number }).code !== 409) throw err;
                 }
                 await db.achievements.update(ach.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] achievement error', e); }
+                synced++;
+            } catch (e) { console.error('[Sync] achievement error', e); failed++; }
         }
 
         // ── Lesiones ──────────────────────────────────────────────────────────
@@ -125,7 +134,8 @@ export const SyncManager = {
                     await appwriteDbHelpers.updateLesion(lesion);
                 }
                 await db.lesiones.update(lesion.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] lesion error', e); }
+                synced++;
+            } catch (e) { console.error('[Sync] lesion error', e); failed++; }
         }
 
         // ── Cardio Sessions ───────────────────────────────────────────────────
@@ -142,10 +152,12 @@ export const SyncManager = {
                     await appwriteDbHelpers.updateCardioSession(session);
                 }
                 await db.cardioSessions.update(session.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] cardio error', e); }
+                synced++;
+            } catch (e) { console.error('[Sync] cardio error', e); failed++; }
         }
 
-        console.log('[Sync] Complete');
+        console.log(`[Sync] Complete — synced: ${synced}, failed: ${failed}`);
+        return { synced, failed };
     },
 
     getPendingCount: async () => {
