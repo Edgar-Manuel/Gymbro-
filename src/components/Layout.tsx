@@ -14,7 +14,8 @@ import {
   X,
   Utensils,
   GraduationCap,
-  LogOut
+  LogOut,
+  CheckSquare
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -44,6 +45,7 @@ export default function Layout() {
     { path: '/progress', label: 'Progreso', icon: TrendingUp },
     { path: '/education', label: 'Educación', icon: GraduationCap },
     { path: '/nutrition', label: 'Nutrición', icon: Utensils },
+    { path: '/habits', label: 'Hábitos', icon: CheckSquare },
     { path: '/profile', label: 'Perfil', icon: User },
   ];
 

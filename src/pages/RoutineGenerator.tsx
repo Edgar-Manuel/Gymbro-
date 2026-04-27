@@ -11,11 +11,15 @@ import { generarRutinaPersonalizada, obtenerResumenRutina, SPLITS_CONFIG } from 
 import type { RutinaSemanal, ExerciseKnowledge } from '@/types';
 import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check } from 'lucide-react';
 import ShareRoutineButton from '@/components/ShareRoutineButton';
+import FullWRoutineView from '@/components/training/FullWRoutineView';
+
+type ModoEntrenamiento = 'basico' | 'fullw';
 
 export default function RoutineGenerator() {
   const navigate = useNavigate();
   const { currentUser, setActiveRoutine } = useAppStore();
 
+  const [modo, setModo] = useState<ModoEntrenamiento>('basico');
   const [exercises, setExercises] = useState<ExerciseKnowledge[]>([]);
   const [generatedRoutine, setGeneratedRoutine] = useState<RutinaSemanal | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -92,7 +96,38 @@ export default function RoutineGenerator() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-4xl">
-      {!generatedRoutine ? (
+
+      {/* ── Selector de modo ── */}
+      <div className="flex gap-2 mb-6 p-1 bg-muted rounded-xl">
+        <button
+          onClick={() => setModo('basico')}
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+            modo === 'basico'
+              ? 'bg-background shadow text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 inline mr-1.5" />
+          Básico IA
+        </button>
+        <button
+          onClick={() => setModo('fullw')}
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+            modo === 'fullw'
+              ? 'bg-background shadow text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Dumbbell className="w-4 h-4 inline mr-1.5" />
+          Full W
+        </button>
+      </div>
+
+      {/* ── Modo Full W ── */}
+      {modo === 'fullw' && <FullWRoutineView />}
+
+      {/* ── Modo Básico IA ── */}
+      {modo === 'basico' && (!generatedRoutine ? (
         // Formulario de generación
         <>
           <div className="mb-8">
@@ -403,7 +438,7 @@ export default function RoutineGenerator() {
             )}
           </div>
         </>
-      )}
+      ))}
     </div>
   );
 }

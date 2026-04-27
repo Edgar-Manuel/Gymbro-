@@ -14,6 +14,7 @@ import {
 } from '@/utils/nutritionCalculator';
 import type { Somatotipo, Objetivo } from '@/types';
 import SomatotipoImage from '@/components/SomatotipoImage';
+import MacroPlannerFullW from '@/components/nutrition/MacroPlannerFullW';
 
 type DayType = 'entrenamiento' | 'descanso';
 
@@ -122,6 +123,16 @@ export default function Nutrition() {
           Plan adaptado para {somatotipoCapitalizado} - {currentUser?.nombre || 'Usuario'} ({peso}kg, {altura}cm)
         </p>
       </div>
+
+      {/* ── NUEVO: Planificador Full W + barras de progreso ── */}
+      <MacroPlannerFullW
+        peso={peso}
+        altura={altura}
+        edad={edad}
+        sexo={sexo}
+        objetivoCalorico={objetivoCalorico}
+        factorActividad={factorActividadEntreno}
+      />
 
       {/* Informacion del perfil nutricional */}
       <Card className="mb-6 border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30">

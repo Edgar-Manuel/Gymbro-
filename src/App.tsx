@@ -19,6 +19,7 @@ import Progress from '@/pages/Progress';
 import Education from '@/pages/Education';
 import Nutrition from '@/pages/Nutrition';
 import Profile from '@/pages/Profile';
+import HabitsTracker from '@/pages/HabitsTracker';
 import SharedRoutineView from '@/pages/SharedRoutineView';
 import WorkoutDetail from '@/pages/WorkoutDetail';
 import { Dumbbell } from 'lucide-react';
@@ -102,6 +103,7 @@ function App() {
             <Route path="progress" element={<Progress />} />
             <Route path="education" element={<Education />} />
             <Route path="nutrition" element={<Nutrition />} />
+            <Route path="habits" element={<HabitsTracker />} />
             <Route path="profile" element={<Profile />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

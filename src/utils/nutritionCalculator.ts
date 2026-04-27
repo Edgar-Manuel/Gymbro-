@@ -195,6 +195,39 @@ export function calcularTDEE(
   return Math.round(bmr * factorActividad);
 }
 
+export interface MacrosFullW {
+  calorias: number;
+  proteina: number;  // g
+  grasa: number;     // g
+  carbs: number;     // g
+  superavitDeficit: number;
+}
+
+/**
+ * Fórmula Full W: Proteína=2g/kg, Grasa=0.8g/kg, Carbos=resto, ±300kcal ajuste
+ */
+export function calcularMacrosFullW(
+  peso: number,
+  altura: number,
+  edad: number,
+  sexo: 'masculino' | 'femenino' = 'masculino',
+  objetivoCalorico: ObjetivoCalorico = 'superavit',
+  factorActividad: number = 1.55
+): MacrosFullW {
+  const bmr = calcularBMR(peso, altura, edad, sexo);
+  const tdee = calcularTDEE(bmr, factorActividad);
+
+  const ajuste = objetivoCalorico === 'superavit' ? 300 : objetivoCalorico === 'deficit' ? -300 : 0;
+  const calorias = tdee + ajuste;
+
+  const proteina = Math.round(peso * 2);
+  const grasa    = Math.round(peso * 0.8);
+  const carbsCal = calorias - proteina * 4 - grasa * 9;
+  const carbs    = Math.max(0, Math.round(carbsCal / 4));
+
+  return { calorias, proteina, grasa, carbs, superavitDeficit: ajuste };
+}
+
 /**
  * Calcular plan nutricional completo
  */
