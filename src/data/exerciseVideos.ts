@@ -719,6 +719,46 @@ export const exerciseVideos: ExerciseVideo[] = [
     category: 'piernas',
     relatedExercises: ['sentadilla-barra', 'zancadas'],
   },
+  {
+    id: 'no-olvides-esto-al-entrenar-biceps',
+    title: 'No olvides esto al entrenar BÍCEPS',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=lkJuCyrex38'),
+    url: 'https://www.youtube.com/watch?v=lkJuCyrex38',
+    category: 'general',
+    relatedExercises: [],
+  },
+  {
+    id: 'asi-se-entrena-el-biceps',
+    title: 'Así se entrena el Bíceps',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=jqc-m3ewPL8'),
+    url: 'https://www.youtube.com/watch?v=jqc-m3ewPL8',
+    category: 'general',
+    relatedExercises: [],
+  },
+  {
+    id: 'la-forma-correcta-de-entrenar-el-biceps',
+    title: 'La forma correcta de entrenar el Bíceps',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=3Qwpa0Jrvss'),
+    url: 'https://www.youtube.com/watch?v=3Qwpa0Jrvss',
+    category: 'general',
+    relatedExercises: [],
+  },
+  {
+    id: 'rutina-de-pierna-minimalista-',
+    title: 'Rutina de Pierna MINIMALISTA 💪',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=fzgKccVPipw'),
+    url: 'https://www.youtube.com/watch?v=fzgKccVPipw',
+    category: 'piernas',
+    relatedExercises: [],
+  },
+  {
+    id: 'rutina-de-pierna-minimalista-',
+    title: 'Rutina de Pierna MINIMALISTA 💪',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=zxX9V7hgRec'),
+    url: 'https://www.youtube.com/watch?v=zxX9V7hgRec',
+    category: 'piernas',
+    relatedExercises: [],
+  },
 ];
 
 // Helper functions

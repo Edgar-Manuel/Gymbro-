@@ -192,3 +192,9 @@ A continuación, se presenta la lista completa de **28 videos** del canal de You
 | Así crece tu Bíceps | general | [Ver Video](https://www.youtube.com/watch?v=PGlBK6u0Wlc) |
 | Rutina de Pierna MINIMALISTA 💪 | piernas | [Ver Video](https://www.youtube.com/watch?v=8Al4TSaG29k) |
 | Rutina de Pierna MINIMALISTA 💪 | piernas | [Ver Video](https://www.youtube.com/watch?v=fzgKccVPipw) |
+
+| No olvides esto al entrenar BÍCEPS | general | [Ver Video](https://www.youtube.com/watch?v=lkJuCyrex38) |
+| Así se entrena el Bíceps | general | [Ver Video](https://www.youtube.com/watch?v=jqc-m3ewPL8) |
+| La forma correcta de entrenar el Bíceps | general | [Ver Video](https://www.youtube.com/watch?v=3Qwpa0Jrvss) |
+| Rutina de Pierna MINIMALISTA 💪 | piernas | [Ver Video](https://www.youtube.com/watch?v=fzgKccVPipw) |
+| Rutina de Pierna MINIMALISTA 💪 | piernas | [Ver Video](https://www.youtube.com/watch?v=zxX9V7hgRec) |
