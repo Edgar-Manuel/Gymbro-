@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { RutinaSemanal, WorkoutLog, ProgressPhoto, DiaRutina } from '@/types';
-import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw, CheckCircle } from 'lucide-react';
+import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw, CheckCircle, Trash2 } from 'lucide-react';
 import StatsShareCard from '@/components/StatsShareCard';
 import InjuryPanel from '@/components/InjuryPanel';
 import { ID } from 'appwrite';
@@ -409,10 +409,12 @@ export default function Dashboard() {
               {recentWorkouts.slice(0, 5).map((w) => (
                 <div
                   key={w.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
-                  onClick={() => navigate(`/workout/${w.id}`)}
+                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors group"
                 >
-                  <div className="flex-1 min-w-0">
+                  <div
+                    className="flex-1 min-w-0 cursor-pointer"
+                    onClick={() => navigate(`/workout/${w.id}`)}
+                  >
                     <p className="font-medium text-sm truncate">{w.diaRutina}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(w.fecha).toLocaleDateString('es-ES', {
@@ -425,6 +427,18 @@ export default function Dashboard() {
                       {w.completado ? '✓' : '…'}
                     </Badge>
                     <span className="text-xs text-muted-foreground">{w.duracionReal}min</span>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (!confirm('¿Eliminar este entrenamiento? Esta acción no se puede deshacer.')) return;
+                        await dbHelpers.deleteWorkout(w.id);
+                        setRecentWorkouts(prev => prev.filter(x => x.id !== w.id));
+                      }}
+                      className="ml-1 p-1.5 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Eliminar entrenamiento"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}

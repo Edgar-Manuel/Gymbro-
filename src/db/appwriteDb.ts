@@ -396,6 +396,15 @@ export const appwriteDbHelpers = {
     }
   },
 
+  async deleteWorkout(id: string): Promise<void> {
+    try {
+      await databases.deleteDocument(APPWRITE_DATABASE_ID, COLLECTIONS.WORKOUTS, id);
+    } catch (error) {
+      console.error('Error eliminando workout:', error);
+      throw error;
+    }
+  },
+
   // ==================== ESTADÍSTICAS ====================
 
   /**

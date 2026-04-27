@@ -2,6 +2,28 @@ import { exercisesData } from '@/data/exercises';
 import type { FullWRoutine, FullWExercise } from '@/data/fullwRoutines';
 import type { RutinaSemanal, DiaRutina, EjercicioEnRutina, ExerciseKnowledge, GrupoMuscular } from '@/types';
 
+// Mapa de nombre de grupo (Full W, capitalizado) → GrupoMuscular del sistema
+const GRUPO_MAP: Record<string, GrupoMuscular> = {
+  'pecho':         'pecho',
+  'espalda':       'espalda',
+  'piernas':       'piernas',
+  'cuádriceps':    'piernas',
+  'cuadriceps':    'piernas',
+  'hombros':       'hombros',
+  'tríceps':       'triceps',
+  'triceps':       'triceps',
+  'bíceps':        'biceps',
+  'biceps':        'biceps',
+  'femorales':     'femorales_gluteos',
+  'glúteos':       'femorales_gluteos',
+  'gluteos':       'femorales_gluteos',
+  'gemelos':       'piernas',
+  'abdominales':   'abdominales',
+  'core':          'abdominales',
+  'trapecios':     'espalda',
+  'antebrazos':    'antebrazos',
+};
+
 // Mapa de nombre Full W → id en exercises.ts
 const NAME_TO_ID: Record<string, string> = {
   'press de banca con barra':              'press-banca-barra',
@@ -146,10 +168,16 @@ export function fullWToRutinaSemanal(
       };
     });
 
+    // Convertir los nombres de grupo (Full W) a GrupoMuscular del sistema
+    const grupos = dia.grupos
+      .map(g => GRUPO_MAP[g.toLowerCase()] ?? GRUPO_MAP[g.replace('á','a').replace('é','e').replace('ó','o').replace('í','i').replace('ú','u').toLowerCase()])
+      .filter((g): g is GrupoMuscular => !!g)
+      .filter((g, i, arr) => arr.indexOf(g) === i); // unique
+
     return {
       id: `fullw-dia-${orden + 1}`,
       nombre: dia.nombre,
-      grupos: [],
+      grupos,
       ejercicios,
       duracionEstimada: Math.round(ejercicios.length * 8 + 10),
       orden: orden + 1,

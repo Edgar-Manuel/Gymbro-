@@ -83,5 +83,13 @@ export const WorkoutRepository = {
             const workoutDate = new Date(w.fecha);
             return workoutDate >= startDate && workoutDate <= endDate;
         }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    },
+
+    async deleteWorkout(id: string) {
+        await db.workouts.delete(id);
+        if (navigator.onLine) {
+            try { await appwriteDbHelpers.deleteWorkout(id); }
+            catch (e) { console.warn('[Repo] Cloud delete workout failed:', e); }
+        }
     }
 };
