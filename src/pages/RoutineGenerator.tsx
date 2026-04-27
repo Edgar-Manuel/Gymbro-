@@ -25,6 +25,7 @@ export default function RoutineGenerator() {
   const [exercises, setExercises] = useState<ExerciseKnowledge[]>([]);
   const [generatedRoutine, setGeneratedRoutine] = useState<RutinaSemanal | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [lastTrainedGroups, setLastTrainedGroups] = useState<string[]>([]);
 
   // Configuración personalizable
   const [diasDisponibles, setDiasDisponibles] = useState(currentUser?.diasDisponibles || 4);
@@ -33,6 +34,19 @@ export default function RoutineGenerator() {
   const loadExercises = async () => {
     const allExercises = await dbHelpers.getAllExercises();
     setExercises(allExercises);
+
+    // Cargar el último entreno para evitar repetir grupos musculares
+    try {
+      const logs = await dbHelpers.getWorkoutsByUser(currentUser?.id || '', 3);
+      const completed = logs.filter(l => l.completado);
+      if (completed.length > 0) {
+        const lastLog = completed[0];
+        const groups = (lastLog.ejercicios ?? []).flatMap(e =>
+          e.ejercicio?.grupoMuscular ? [e.ejercicio.grupoMuscular] : []
+        );
+        setLastTrainedGroups([...new Set(groups)]);
+      }
+    } catch { /* sin historial, no pasa nada */ }
   };
 
   useEffect(() => {
@@ -43,18 +57,19 @@ export default function RoutineGenerator() {
     if (!currentUser) return;
 
     setIsGenerating(true);
+    await new Promise(resolve => setTimeout(resolve, 600));
 
-    // Simular un pequeño delay para dar feedback visual
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // Actualizar perfil del usuario con las nuevas preferencias
     const updatedUser = {
       ...currentUser,
       diasDisponibles,
       objetivo: objetivo as typeof currentUser.objetivo
     };
 
-    const rutina = generarRutinaPersonalizada(updatedUser, exercises);
+    const rutina = generarRutinaPersonalizada(
+      updatedUser,
+      exercises,
+      lastTrainedGroups as import('@/types').GrupoMuscular[]
+    );
     setGeneratedRoutine(rutina);
     setIsGenerating(false);
   };

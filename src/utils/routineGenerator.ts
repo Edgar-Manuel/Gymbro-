@@ -73,19 +73,42 @@ export const OBJETIVO_CONFIG = {
   }
 };
 
+/** Fisher-Yates — shuffle real, no el Math.random() en sort que es cuasi-determinista */
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 /**
- * Genera una rutina personalizada basada en el perfil del usuario
+ * Genera una rutina personalizada basada en el perfil del usuario.
+ * @param avoidGroups Grupos musculares entrenados recientemente — se evitan en el día 1.
  */
 export function generarRutinaPersonalizada(
   user: UserProfile,
-  exercises: ExerciseKnowledge[]
+  exercises: ExerciseKnowledge[],
+  avoidGroups: GrupoMuscular[] = []
 ): RutinaSemanal {
   const dias = user.diasDisponibles >= 3 && user.diasDisponibles <= 6
     ? user.diasDisponibles
     : 4;
 
-  const split = SPLITS_CONFIG[dias as keyof typeof SPLITS_CONFIG];
   const config = OBJETIVO_CONFIG[user.objetivo];
+
+  // Rotar el split para que el día 1 no repita los grupos evitados.
+  // Si el primer día tiene solapamiento, lo mandamos al final y empezamos por el siguiente.
+  let split = [...SPLITS_CONFIG[dias as keyof typeof SPLITS_CONFIG]];
+  if (avoidGroups.length > 0) {
+    const overlap = (grupos: GrupoMuscular[]) => grupos.some(g => avoidGroups.includes(g));
+    let rotations = 0;
+    while (overlap(split[0].grupos) && rotations < split.length) {
+      split = [...split.slice(1), split[0]];
+      rotations++;
+    }
+  }
 
   const diasRutina: DiaRutina[] = split.map((dia, index) => {
     if (dia.grupos.length === 0) {
@@ -187,40 +210,40 @@ function seleccionarEjerciciosParaDia(
       return true;
     });
 
-    // Ordenar por tier y mezclar los del mismo tier para dar variedad
-    const ordenados = disponibles.sort((a, b) => {
-      const tierOrder = { 'S': 0, 'A': 1, 'B': 2, 'C': 3, 'F': 4 };
-      const diff = tierOrder[a.tier] - tierOrder[b.tier];
-      if (diff !== 0) return diff;
-
-      // Si tienen el mismo tier, priorizar compuestos
-      if (a.categoria === 'compuesto' && b.categoria === 'aislamiento') return -1;
-      if (a.categoria === 'aislamiento' && b.categoria === 'compuesto') return 1;
-
-      // Añadir algo de aleatoriedad para evitar rutinas clónicas (shuffle determinístico)
-      return Math.random() - 0.5;
+    // Agrupar por tier y hacer Fisher-Yates en cada grupo → rotación real
+    const porTier: Record<string, ExerciseKnowledge[]> = {};
+    for (const ex of disponibles) {
+      (porTier[ex.tier] ??= []).push(ex);
+    }
+    // Dentro de cada tier: compuestos primero, pero con orden aleatorio entre sí
+    const ordenados = (['S', 'A', 'B', 'C', 'F'] as const).flatMap(t => {
+      if (!porTier[t]) return [];
+      const compuestos   = shuffleArray(porTier[t].filter(e => e.categoria === 'compuesto'));
+      const aislamientos = shuffleArray(porTier[t].filter(e => e.categoria === 'aislamiento'));
+      return [...compuestos, ...aislamientos];
     });
 
     // Seleccionar ejercicios para este grupo
     let seleccionados = 0;
 
-    // Necesidades especiales para ciertos grupos
+    // Espalda: garantizar 1 vertical + 1 horizontal, elegidos al azar entre los disponibles
     if (grupo === GM.ESPALDA) {
-      // Espalda necesita 1 vertical + 1 horizontal
-      const vertical = ordenados.find(e => e.tags?.includes('tiron_vertical'));
-      const horizontal = ordenados.find(e => e.tags?.includes('tiron_horizontal'));
+      const verticales  = shuffleArray(ordenados.filter(e => e.tags?.includes('tiron_vertical')));
+      const horizontales = shuffleArray(ordenados.filter(e => e.tags?.includes('tiron_horizontal')));
+      // Orden aleatorio: a veces empezar por vertical, a veces por horizontal
+      const [first, second] = Math.random() > 0.5
+        ? [verticales, horizontales]
+        : [horizontales, verticales];
 
-      if (vertical) {
-        ejerciciosSeleccionados.push(vertical);
-        seleccionados++;
-      }
-      if (horizontal && seleccionados < ejerciciosPorGrupo) {
-        ejerciciosSeleccionados.push(horizontal);
-        seleccionados++;
+      const picked = first[0];
+      const picked2 = second[0];
+      if (picked) { ejerciciosSeleccionados.push(picked); seleccionados++; }
+      if (picked2 && seleccionados < ejerciciosPorGrupo) {
+        ejerciciosSeleccionados.push(picked2); seleccionados++;
       }
     }
 
-    // Completar con los mejores ejercicios restantes
+    // Completar con los mejores ejercicios restantes (ya mezclados dentro de cada tier)
     for (const ejercicio of ordenados) {
       if (seleccionados >= ejerciciosPorGrupo) break;
       if (!ejerciciosSeleccionados.includes(ejercicio)) {
