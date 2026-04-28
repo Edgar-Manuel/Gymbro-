@@ -254,7 +254,28 @@ export default function Dashboard() {
     const idx = activeRoutine.dias.findIndex(
       d => d.id === ultimo.diaRutinaId || d.nombre === ultimo.diaRutina
     );
-    return activeRoutine.dias[idx !== -1 ? (idx + 1) % activeRoutine.dias.length : 0];
+
+    // Día encontrado en la rutina actual → simplemente avanzar al siguiente
+    if (idx !== -1) {
+      return activeRoutine.dias[(idx + 1) % activeRoutine.dias.length];
+    }
+
+    // El último entreno era de una rutina diferente (ej. Básico IA → Full W).
+    // Evitar repetir los grupos musculares del día anterior.
+    const lastMuscles = new Set<string>(
+      (ultimo.ejercicios ?? [])
+        .map(e => e.ejercicio?.grupoMuscular)
+        .filter(Boolean) as string[]
+    );
+
+    if (lastMuscles.size > 0) {
+      const sinSolapamiento = activeRoutine.dias.find(
+        d => d.grupos.length > 0 && !d.grupos.some(g => lastMuscles.has(g))
+      );
+      if (sinSolapamiento) return sinSolapamiento;
+    }
+
+    return activeRoutine.dias[0];
   };
 
   const nextDay = getNextWorkoutDay();

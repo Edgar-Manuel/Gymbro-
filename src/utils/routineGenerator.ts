@@ -150,14 +150,19 @@ export function generarRutinaPersonalizada(
 
     const duracionEstimada = calcularDuracionEstimada(ejerciciosEnRutina, descansoAdaptado);
 
+    // ID estable basado en el nombre del día para que los workouts guardados
+    // puedan seguir encontrando su día aunque se regenere la rutina.
+    const diaId = `basico-${dia.nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
+
     return {
+      id: diaId,
       nombre: dia.nombre,
       grupos: dia.grupos,
       ejercicios: ejerciciosEnRutina,
       duracionEstimada,
       orden: index + 1
     };
-  }).filter(dia => dia.ejercicios.length > 0); // Remover días vacíos (descanso) por si acaso
+  }).filter(dia => dia.ejercicios.length > 0);
 
   const rutina: RutinaSemanal = {
     id: `rutina-${Date.now()}`,

@@ -79,6 +79,40 @@ export default function WorkoutSession() {
     }
   }, [currentUser, activeRoutine, navigate]);
 
+  // Pre-seleccionar el siguiente día lógico según el último entreno
+  useEffect(() => {
+    if (!activeRoutine?.dias?.length || !currentUser) return;
+
+    const autoSelect = async () => {
+      const dias = activeRoutine.dias.filter(d => d.ejercicios.length > 0);
+      if (!dias.length) return;
+
+      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 1);
+      if (!workouts.length) { setSelectedDay(dias[0]); return; }
+
+      const ultimo = workouts[0];
+      const idx = dias.findIndex(d => d.id === ultimo.diaRutinaId || d.nombre === ultimo.diaRutina);
+
+      if (idx !== -1) {
+        setSelectedDay(dias[(idx + 1) % dias.length]);
+        return;
+      }
+
+      // Cambio de rutina: evitar repetir músculos del día anterior
+      const lastMuscles = new Set<string>(
+        (ultimo.ejercicios ?? []).map(e => e.ejercicio?.grupoMuscular).filter(Boolean) as string[]
+      );
+      if (lastMuscles.size > 0) {
+        const sinSolapamiento = dias.find(d => !d.grupos.some(g => lastMuscles.has(g)));
+        if (sinSolapamiento) { setSelectedDay(sinSolapamiento); return; }
+      }
+
+      setSelectedDay(dias[0]);
+    };
+
+    autoSelect();
+  }, [activeRoutine, currentUser]);
+
   const loadPesoSugerido = async () => {
     if (!currentUser || !selectedDay) return;
 
