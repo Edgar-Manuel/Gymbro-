@@ -46,6 +46,52 @@ export const StatisticsRepository = {
         }
     },
 
+    async recalcularEstadisticas(userId: string) {
+        const todos = await db.workouts.where('userId').equals(userId).toArray();
+        const completados = todos.filter(w => w.completado !== false);
+        const totalEntrenamientos = completados.length;
+
+        const ahora = new Date();
+        const primerDiaMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+        let volumenTotal = 0;
+        let volumenEsteMes = 0;
+        for (const w of completados) {
+            const vol = (w.ejercicios ?? []).reduce((t: number, e: any) =>
+                t + (e.series ?? []).reduce((s: number, serie: any) =>
+                    s + ((serie.peso ?? 0) * (serie.repeticiones ?? 0)), 0), 0);
+            volumenTotal += vol;
+            if (new Date(w.fecha) >= primerDiaMes) volumenEsteMes += vol;
+        }
+
+        const diasConEntreno = new Set(completados.map((w: any) => {
+            const d = new Date(w.fecha); d.setHours(0, 0, 0, 0); return d.getTime();
+        }));
+        const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+        let rachaActual = 0;
+        for (let i = 0; i < 365; i++) {
+            const dia = new Date(hoy); dia.setDate(hoy.getDate() - i);
+            if (diasConEntreno.has(dia.getTime())) { rachaActual++; }
+            else if (i > 0) break;
+        }
+
+        const stats = {
+            userId,
+            totalEntrenamientos,
+            totalWorkouts: totalEntrenamientos,
+            rachaActual,
+            currentStreak: rachaActual,
+            rachaMasLarga: rachaActual,
+            longestStreak: rachaActual,
+            volumenTotalMovido: volumenTotal,
+            totalVolume: volumenTotal,
+            volumenEsteMes,
+        };
+
+        await db.statistics.put({ ...stats, syncStatus: 'pending_update', lastUpdated: Date.now() });
+        console.log('[Stats] Recalculadas desde workouts locales:', stats);
+        return stats;
+    },
+
     async getPendingSync() {
         return await db.statistics
             .filter(s => s.syncStatus !== 'synced' && s.syncStatus !== undefined)

@@ -41,6 +41,9 @@ export const dbHelpers = {
     await db.cardioSessions.clear();
   },
 
+  // Recalculate stats from local workouts
+  recalcularEstadisticas: StatisticsRepository.recalcularEstadisticas.bind(StatisticsRepository),
+
   // Sync
   sync: SyncManager.syncAll,
   getPendingSyncCount: SyncManager.getPendingCount

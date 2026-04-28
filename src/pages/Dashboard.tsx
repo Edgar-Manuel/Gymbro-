@@ -198,11 +198,20 @@ export default function Dashboard() {
       setStoreRoutine(routine || null);
 
       const stats = await dbHelpers.getUserStatistics(currentUser.id);
-      console.log('[Dashboard] stats de cloud:', stats);
+      console.log('[Dashboard] stats:', stats);
       if (stats) setStatistics(stats);
 
-      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 10);
-      setRecentWorkouts(workouts);
+      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 100);
+      setRecentWorkouts(workouts.slice(0, 10));
+
+      // Si hay workouts pero las stats muestran 0, recalcular desde IndexedDB
+      if (workouts.length > 0) {
+        const totalEnStats = stats?.totalEntrenamientos ?? stats?.totalWorkouts ?? 0;
+        if (totalEnStats === 0) {
+          const recalculadas = await dbHelpers.recalcularEstadisticas(currentUser.id);
+          setStatistics(recalculadas as any);
+        }
+      }
 
       const ach = await dbHelpers.getUserAchievements(currentUser.id);
       setAchievements(ach.slice(0, 3));
