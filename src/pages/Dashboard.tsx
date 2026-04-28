@@ -90,17 +90,28 @@ function WeeklyTimeline({
       routineDay = diasRutina[((todayRoutineIdx + offset) % len + len) % len];
     }
 
-    // Muscles: real workout muscles take priority, then scheduled routine
+    // Muscles: real workout muscles take priority, then scheduled routine.
+    // Falls back to exercise-level grupoMuscular for old routines with empty grupos[].
+    const extractFromExercises = (dia: DiaRutina | null | undefined): string[] =>
+      dia?.ejercicios
+        ? [...new Set(dia.ejercicios.map(e => e.ejercicio?.grupoMuscular).filter(Boolean) as string[])]
+        : [];
+
     let dailyMuscles: string[] = [];
     if (trained && workoutDelDia) {
       const rd = diasRutina.find(d => d.id === workoutDelDia.diaRutinaId);
-      if (rd?.grupos) {
+      if (rd?.grupos?.length) {
         dailyMuscles = rd.grupos;
-      } else if (workoutDelDia.ejercicios?.[0]?.ejercicio?.grupoMuscular) {
+      } else if (rd) {
+        dailyMuscles = extractFromExercises(rd);
+      }
+      if (!dailyMuscles.length && workoutDelDia.ejercicios?.[0]?.ejercicio?.grupoMuscular) {
         dailyMuscles = [workoutDelDia.ejercicios[0].ejercicio.grupoMuscular];
       }
-    } else if (routineDay?.grupos) {
+    } else if (routineDay?.grupos?.length) {
       dailyMuscles = routineDay.grupos;
+    } else if (routineDay) {
+      dailyMuscles = extractFromExercises(routineDay);
     }
 
     const muscleImages = dailyMuscles

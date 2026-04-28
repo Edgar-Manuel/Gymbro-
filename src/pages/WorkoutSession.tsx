@@ -395,22 +395,27 @@ export default function WorkoutSession() {
       await dbHelpers.logWorkout(workoutFinal);
       notificationManager.markTrained();
 
-      // Actualizar estadísticas
-      const stats = await dbHelpers.getUserStatistics(currentUser.id);
-      if (stats) {
-        const volumenSesion = workoutFinal.ejercicios.reduce((total, ej) => {
-          return total + ej.series.reduce((sum, serie) => {
-            return sum + (serie.peso * serie.repeticiones);
-          }, 0);
+      // Actualizar estadísticas (inicializa defaults si aún no existen localmente)
+      const existingStats = await dbHelpers.getUserStatistics(currentUser.id);
+      const stats = existingStats ?? {
+        userId: currentUser.id,
+        totalEntrenamientos: 0,
+        rachaActual: 0,
+        rachaMasLarga: 0,
+        volumenTotalMovido: 0,
+        volumenEsteMes: 0,
+      };
+      const volumenSesion = workoutFinal.ejercicios.reduce((total, ej) => {
+        return total + ej.series.reduce((sum, serie) => {
+          return sum + (serie.peso * serie.repeticiones);
         }, 0);
-
-        await dbHelpers.updateStatistics({
-          ...stats,
-          totalEntrenamientos: stats.totalEntrenamientos + 1,
-          volumenEsteMes: stats.volumenEsteMes + volumenSesion,
-          volumenTotalMovido: stats.volumenTotalMovido + volumenSesion
-        });
-      }
+      }, 0);
+      await dbHelpers.updateStatistics({
+        ...stats,
+        totalEntrenamientos: (stats.totalEntrenamientos ?? 0) + 1,
+        volumenEsteMes: (stats.volumenEsteMes ?? 0) + volumenSesion,
+        volumenTotalMovido: (stats.volumenTotalMovido ?? 0) + volumenSesion,
+      });
 
       // Comprobar logros
       const updatedStats = await dbHelpers.getUserStatistics(currentUser.id);
