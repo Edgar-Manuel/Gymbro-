@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import RestTimer from '@/components/RestTimer';
+import TUTTimer from '@/components/TUTTimer';
 import DaySelector from '@/components/DaySelector';
 import SwapExerciseModal from '@/components/SwapExerciseModal';
 import AchievementUnlocked from '@/components/AchievementUnlocked';
@@ -707,6 +708,11 @@ export default function WorkoutSession() {
                 <Check className="w-5 h-5 mr-2" />
                 Completar Serie {currentSetNumber}
               </Button>
+            </div>
+
+            {/* TUT Timer */}
+            <div className="mt-4">
+              <TUTTimer />
             </div>
 
             {/* Series completadas */}

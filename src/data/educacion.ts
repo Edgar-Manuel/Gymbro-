@@ -1012,6 +1012,66 @@ export const conceptosEducativos: ConceptoEducativo[] = [
       'Rutina decente + consistencia total = RESULTADOS INCREÍBLES.'
     ],
     errorComun: 'Cambiar de rutina cada 2 semanas buscando la "perfecta" - la consistencia importa más que la rutina'
+  },
+
+  // ============================================
+  // CIENCIA DE LA HIPERTROFIA
+  // ============================================
+  {
+    id: 'tres-mecanismos-hipertrofia',
+    titulo: 'Los 3 Mecanismos Biológicos que Disparan el Crecimiento Muscular',
+    categoria: 'progresion',
+    importancia: 'critica',
+    resumen: 'El músculo no crece por levantar pesado ni por comer proteína sola. Hay tres mecanismos específicos que lo activan — si no los tres, estás dejando ganancias sobre la mesa.',
+    contenido: [
+      '⚡ MECANISMO 1: TENSIÓN MECÁNICA',
+      '',
+      'Es la fuerza que tus músculos generan contra una resistencia. Al levantar carga, las fibras se contraen bajo tensión y activan proteínas llamadas mecanorreceptores. Estos envían señales al núcleo celular: "Necesitamos más capacidad". El núcleo responde fabricando proteínas musculares nuevas.',
+      '',
+      'ERROR FRECUENTE: Creer que tensión mecánica = levantar lo más pesado posible en explosivo. Una rep de 1 segundo genera MENOS tensión total que una de 4 segundos controlada.',
+      '',
+      'CLAVE: Tensión mecánica efectiva = carga alta + TIEMPO BAJO TENSIÓN + rango completo de movimiento. Series de 3-6 reps con cadencia 4-1-2 son el estímulo óptimo.',
+      '',
+      '🔥 MECANISMO 2: ESTRÉS METABÓLICO',
+      '',
+      'Es el "pump". Cuando haces series largas (8-15 reps), tus músculos se llenan de sangre y acumulan metabolitos: lactato, iones de hidrógeno, fosfato inorgánico. Este ambiente químico hostil provoca hinchazón celular.',
+      '',
+      'Las células musculares absorben agua y se expanden. Esa expansión activa una cascada de señales anabólicas: hormona de crecimiento, IGF-1 (factor de crecimiento similar a insulina) y otros factores que estimulan la síntesis de proteínas.',
+      '',
+      'IMPORTANTE: El estrés metabólico solo no construye tanto músculo como la tensión mecánica. Pero COMBINADOS, la magia ocurre. Por eso entrenar solo pesado (3 reps) falla, y entrenar solo ligero (20 reps) también falla.',
+      '',
+      '💥 MECANISMO 3: DAÑO MUSCULAR',
+      '',
+      'Cuando entrenas, creas micro-roturas en las fibras musculares. Tu cuerpo envía células inflamatorias al área. Esas células liberan citoquinas y factores de crecimiento que despiertan las CÉLULAS SATÉLITE — las células madre del músculo.',
+      '',
+      'Las células satélite se fusionan con las fibras musculares existentes y donan sus núcleos. Más núcleos = más capacidad de producir proteínas = más potencial de crecimiento.',
+      '',
+      'CRÍTICO: El daño muscular NO es proporcional al dolor. Puedes tener agujetas terribles con poca hipertrofia, y excelente crecimiento con agujetas moderadas. Medir el entrenamiento por "cuánto duele" es la métrica EQUIVOCADA.',
+      '',
+      '📋 DÓNDE CRECE EL MÚSCULO REALMENTE',
+      '',
+      'Los 3 mecanismos se activan en el gimnasio, pero el crecimiento real ocurre en las 24-48 horas siguientes. Tu cuerpo necesita:',
+      '  • PROTEÍNA: materia prima para construir tejido nuevo (2g por kg de peso)',
+      '  • CALORÍAS: energía para el proceso de síntesis (no te quedes en déficit los días de entreno)',
+      '  • DESCANSO: contexto hormonal adecuado — la GH se libera principalmente en fase de sueño profundo',
+      '',
+      'Sin cualquiera de estos tres, todo el trabajo en el gimnasio fue parcialmente inútil. Es como construir una casa con los mejores planos pero sin cemento o sin tiempo para que fragüe.',
+      '',
+      '🔱 CÓMO ACTIVAR LOS 3 EN CADA SESIÓN',
+      '',
+      '1. Ejercicio compuesto pesado al inicio (4×4-6 reps, cadencia 4-1-2) → Tensión mecánica',
+      '2. Series moderadas en bloque principal (3×8-12 reps) → Tensión + Estrés metabólico',
+      '3. Finalizador de aislamiento (2-3×12-15 reps, sin descanso prolongado) → Estrés metabólico + Daño',
+      '',
+      'Esta estructura es exactamente lo que sigue el protocolo Full W: días de fuerza (Upper A/Lower A) atacan la tensión mecánica; días de hipertrofia (Upper B/Lower B) maximizan el estrés metabólico y el daño.'
+    ],
+    ejemplos: [
+      'Press banca 4×5 reps a 80% 1RM, cadencia 4-1-2 → activa tensión mecánica máxima',
+      'Aperturas en cable 3×15 reps con contracción de 2s → activa estrés metabólico',
+      'Primera vez haciendo zancadas bulgara → daño muscular máximo (agujetas garantizadas)',
+      'Combinar los tres en un día: sentadilla pesada → prensa moderada → extensiones altas reps'
+    ],
+    errorComun: 'Medir el progreso del entrenamiento por las agujetas o por el cansancio. Un entreno puede ser muy efectivo sin dejar apenas dolor muscular al día siguiente.'
   }
 ];
 

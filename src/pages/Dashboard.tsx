@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { RutinaSemanal, WorkoutLog, ProgressPhoto, DiaRutina } from '@/types';
-import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw, CheckCircle, Trash2 } from 'lucide-react';
+import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw, CheckCircle, Trash2, Zap, Droplets, Activity } from 'lucide-react';
 import StatsShareCard from '@/components/StatsShareCard';
 import InjuryPanel from '@/components/InjuryPanel';
 import { ID } from 'appwrite';
@@ -396,6 +396,66 @@ export default function Dashboard() {
           <WeeklyTimeline workouts={recentWorkouts} routine={activeRoutine} nextDay={nextDay ?? null} />
         </CardContent>
       </Card>
+
+      {/* Ventana de recuperación 24-48h */}
+      {(() => {
+        if (!recentWorkouts.length) return null;
+        const lastDate = new Date(recentWorkouts[0].fecha);
+        const horasPasadas = (Date.now() - lastDate.getTime()) / 3600000;
+        if (horasPasadas >= 48) return null;
+        const horasRestantes = Math.max(0, 48 - horasPasadas);
+        const pct = Math.round((horasPasadas / 48) * 100);
+        const fase = horasPasadas < 24 ? 'pico' : 'final';
+        return (
+          <Card className="border-violet-500/40 bg-gradient-to-br from-violet-50 dark:from-violet-950/20">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    🔧 Ventana de Crecimiento Activa
+                  </CardTitle>
+                  <CardDescription className="mt-0.5">
+                    {fase === 'pico'
+                      ? 'Fase de síntesis proteica máxima — aprovecha ahora'
+                      : 'Fase final de recuperación — casi completada'}
+                  </CardDescription>
+                </div>
+                <span className="text-lg font-bold text-violet-600 tabular-nums shrink-0">
+                  {Math.floor(horasRestantes)}h {Math.round((horasRestantes % 1) * 60)}m
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Barra de progreso */}
+              <div className="space-y-1">
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-violet-300 transition-all duration-1000"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>Entreno</span><span>24h</span><span>48h</span>
+                </div>
+              </div>
+              {/* Los 3 pilares */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { icon: Zap,      label: 'Proteína',    hint: '30-40g ya',    color: 'text-green-500' },
+                  { icon: Activity, label: 'Calorías',    hint: 'No déficit',   color: 'text-amber-500' },
+                  { icon: Droplets, label: 'Sueño',       hint: '7-9h hoy',     color: 'text-blue-500' },
+                ].map(({ icon: Icon, label, hint, color }) => (
+                  <div key={label} className="flex flex-col items-center gap-1 rounded-lg bg-background/60 p-2 text-center">
+                    <Icon className={`w-4 h-4 ${color}`} />
+                    <span className="text-[11px] font-semibold">{label}</span>
+                    <span className="text-[10px] text-muted-foreground">{hint}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Logros recientes */}
       {achievements.length > 0 && (
