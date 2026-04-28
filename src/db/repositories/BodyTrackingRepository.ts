@@ -1,4 +1,5 @@
 import { db } from '../schema';
+import { appwriteDbHelpers } from '../appwriteDb';
 import type { BodyMeasurement, ProgressPhoto } from '@/types';
 
 export const BodyTrackingRepository = {
@@ -50,7 +51,19 @@ export const BodyTrackingRepository = {
     },
 
     async deleteProgressPhoto(id: string): Promise<void> {
-        await db.progressPhotos.delete(id);
+        if (navigator.onLine) {
+            try {
+                await appwriteDbHelpers.deleteProgressPhoto(id);
+            } catch (err) {
+                if ((err as { code?: number }).code !== 404) {
+                    await db.progressPhotos.update(id, { syncStatus: 'pending_delete' });
+                    return;
+                }
+            }
+            await db.progressPhotos.delete(id);
+        } else {
+            await db.progressPhotos.update(id, { syncStatus: 'pending_delete' });
+        }
     },
 
     async getPendingSync() {

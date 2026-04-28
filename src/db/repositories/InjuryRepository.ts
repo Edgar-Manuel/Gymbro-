@@ -1,4 +1,5 @@
 import { db } from '../schema';
+import { appwriteDbHelpers } from '../appwriteDb';
 import type { Lesion } from '@/types';
 import type { WithSync } from '../types';
 
@@ -42,7 +43,19 @@ export const InjuryRepository = {
   },
 
   async deleteInjury(id: string): Promise<void> {
-    await db.lesiones.delete(id);
+    if (navigator.onLine) {
+      try {
+        await appwriteDbHelpers.deleteLesion(id);
+      } catch (err) {
+        if ((err as { code?: number }).code !== 404) {
+          await db.lesiones.update(id, { syncStatus: 'pending_delete' });
+          return;
+        }
+      }
+      await db.lesiones.delete(id);
+    } else {
+      await db.lesiones.update(id, { syncStatus: 'pending_delete' });
+    }
   },
 
   async getPendingSync(): Promise<WithSync<Lesion>[]> {

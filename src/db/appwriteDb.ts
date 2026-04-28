@@ -361,25 +361,22 @@ export const appwriteDbHelpers = {
    */
   async updateWorkout(id: string, updates: Partial<WorkoutLog>): Promise<string> {
     try {
-      const updateData: Record<string, any> = {};
+      // Workouts use a single `datos` JSON column plus top-level `completado`.
+      // Build the patch using only the columns that exist in Appwrite.
+      const updateData: Record<string, any> = {
+        datos: JSON.stringify({
+          rutinaId: updates.rutinaId || '',
+          diaRutinaId: updates.diaRutinaId || '',
+          ejercicios: updates.ejercicios || [],
+          duracion: updates.duracion ?? updates.duracionReal ?? 0,
+          notas: updates.notas || '',
+          volumenTotal: updates.volumenTotal ?? 0,
+          caloriaQuemadas: updates.caloriaQuemadas ?? 0,
+        }),
+      };
 
-      if (updates.ejercicios) {
-        updateData.ejercicios = JSON.stringify(updates.ejercicios);
-      }
-      if (updates.duracion !== undefined) {
-        updateData.duracion = updates.duracion;
-      }
-      if (updates.notas !== undefined) {
-        updateData.notas = updates.notas;
-      }
       if (updates.completado !== undefined) {
         updateData.completado = updates.completado;
-      }
-      if (updates.volumenTotal !== undefined) {
-        updateData.volumenTotal = updates.volumenTotal;
-      }
-      if (updates.caloriaQuemadas !== undefined) {
-        updateData.caloriaQuemadas = updates.caloriaQuemadas;
       }
 
       await databases.updateDocument(
@@ -1163,6 +1160,14 @@ export const appwriteDbHelpers = {
       console.error('Error updating cardio session:', error);
       throw error;
     }
+  },
+
+  async deleteLesion(id: string): Promise<void> {
+    await databases.deleteDocument(APPWRITE_DATABASE_ID, COLLECTIONS.LESIONES, id);
+  },
+
+  async deleteCardioSession(id: string): Promise<void> {
+    await databases.deleteDocument(APPWRITE_DATABASE_ID, COLLECTIONS.CARDIO, id);
   },
 
   // ==================== RUTINAS COMPARTIDAS ====================

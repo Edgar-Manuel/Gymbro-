@@ -406,9 +406,10 @@ export default function WorkoutSession() {
 
         await dbHelpers.updateStatistics({
           ...stats,
-          totalEntrenamientos: stats.totalEntrenamientos + 1,
-          volumenEsteMes: stats.volumenEsteMes + volumenSesion,
-          volumenTotalMovido: stats.volumenTotalMovido + volumenSesion
+          totalEntrenamientos: (stats.totalEntrenamientos ?? stats.totalWorkouts ?? 0) + 1,
+          totalWorkouts: (stats.totalWorkouts ?? stats.totalEntrenamientos ?? 0) + 1,
+          volumenEsteMes: (stats.volumenEsteMes ?? 0) + volumenSesion,
+          volumenTotalMovido: (stats.volumenTotalMovido ?? 0) + volumenSesion,
         });
       }
 

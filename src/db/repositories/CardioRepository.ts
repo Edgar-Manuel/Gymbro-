@@ -1,4 +1,5 @@
 import { db } from '../schema';
+import { appwriteDbHelpers } from '../appwriteDb';
 import type { CardioSession } from '@/types';
 import type { WithSync } from '../types';
 
@@ -22,7 +23,7 @@ export const CardioRepository = {
   },
 
   async addCardioSession(session: CardioSession): Promise<string> {
-    await db.cardioSessions.add({ ...session, syncStatus: 'pending_create' });
+    await db.cardioSessions.add({ ...session, syncStatus: 'pending_create', lastUpdated: Date.now() });
     return session.id;
   },
 
@@ -31,11 +32,24 @@ export const CardioRepository = {
       completado: true,
       duracionReal,
       syncStatus: 'pending_update',
+      lastUpdated: Date.now(),
     });
   },
 
   async deleteCardioSession(id: string): Promise<void> {
-    await db.cardioSessions.delete(id);
+    if (navigator.onLine) {
+      try {
+        await appwriteDbHelpers.deleteCardioSession(id);
+      } catch (err) {
+        if ((err as { code?: number }).code !== 404) {
+          await db.cardioSessions.update(id, { syncStatus: 'pending_delete' });
+          return;
+        }
+      }
+      await db.cardioSessions.delete(id);
+    } else {
+      await db.cardioSessions.update(id, { syncStatus: 'pending_delete' });
+    }
   },
 
   async getPendingSync(): Promise<WithSync<CardioSession>[]> {

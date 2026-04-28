@@ -6,6 +6,8 @@ import { BodyTrackingRepository } from '../repositories/BodyTrackingRepository';
 import { InjuryRepository } from '../repositories/InjuryRepository';
 import { CardioRepository } from '../repositories/CardioRepository';
 import { appwriteDbHelpers } from '../appwriteDb';
+import { databases } from '@/services/appwrite';
+import { APPWRITE_DATABASE_ID, COLLECTIONS } from '@/config/appwriteSchema';
 import { db } from '../schema';
 
 export const SyncManager = {
@@ -169,19 +171,52 @@ export const SyncManager = {
             } catch (e) { console.error('[Sync] cardio error', e); }
         }
 
+        // ── Pending Deletes ───────────────────────────────────────────────────
+        const deleteLesiones = await db.lesiones.filter(l => l.syncStatus === 'pending_delete').toArray();
+        for (const l of deleteLesiones) {
+            try {
+                await databases.deleteDocument(APPWRITE_DATABASE_ID, COLLECTIONS.LESIONES, l.id);
+            } catch (err) {
+                if ((err as { code?: number }).code !== 404) { console.error('[Sync] delete lesion error', err); continue; }
+            }
+            await db.lesiones.delete(l.id);
+        }
+
+        const deleteCardio = await db.cardioSessions.filter(s => s.syncStatus === 'pending_delete').toArray();
+        for (const s of deleteCardio) {
+            try {
+                await databases.deleteDocument(APPWRITE_DATABASE_ID, COLLECTIONS.CARDIO, s.id);
+            } catch (err) {
+                if ((err as { code?: number }).code !== 404) { console.error('[Sync] delete cardio error', err); continue; }
+            }
+            await db.cardioSessions.delete(s.id);
+        }
+
+        const deletePhotos = await db.progressPhotos.filter(p => p.syncStatus === 'pending_delete').toArray();
+        for (const p of deletePhotos) {
+            try {
+                await appwriteDbHelpers.deleteProgressPhoto(p.id);
+            } catch (err) {
+                if ((err as { code?: number }).code !== 404) { console.error('[Sync] delete photo error', err); continue; }
+            }
+            await db.progressPhotos.delete(p.id);
+        }
+
         console.log('[Sync] Complete');
     },
 
     getPendingCount: async () => {
-        const u = await db.users.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
-        const r = await db.rutinas.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
-        const w = await db.workouts.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
-        const s = await db.statistics.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
-        const m = await db.bodyMeasurements.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
-        const p = await db.progressPhotos.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
-        const a = await db.achievements.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
-        const l = await db.lesiones.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
-        const c = await db.cardioSessions.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').count();
+        const isPending = (x: { syncStatus?: string }) =>
+            x.syncStatus !== undefined && x.syncStatus !== 'synced';
+        const u = await db.users.filter(isPending).count();
+        const r = await db.rutinas.filter(isPending).count();
+        const w = await db.workouts.filter(isPending).count();
+        const s = await db.statistics.filter(isPending).count();
+        const m = await db.bodyMeasurements.filter(isPending).count();
+        const p = await db.progressPhotos.filter(isPending).count();
+        const a = await db.achievements.filter(isPending).count();
+        const l = await db.lesiones.filter(isPending).count();
+        const c = await db.cardioSessions.filter(isPending).count();
         return u + r + w + s + m + p + a + l + c;
     }
 };

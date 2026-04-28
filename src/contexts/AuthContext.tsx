@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    handleUserChange();
+    handleUserChange().catch(err => console.error('Error in handleUserChange:', err));
   }, [user]);
 
   const checkSession = async () => {
