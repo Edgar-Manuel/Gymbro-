@@ -34,7 +34,13 @@ export const SyncManager = {
                         if ((err as { code?: number }).code !== 409) throw err;
                     }
                 } else if (routine.syncStatus === 'pending_update') {
-                    await appwriteDbHelpers.updateRoutine(routine);
+                    try {
+                        await appwriteDbHelpers.updateRoutine(routine);
+                    } catch (err) {
+                        if ((err as { code?: number }).code === 404) {
+                            await appwriteDbHelpers.createRoutine(routine);
+                        } else throw err;
+                    }
                 }
                 await db.rutinas.update(routine.id, { syncStatus: 'synced' });
             } catch (e) { console.error('[Sync] routine error', e); }
@@ -51,7 +57,13 @@ export const SyncManager = {
                         if ((err as { code?: number }).code !== 409) throw err;
                     }
                 } else if (workout.syncStatus === 'pending_update') {
-                    await appwriteDbHelpers.updateWorkout(workout.id, workout);
+                    try {
+                        await appwriteDbHelpers.updateWorkout(workout.id, workout);
+                    } catch (err) {
+                        if ((err as { code?: number }).code === 404) {
+                            await appwriteDbHelpers.logWorkout(workout);
+                        } else throw err;
+                    }
                 }
                 await db.workouts.update(workout.id, { syncStatus: 'synced' });
             } catch (e) { console.error('[Sync] workout error', e); }
@@ -122,7 +134,13 @@ export const SyncManager = {
                         if ((err as { code?: number }).code !== 409) throw err;
                     }
                 } else if (lesion.syncStatus === 'pending_update') {
-                    await appwriteDbHelpers.updateLesion(lesion);
+                    try {
+                        await appwriteDbHelpers.updateLesion(lesion);
+                    } catch (err) {
+                        if ((err as { code?: number }).code === 404) {
+                            await appwriteDbHelpers.addLesion(lesion);
+                        } else throw err;
+                    }
                 }
                 await db.lesiones.update(lesion.id, { syncStatus: 'synced' });
             } catch (e) { console.error('[Sync] lesion error', e); }
@@ -139,7 +157,13 @@ export const SyncManager = {
                         if ((err as { code?: number }).code !== 409) throw err;
                     }
                 } else if (session.syncStatus === 'pending_update') {
-                    await appwriteDbHelpers.updateCardioSession(session);
+                    try {
+                        await appwriteDbHelpers.updateCardioSession(session);
+                    } catch (err) {
+                        if ((err as { code?: number }).code === 404) {
+                            await appwriteDbHelpers.addCardioSession(session);
+                        } else throw err;
+                    }
                 }
                 await db.cardioSessions.update(session.id, { syncStatus: 'synced' });
             } catch (e) { console.error('[Sync] cardio error', e); }
