@@ -9,12 +9,13 @@ import { appwriteDbHelpers } from '../appwriteDb';
 import { db } from '../schema';
 
 export const SyncManager = {
-    async syncAll(): Promise<{ synced: number; failed: number }> {
+    async syncAll(): Promise<{ synced: number; failed: number; lastError?: string }> {
         if (!navigator.onLine) return { synced: 0, failed: 0 };
 
         console.log('[Sync] Starting background sync...');
         let synced = 0;
         let failed = 0;
+        let lastError: string | undefined;
 
         // ── Users ─────────────────────────────────────────────────────────────
         const pendingUsers = await UserRepository.getPendingSync();
@@ -59,7 +60,14 @@ export const SyncManager = {
                 }
                 await db.workouts.update(workout.id, { syncStatus: 'synced' });
                 synced++;
-            } catch (e) { console.error('[Sync] workout error', e); failed++; }
+            } catch (e) {
+                console.error('[Sync] workout error', e);
+                const appErr = e as { code?: number; message?: string; type?: string };
+                lastError = appErr.code
+                    ? `Appwrite ${appErr.code}: ${appErr.message ?? appErr.type ?? 'Error desconocido'}`
+                    : String(e);
+                failed++;
+            }
         }
 
         // ── Statistics ────────────────────────────────────────────────────────
@@ -156,8 +164,8 @@ export const SyncManager = {
             } catch (e) { console.error('[Sync] cardio error', e); failed++; }
         }
 
-        console.log(`[Sync] Complete — synced: ${synced}, failed: ${failed}`);
-        return { synced, failed };
+        console.log(`[Sync] Complete — synced: ${synced}, failed: ${failed}${lastError ? ` | ${lastError}` : ''}`);
+        return { synced, failed, lastError };
     },
 
     getPendingCount: async () => {
