@@ -208,11 +208,19 @@ export default function Dashboard() {
       setActiveRoutine(routine || null);
       setStoreRoutine(routine || null);
 
-      const stats = await dbHelpers.getUserStatistics(currentUser.id);
-      if (stats) setStatistics(stats);
-
       const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 10);
       setRecentWorkouts(workouts);
+
+      const stats = await dbHelpers.getUserStatistics(currentUser.id);
+
+      // Si no hay stats o totalEntrenamientos=0 pero sí hay workouts reales,
+      // recalcula desde IndexedDB para corregir datos históricos sin sync.
+      if ((!stats || (stats.totalEntrenamientos ?? 0) === 0) && workouts.length > 0) {
+        const recalculadas = await dbHelpers.recalcularEstadisticas(currentUser.id);
+        setStatistics(recalculadas);
+      } else if (stats) {
+        setStatistics(stats);
+      }
 
       const ach = await dbHelpers.getUserAchievements(currentUser.id);
       setAchievements(ach.slice(0, 3));
