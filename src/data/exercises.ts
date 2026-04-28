@@ -661,6 +661,43 @@ export const exercisesData: ExerciseKnowledge[] = [
     tags: ['empuje_pierna', 'accesible_principiantes', 'seguro']
   },
   {
+    id: 'extensiones-cuadriceps',
+    nombre: 'Extensiones de Cuádriceps',
+    grupoMuscular: GrupoMuscular.PIERNAS,
+    categoria: 'aislamiento',
+    tier: 'B',
+    dificultad: 'principiante',
+    equipamiento: ['maquina'],
+    enfoqueMuscular: ['cuádriceps'],
+    tecnica: {
+      posicionInicial: 'Sentado en la máquina, espalda apoyada, rodillas a 90°. El rodillo sobre el empeine (no en el pie). Agarra los agarradores laterales.',
+      ejecucion: [
+        'Extiende las piernas hasta casi bloquear las rodillas',
+        'Mantén 1-2 segundos en la contracción máxima',
+        'Baja lento y controlado (2-3 segundos) sin soltar el peso',
+        'No dejes que los glúteos se despeguen del asiento'
+      ],
+      erroresComunes: [
+        'Usar impulso o rebote en la bajada',
+        'No llegar a extensión completa',
+        'Glúteos despegándose del asiento',
+        'Rodillo mal colocado (en el pie en vez del empeine)'
+      ],
+      consejosClave: [
+        'Pesos ligeros-moderados: es un ejercicio de aislamiento puro',
+        'Contracción final es lo más importante',
+        'Excelente como finalizador tras sentadilla o prensa',
+        'Mantén el pie en posición neutra o ligeramente girado hacia afuera'
+      ]
+    },
+    imagenes: { posicionInicial: '', ejecucion: [], errores: [] },
+    variantes: [
+      { nombre: 'Extensiones unilaterales', cuando: 'Para corregir desequilibrios entre piernas', tier: 'B' }
+    ],
+    descansoSugerido: 60,
+    tags: ['aislamiento', 'cuadriceps', 'finalizador']
+  },
+  {
     id: 'hack-squat',
     nombre: 'Hack Squat Machine',
     grupoMuscular: GrupoMuscular.PIERNAS,

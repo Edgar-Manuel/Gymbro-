@@ -97,7 +97,7 @@ const NAME_TO_ID: Record<string, string> = {
   'elevaciones de gemelos (de pie)':       'elevaciones-talones',
   'elevaciones de gemelos (sentado)':      'elevaciones-talones',
   'elevaciones de talones':                'elevaciones-talones',
-  'extensiones de cuádriceps':             'prensa-pierna',
+  'extensiones de cuádriceps':             'extensiones-cuadriceps',
   'hack squat':                            'hack-squat',
   'abdominales':                           'crunch-polea',
   'abdominales colgado':                   'elevaciones-piernas-flexion',
