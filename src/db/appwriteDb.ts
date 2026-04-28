@@ -475,15 +475,18 @@ export const appwriteDbHelpers = {
         [Query.equal('userId', stats.userId), Query.limit(1)]
       );
 
+      const totalWorkouts = stats.totalWorkouts ?? stats.totalEntrenamientos ?? 0;
       const statsData = {
         userId: stats.userId,
         datos: JSON.stringify({
-          totalWorkouts: stats.totalWorkouts,
-          currentStreak: stats.currentStreak,
-          longestStreak: stats.longestStreak,
-          totalVolume: stats.totalVolume,
-          totalCalories: stats.totalCalories,
-          totalMinutes: stats.totalMinutes,
+          totalWorkouts,
+          totalEntrenamientos: totalWorkouts,
+          currentStreak: stats.currentStreak ?? stats.rachaActual ?? 0,
+          longestStreak: stats.longestStreak ?? stats.rachaMasLarga ?? 0,
+          totalVolume: stats.totalVolume ?? stats.volumenTotalMovido ?? 0,
+          totalCalories: stats.totalCalories ?? 0,
+          totalMinutes: stats.totalMinutes ?? 0,
+          volumenEsteMes: stats.volumenEsteMes ?? 0,
           favoriteExercises: stats.favoriteExercises || {},
           muscleGroupStats: stats.muscleGroupStats || {},
           lastWorkoutDate: stats.lastWorkoutDate?.toISOString(),
@@ -967,14 +970,20 @@ export const appwriteDbHelpers = {
   mapStatisticsDocumentToStats(doc: any): UserStatistics {
     const datos = doc.datos ? JSON.parse(doc.datos) : {};
 
+    const totalWorkouts = datos.totalWorkouts ?? datos.totalEntrenamientos ?? 0;
     return {
       userId: doc.userId,
-      totalWorkouts: datos.totalWorkouts || 0,
-      currentStreak: datos.currentStreak || 0,
-      longestStreak: datos.longestStreak || 0,
-      totalVolume: datos.totalVolume || 0,
-      totalCalories: datos.totalCalories || 0,
-      totalMinutes: datos.totalMinutes || 0,
+      totalWorkouts,
+      totalEntrenamientos: totalWorkouts,
+      currentStreak: datos.currentStreak ?? 0,
+      rachaActual: datos.currentStreak ?? 0,
+      longestStreak: datos.longestStreak ?? 0,
+      rachaMasLarga: datos.longestStreak ?? 0,
+      totalVolume: datos.totalVolume ?? datos.volumenTotalMovido ?? 0,
+      volumenTotalMovido: datos.totalVolume ?? datos.volumenTotalMovido ?? 0,
+      volumenEsteMes: datos.volumenEsteMes ?? 0,
+      totalCalories: datos.totalCalories ?? 0,
+      totalMinutes: datos.totalMinutes ?? 0,
       favoriteExercises: datos.favoriteExercises || {},
       muscleGroupStats: datos.muscleGroupStats || {},
       lastWorkoutDate: datos.lastWorkoutDate ? new Date(datos.lastWorkoutDate) : undefined,

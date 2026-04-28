@@ -9,6 +9,15 @@ export const StatisticsRepository = {
             try {
                 const stats = await appwriteDbHelpers.getUserStatistics(userId);
                 if (stats) {
+                    const cloudWorkouts = stats.totalWorkouts ?? stats.totalEntrenamientos ?? 0;
+                    if (cloudWorkouts === 0) {
+                        const localStats = await db.statistics.get(userId);
+                        const localWorkouts = localStats?.totalEntrenamientos ?? localStats?.totalWorkouts ?? 0;
+                        if (localWorkouts > 0) {
+                            console.log('[Stats] Cloud has 0 workouts but local has', localWorkouts, '— using local data');
+                            return localStats;
+                        }
+                    }
                     await db.statistics.put({ ...stats, syncStatus: 'synced', lastUpdated: Date.now() });
                     return stats;
                 }

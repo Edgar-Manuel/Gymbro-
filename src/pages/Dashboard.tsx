@@ -198,6 +198,7 @@ export default function Dashboard() {
       setStoreRoutine(routine || null);
 
       const stats = await dbHelpers.getUserStatistics(currentUser.id);
+      console.log('[Dashboard] stats de cloud:', stats);
       if (stats) setStatistics(stats);
 
       const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 10);
