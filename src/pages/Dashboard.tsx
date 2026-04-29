@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
-import type { RutinaSemanal, WorkoutLog, ProgressPhoto, DiaRutina } from '@/types';
+import type { RutinaSemanal, WorkoutLog, ProgressPhoto, DiaRutina, GrupoMuscular } from '@/types';
 import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw, CheckCircle } from 'lucide-react';
 import StatsShareCard from '@/components/StatsShareCard';
 import InjuryPanel from '@/components/InjuryPanel';
@@ -249,11 +249,33 @@ export default function Dashboard() {
     if (!activeRoutine?.dias?.length) return null;
     if (!recentWorkouts.length) return activeRoutine.dias[0];
 
-    const ultimo = recentWorkouts[0];
-    const idx = activeRoutine.dias.findIndex(
-      d => d.id === ultimo.diaRutinaId || d.nombre === ultimo.diaRutina
+    const ultimo = recentWorkouts.find(w => w.completado);
+    if (!ultimo) return activeRoutine.dias[0];
+
+    const lastMuscles = new Set<GrupoMuscular>(
+      (ultimo.ejercicios ?? [])
+        .map(e => e.ejercicio?.grupoMuscular)
+        .filter((m): m is GrupoMuscular => m !== undefined)
     );
-    return activeRoutine.dias[idx !== -1 ? (idx + 1) % activeRoutine.dias.length : 0];
+
+    const idx = activeRoutine.dias.findIndex(d => d.id === ultimo.diaRutinaId || d.nombre === ultimo.diaRutina);
+    const nextIdx = idx >= 0 ? (idx + 1) % activeRoutine.dias.length : 0;
+    const nextByOrder = activeRoutine.dias[nextIdx];
+
+    const nextMuscles: GrupoMuscular[] = nextByOrder.grupos?.length > 0
+      ? nextByOrder.grupos
+      : (nextByOrder.ejercicios ?? []).map(e => e.ejercicio?.grupoMuscular).filter((m): m is GrupoMuscular => m !== undefined);
+
+    if (!nextMuscles.some(m => lastMuscles.has(m))) return nextByOrder;
+
+    const sinSolapamiento = activeRoutine.dias.find(d => {
+      const muscles: GrupoMuscular[] = d.grupos?.length > 0
+        ? d.grupos
+        : (d.ejercicios ?? []).map(e => e.ejercicio?.grupoMuscular).filter((m): m is GrupoMuscular => m !== undefined);
+      return muscles.length > 0 && !muscles.some(m => lastMuscles.has(m));
+    });
+
+    return sinSolapamiento ?? nextByOrder;
   };
 
   const nextDay = getNextWorkoutDay();
