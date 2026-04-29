@@ -207,7 +207,19 @@ PRINCIPIOS FULL W:
 - El primer ejercicio de cada día es el compuesto principal (no mover de posición 0)
 - Progresión lineal en 8 semanas
 - Descansos: 2-3 min en compuestos, 1-2 min accesorios, 1 min aislamiento
-- Estructura por día: compuesto → accesorios → aislamiento → core (opcional)
+- Estructura por día: compuesto pesado → 2-3 accesorios → 1-2 aislamiento → 1 core
+
+REGLAS DE VOLUMEN POR SESIÓN (OBLIGATORIO CUMPLIR):
+- Cada día DEBE tener entre 6 y 7 ejercicios (NO menos de 6 NUNCA)
+- Duración objetivo de la sesión: 60–90 minutos (con descansos largos del Full W)
+- Estructura típica de un día (cumplir esta plantilla):
+  1. Compuesto principal pesado (3 series × 6-8)
+  2. Compuesto secundario (3 series × 8-10)
+  3. Accesorio principal (2-3 series × 8-12)
+  4. Accesorio secundario (2-3 series × 10-12)
+  5. Aislamiento 1 (2-3 series × 12-15)
+  6. Aislamiento 2 o core (2-3 series × 12-20)
+  7. (opcional) Core / gemelos / extra (2-3 series × 12-20)
 
 DISTRIBUCIÓN PARA ${dias} DÍAS: ${distribuciones[dias] ?? 'Push / Pull / Legs'}
 
@@ -219,23 +231,23 @@ PERFIL DEL ATLETA:
 - Lesiones/Limitaciones: ${perfil.lesiones?.join(', ') || 'ninguna'}
 
 AJUSTES POR SOMATOTIPO:
-- ectomorfo → 3 series, descansos largos, prioriza compuestos
+- ectomorfo → 3 series en compuestos, descansos largos, prioriza compuestos
 - mesomorfo → equilibrio compuestos/accesorios, progresión estándar
-- endomorfo → densidad mayor, accesorios con menos descanso
+- endomorfo → un ejercicio extra de aislamiento o core, descansos algo más cortos en accesorios
 
 AJUSTES POR NIVEL:
-- principiante → reps 8-12, 3 series
-- intermedio → compuestos 6-8, accesorios 8-12, 3 series
-- avanzado → compuestos 5-8, accesorios 8-12, 3-4 series
+- principiante → reps 8-12 en todo, 2-3 series
+- intermedio → compuestos 6-8, accesorios 8-12, aislamiento 12-15, 2-3 series
+- avanzado → compuestos 5-8, accesorios 8-12, aislamiento 10-15, 3 series, añade 1 ejercicio extra (7 totales)
 
 HISTORIAL DE ENTRENAMIENTOS RECIENTES (últimas sesiones):
 ${historialTexto}
 
 INSTRUCCIONES DE SELECCIÓN:
-1. Analiza el historial y VARÍA los ejercicios: evita repetir los mismos 3 entrenamientos seguidos
-2. Si el usuario tiene historial, ajusta el volumen según los patrones observados
-3. Respeta las lesiones: elimina ejercicios que carguen las zonas afectadas
-4. Prioriza grupos musculares menos entrenados recientemente
+1. Analiza el historial y VARÍA los ejercicios respecto a las sesiones recientes
+2. Respeta las lesiones: elimina ejercicios que carguen las zonas afectadas
+3. Prioriza grupos musculares menos entrenados recientemente
+4. CADA día debe golpear todos los músculos del split de ese día (no descuides ningún grupo)
 
 CATÁLOGO EXACTO (usa EXACTAMENTE estos nombres, respetando mayúsculas/minúsculas):
 PECHO: "Press de Banca con Barra", "Press de Banca con Mancuernas", "Press Inclinado con Barra", "Press Inclinado con Mancuernas", "Aperturas con Mancuernas", "Aperturas en Polea", "Fondos en Paralelas"
@@ -247,9 +259,13 @@ PIERNA: "Sentadilla con Barra", "Prensa de Piernas", "Peso Muerto Convencional",
 GEMELOS: "Elevaciones de Gemelos de Pie", "Elevaciones de Gemelos Sentado"
 CORE: "Abdominales", "Plancha"
 
+VALIDACIÓN ANTES DE RESPONDER:
+- Cuenta los ejercicios de cada día. Si alguno tiene <6 ejercicios, AÑADE más antes de responder.
+- Verifica que todos los grupos musculares del día están cubiertos.
+
 RESPONDE ÚNICAMENTE CON JSON VÁLIDO. Sin markdown, sin bloques de código, sin explicaciones. Solo el objeto JSON.
 
-Esquema requerido:
+Esquema requerido (ejemplo de un día COMPLETO con 6 ejercicios):
 {
   "id": "fullw-ia",
   "nombre": "Full W IA — N Días",
@@ -259,11 +275,15 @@ Esquema requerido:
   "semanas": 8,
   "plan": [
     {
-      "nombre": "Día 1 — Nombre descriptivo",
+      "nombre": "Día 1 — Empuje (Pecho · Hombro · Tríceps)",
       "grupos": ["Pecho", "Hombros", "Tríceps"],
       "ejercicios": [
-        { "nombre": "Press de Banca con Barra", "series": 3, "reps": "6-8", "descanso": "3 min", "notas": "Ejercicio principal" },
-        { "nombre": "Press Inclinado con Mancuernas", "series": 2, "reps": "8-10", "descanso": "2 min" }
+        { "nombre": "Press de Banca con Barra", "series": 3, "reps": "6-8", "descanso": "3 min", "notas": "Ejercicio principal, retracción escapular" },
+        { "nombre": "Press Inclinado con Mancuernas", "series": 3, "reps": "8-10", "descanso": "2 min", "notas": "Énfasis pectoral superior" },
+        { "nombre": "Press Militar con Barra", "series": 3, "reps": "6-8", "descanso": "2-3 min" },
+        { "nombre": "Aperturas en Polea", "series": 2, "reps": "12-15", "descanso": "1 min", "notas": "Aislamiento pectoral" },
+        { "nombre": "Elevaciones Laterales", "series": 3, "reps": "12-15", "descanso": "1 min" },
+        { "nombre": "Extensiones en Polea (Tríceps)", "series": 3, "reps": "10-12", "descanso": "1 min" }
       ]
     }
   ]
@@ -272,10 +292,10 @@ Esquema requerido:
   const raw = await groqService.chat(
     [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: `Genera la rutina Full W adaptativa de ${dias} días para este atleta.` },
+      { role: 'user', content: `Genera la rutina Full W adaptativa de ${dias} días. CADA día debe tener mínimo 6 ejercicios (idealmente 6-7). Sesiones de 60-90 minutos.` },
     ],
     0.4,
-    3500,
+    5000,
   );
 
   const jsonMatch = raw.match(/\{[\s\S]*\}/);

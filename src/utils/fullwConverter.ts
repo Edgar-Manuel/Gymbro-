@@ -163,7 +163,7 @@ export function fullWToRutinaSemanal(
       nombre: dia.nombre,
       grupos: [] as GrupoMuscular[],
       ejercicios,
-      duracionEstimada: Math.round(ejercicios.length * 8 + 10),
+      duracionEstimada: Math.round(ejercicios.length * 12 + 15),
       orden: orden + 1,
     };
   });
