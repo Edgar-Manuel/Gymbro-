@@ -10,12 +10,13 @@ import { dbHelpers } from '@/db';
 import { generarRutinaPersonalizada, obtenerResumenRutina, SPLITS_CONFIG } from '@/utils/routineGenerator';
 import type { RutinaSemanal, ExerciseKnowledge } from '@/types';
 import type { FullWRoutine } from '@/data/fullwRoutines';
-import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check } from 'lucide-react';
+import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check, Brain, AlertCircle } from 'lucide-react';
 import ShareRoutineButton from '@/components/ShareRoutineButton';
 import FullWRoutineView from '@/components/training/FullWRoutineView';
 import { fullWToRutinaSemanal } from '@/utils/fullwConverter';
+import { generarRutinaFullWconIA } from '@/services/groq';
 
-type ModoEntrenamiento = 'basico' | 'fullw';
+type ModoEntrenamiento = 'basico' | 'fullw' | 'ia_adaptativa';
 
 export default function RoutineGenerator() {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ export default function RoutineGenerator() {
   const [exercises, setExercises] = useState<ExerciseKnowledge[]>([]);
   const [generatedRoutine, setGeneratedRoutine] = useState<RutinaSemanal | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [iaError, setIaError] = useState<string | null>(null);
 
   // Configuración personalizable
   const [diasDisponibles, setDiasDisponibles] = useState(currentUser?.diasDisponibles || 4);
@@ -74,6 +76,43 @@ export default function RoutineGenerator() {
     if (!currentUser) return;
     const rutinaSemanal = fullWToRutinaSemanal(fullwRutina, currentUser.id);
     setGeneratedRoutine(rutinaSemanal);
+  };
+
+  const handleGenerateIA = async () => {
+    if (!currentUser) return;
+    setIsGenerating(true);
+    setIaError(null);
+    try {
+      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 8);
+      const historial = workouts
+        .filter(w => w.completado)
+        .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+        .slice(0, 6)
+        .map(w => ({
+          fecha: new Date(w.fecha).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }),
+          musculos: [...new Set((w.ejercicios ?? []).map(e => e.ejercicio?.grupoMuscular).filter(Boolean) as string[])],
+          ejercicios: (w.ejercicios ?? []).map(e => e.ejercicio?.nombre).filter(Boolean) as string[],
+        }));
+
+      const fullwRutina = await generarRutinaFullWconIA(
+        {
+          nivel: currentUser.nivel,
+          somatotipo: currentUser.somatotipo ?? 'mesomorfo',
+          objetivo: currentUser.objetivo,
+          equipamiento: currentUser.equipamiento as string[],
+          lesiones: currentUser.lesiones,
+          diasDisponibles,
+        },
+        historial,
+      );
+
+      const rutinaSemanal = fullWToRutinaSemanal(fullwRutina, currentUser.id);
+      setGeneratedRoutine(rutinaSemanal);
+    } catch (err) {
+      setIaError(err instanceof Error ? err.message : 'Error generando la rutina. Inténtalo de nuevo.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   if (!currentUser) {
@@ -126,10 +165,117 @@ export default function RoutineGenerator() {
           <Dumbbell className="w-4 h-4 inline mr-1.5" />
           Full W
         </button>
+        <button
+          onClick={() => setModo('ia_adaptativa')}
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+            modo === 'ia_adaptativa'
+              ? 'bg-background shadow text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Brain className="w-4 h-4 inline mr-1.5" />
+          IA Adaptativa
+        </button>
       </div>
 
       {/* ── Modo Full W: selector de plantilla ── */}
       {modo === 'fullw' && !generatedRoutine && <FullWRoutineView onUseRoutine={handleUseFullW} />}
+
+      {/* ── Modo IA Adaptativa ── */}
+      {modo === 'ia_adaptativa' && !generatedRoutine && (
+        <>
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold mb-2 flex items-center gap-2">
+              <Brain className="w-8 h-8 text-primary" />
+              Full W con IA Adaptativa
+            </h1>
+            <p className="text-muted-foreground">
+              Llama 3.3 analiza tu historial real y diseña la rutina Full W óptima para ti
+            </p>
+          </div>
+
+          {/* Perfil */}
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle className="text-base">Tu perfil</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-3 text-sm">
+              <div>Nivel: <span className="font-medium">{currentUser.nivel}</span></div>
+              <div>Somatotipo: <span className="font-medium">{currentUser.somatotipo ?? 'mesomorfo'}</span></div>
+              <div>Objetivo: <span className="font-medium">{currentUser.objetivo}</span></div>
+              <div>
+                Equipamiento:{' '}
+                <span className="font-medium">
+                  {Array.isArray(currentUser.equipamiento) ? currentUser.equipamiento.join(', ') : 'completo'}
+                </span>
+              </div>
+              {currentUser.lesiones && currentUser.lesiones.length > 0 && (
+                <div className="col-span-2 text-destructive">
+                  Lesiones: {currentUser.lesiones.join(', ')}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Días */}
+          <Card className="mb-4">
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <Label htmlFor="dias-ia" className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Días por semana
+                </Label>
+                <Select
+                  value={diasDisponibles.toString()}
+                  onValueChange={(value) => setDiasDisponibles(parseInt(value))}
+                >
+                  <SelectTrigger id="dias-ia">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="3">3 días — Push / Pull / Legs</SelectItem>
+                    <SelectItem value="4">4 días — Upper / Lower</SelectItem>
+                    <SelectItem value="5">5 días — PPL + Upper/Lower</SelectItem>
+                    <SelectItem value="6">6 días — PPL × 2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Error */}
+          {iaError && (
+            <div className="flex items-start gap-3 p-4 rounded-lg border border-destructive/50 bg-destructive/10 mb-4 text-sm text-destructive">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              {iaError}
+            </div>
+          )}
+
+          {/* CTA */}
+          <Button
+            onClick={handleGenerateIA}
+            size="lg"
+            className="w-full"
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <>
+                <Brain className="w-4 h-4 mr-2 animate-pulse" />
+                Llama 3.3 está diseñando tu rutina...
+              </>
+            ) : (
+              <>
+                <Brain className="w-4 h-4 mr-2" />
+                Generar con Llama 3.3
+              </>
+            )}
+          </Button>
+
+          <p className="text-xs text-muted-foreground text-center mt-3">
+            La IA recibe tu historial de entrenamientos real para optimizar la selección de ejercicios
+          </p>
+        </>
+      )}
 
       {/* ── Modo Básico IA: formulario ── */}
       {modo === 'basico' && !generatedRoutine && (
@@ -426,7 +572,7 @@ export default function RoutineGenerator() {
               onClick={() => setGeneratedRoutine(null)}
               className="flex-1"
             >
-              {modo === 'fullw' ? 'Elegir otra plantilla' : 'Generar Otra'}
+              {modo === 'fullw' ? 'Elegir otra plantilla' : modo === 'ia_adaptativa' ? 'Regenerar con IA' : 'Generar Otra'}
             </Button>
             <Button
               onClick={handleSaveRoutine}
