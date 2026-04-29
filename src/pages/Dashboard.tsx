@@ -57,9 +57,17 @@ function WeeklyTimeline({
   const totalDays = routine?.diasPorSemana || routine?.dias?.length || 4;
   const diasRutina = routine?.dias ?? [];
 
-  // Anchor: today's training slot = nextDay's index in the routine.
-  // This ensures today's column always matches the "Próximo Entrenamiento" card.
-  const todayRoutineIdx = nextDay
+  // Anchor on the NEXT training day in the calendar (today if today is a
+  // training day, else look forward). Using "today" as anchor when today is
+  // a rest day causes the offset loop to double-count the next training day.
+  let anchorWeekIdx = todayWeekIndex;
+  if (!isTrainingDay(todayWeekIndex, totalDays)) {
+    for (let k = 1; k <= 7; k++) {
+      const idx = (todayWeekIndex + k) % 7;
+      if (isTrainingDay(idx, totalDays)) { anchorWeekIdx = idx; break; }
+    }
+  }
+  const anchorRoutineIdx = nextDay
     ? diasRutina.findIndex(d => d.id === nextDay.id)
     : -1;
 
@@ -76,19 +84,19 @@ function WeeklyTimeline({
     // Compute the routine slot for this day by counting training-day steps
     // from the anchor (today) and offsetting todayRoutineIdx accordingly.
     let routineDay: DiaRutina | null = null;
-    if (!isRest && todayRoutineIdx !== -1 && diasRutina.length > 0) {
+    if (!isRest && anchorRoutineIdx !== -1 && diasRutina.length > 0) {
       let offset = 0;
-      if (i < todayWeekIndex) {
-        for (let j = i; j < todayWeekIndex; j++) {
+      if (i < anchorWeekIdx) {
+        for (let j = i; j < anchorWeekIdx; j++) {
           if (isTrainingDay(j, totalDays)) offset--;
         }
-      } else if (i > todayWeekIndex) {
-        for (let j = todayWeekIndex + 1; j <= i; j++) {
+      } else if (i > anchorWeekIdx) {
+        for (let j = anchorWeekIdx + 1; j <= i; j++) {
           if (isTrainingDay(j, totalDays)) offset++;
         }
       }
       const len = diasRutina.length;
-      routineDay = diasRutina[((todayRoutineIdx + offset) % len + len) % len];
+      routineDay = diasRutina[((anchorRoutineIdx + offset) % len + len) % len];
     }
 
     // Muscles: real workout muscles take priority, then scheduled routine
@@ -274,6 +282,22 @@ export default function Dashboard() {
 
   const nextDay = getNextWorkoutDay();
 
+  // ¿Hoy toca entrenar o es día de descanso según el calendario semanal?
+  const todayWeekIdx = (new Date().getDay() + 6) % 7;
+  const totalTrainingDays = activeRoutine?.diasPorSemana || activeRoutine?.dias?.length || 0;
+  const isRestToday = !!activeRoutine && totalTrainingDays > 0
+    && !isTrainingDay(todayWeekIdx, totalTrainingDays);
+
+  let nextTrainingWeekIdx = todayWeekIdx;
+  if (isRestToday) {
+    for (let k = 1; k <= 7; k++) {
+      const idx = (todayWeekIdx + k) % 7;
+      if (isTrainingDay(idx, totalTrainingDays)) { nextTrainingWeekIdx = idx; break; }
+    }
+  }
+  const dayNames = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+  const nextTrainingDayName = dayNames[nextTrainingWeekIdx];
+
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 12) return 'Buenos días';
@@ -345,12 +369,18 @@ export default function Dashboard() {
           <div className="flex items-start justify-between">
             <div>
               <CardTitle>
-                {nextDay ? nextDay.nombre : 'Sin rutina activa'}
+                {!nextDay
+                  ? 'Sin rutina activa'
+                  : isRestToday
+                    ? '💤 Hoy descansas'
+                    : nextDay.nombre}
               </CardTitle>
               <CardDescription>
-                {nextDay
-                  ? `${nextDay.ejercicios.length} ejercicios · ~${nextDay.duracionEstimada} min`
-                  : 'Genera una rutina para empezar'}
+                {!nextDay
+                  ? 'Genera una rutina para empezar'
+                  : isRestToday
+                    ? <>Próximo entreno <span className="capitalize">{nextTrainingDayName}</span>: {nextDay.nombre}</>
+                    : `${nextDay.ejercicios.length} ejercicios · ~${nextDay.duracionEstimada} min`}
               </CardDescription>
             </div>
             <Dumbbell className="w-8 h-8 text-primary/60 shrink-0" />
@@ -365,13 +395,25 @@ export default function Dashboard() {
                 ))}
               </div>
               <div className="flex flex-col gap-2">
-                <Button onClick={() => navigate('/workout-session')} size="lg" className="w-full">
-                  Comenzar Entrenamiento
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/routine-generator')} 
+                {isRestToday ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/workout-session')}
+                    size="lg"
+                    className="w-full"
+                  >
+                    Entrenar de todos modos
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                ) : (
+                  <Button onClick={() => navigate('/workout-session')} size="lg" className="w-full">
+                    Comenzar Entrenamiento
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/routine-generator')}
                   className="w-full text-muted-foreground"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
