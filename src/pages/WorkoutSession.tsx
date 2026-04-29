@@ -134,41 +134,65 @@ export default function WorkoutSession() {
     setAffectedInjuries(affected);
   }, [selectedDay, activeInjuries]);
 
-  // Auto-preselect day based on last workout, avoiding muscle group overlap
+  // Auto-preselect day based on 48h muscle recovery window, works across routine changes
   useEffect(() => {
     const autoSelectDay = async () => {
       if (!currentUser || !activeRoutine?.dias?.length) return;
 
-      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 5);
+      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 10);
       const ultimo = workouts.find(w => w.completado);
       if (!ultimo) return;
 
-      const lastMuscles = new Set<GrupoMuscular>(
-        (ultimo.ejercicios ?? [])
-          .map(e => e.ejercicio?.grupoMuscular)
-          .filter((m): m is GrupoMuscular => m !== undefined)
+      const hace48h = Date.now() - 48 * 3600 * 1000;
+      const recientes = workouts.filter(
+        w => w.completado && new Date(w.fecha).getTime() > hace48h
+      );
+      const musculosRecientes = new Set<string>(
+        recientes.flatMap(w =>
+          (w.ejercicios ?? [])
+            .map(e => e.ejercicio?.grupoMuscular)
+            .filter(Boolean) as string[]
+        )
       );
 
+      const getMusculos = (dia: DiaRutina): string[] => {
+        if (dia.grupos?.length > 0) return dia.grupos as string[];
+        return [...new Set(
+          (dia.ejercicios ?? [])
+            .map(e => e.ejercicio?.grupoMuscular)
+            .filter(Boolean) as string[]
+        )];
+      };
+
       const activeDias = activeRoutine.dias.filter(d => d.ejercicios.length > 0);
-      const idx = activeDias.findIndex(d => d.id === ultimo.diaRutinaId || d.nombre === ultimo.diaRutina);
-      const nextIdx = idx >= 0 ? (idx + 1) % activeDias.length : 0;
-      const nextByOrder = activeDias[nextIdx];
 
-      const nextMuscles: GrupoMuscular[] = nextByOrder.grupos?.length > 0
-        ? nextByOrder.grupos
-        : (nextByOrder.ejercicios ?? []).map(e => e.ejercicio?.grupoMuscular).filter((m): m is GrupoMuscular => m !== undefined);
+      const idx = activeDias.findIndex(d =>
+        d.id === ultimo.diaRutinaId ||
+        d.nombre === ultimo.diaRutina ||
+        getMusculos(d).some(m => musculosRecientes.has(m))
+      );
 
-      if (!nextMuscles.some(m => lastMuscles.has(m))) {
-        setSelectedDay(nextByOrder);
-      } else {
-        const sinSolapamiento = activeDias.find(d => {
-          const muscles: GrupoMuscular[] = d.grupos?.length > 0
-            ? d.grupos
-            : (d.ejercicios ?? []).map(e => e.ejercicio?.grupoMuscular).filter((m): m is GrupoMuscular => m !== undefined);
-          return muscles.length > 0 && !muscles.some(m => lastMuscles.has(m));
-        });
-        if (sinSolapamiento) setSelectedDay(sinSolapamiento);
+      const candidatos = activeDias.filter(d => {
+        const muscles = getMusculos(d);
+        return muscles.length > 0 && !muscles.some(m => musculosRecientes.has(m));
+      });
+
+      if (candidatos.length > 0) {
+        if (idx >= 0) {
+          const siguiente = candidatos.find((_, i) => {
+            const candIdx = activeDias.indexOf(candidatos[i]);
+            return candIdx > idx;
+          });
+          setSelectedDay(siguiente ?? candidatos[0]);
+        } else {
+          setSelectedDay(candidatos[0]);
+        }
+        return;
       }
+
+      // Fallback: todos los días solapan — avanzar secuencialmente
+      const nextIdx = idx >= 0 ? (idx + 1) % activeDias.length : 0;
+      setSelectedDay(activeDias[nextIdx]);
     };
     autoSelectDay();
   }, [activeRoutine, currentUser]);

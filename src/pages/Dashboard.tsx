@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
-import type { RutinaSemanal, WorkoutLog, ProgressPhoto, DiaRutina, GrupoMuscular } from '@/types';
+import type { RutinaSemanal, WorkoutLog, ProgressPhoto, DiaRutina } from '@/types';
 import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw, CheckCircle } from 'lucide-react';
 import StatsShareCard from '@/components/StatsShareCard';
 import InjuryPanel from '@/components/InjuryPanel';
@@ -264,30 +264,56 @@ export default function Dashboard() {
     const ultimo = recentWorkouts.find(w => w.completado);
     if (!ultimo) return activeRoutine.dias[0];
 
-    const lastMuscles = new Set<GrupoMuscular>(
-      (ultimo.ejercicios ?? [])
-        .map(e => e.ejercicio?.grupoMuscular)
-        .filter((m): m is GrupoMuscular => m !== undefined)
+    // Todos los músculos trabajados en las últimas 48h, sin importar qué rutina era
+    const hace48h = Date.now() - 48 * 3600 * 1000;
+    const recientes = recentWorkouts.filter(
+      w => w.completado && new Date(w.fecha).getTime() > hace48h
+    );
+    const musculosRecientes = new Set<string>(
+      recientes.flatMap(w =>
+        (w.ejercicios ?? [])
+          .map(e => e.ejercicio?.grupoMuscular)
+          .filter(Boolean) as string[]
+      )
     );
 
-    const idx = activeRoutine.dias.findIndex(d => d.id === ultimo.diaRutinaId || d.nombre === ultimo.diaRutina);
-    const nextIdx = idx >= 0 ? (idx + 1) % activeRoutine.dias.length : 0;
-    const nextByOrder = activeRoutine.dias[nextIdx];
+    const getMusculos = (dia: DiaRutina): string[] => {
+      if (dia.grupos?.length > 0) return dia.grupos as string[];
+      return [...new Set(
+        (dia.ejercicios ?? [])
+          .map(e => e.ejercicio?.grupoMuscular)
+          .filter(Boolean) as string[]
+      )];
+    };
 
-    const nextMuscles: GrupoMuscular[] = nextByOrder.grupos?.length > 0
-      ? nextByOrder.grupos
-      : (nextByOrder.ejercicios ?? []).map(e => e.ejercicio?.grupoMuscular).filter((m): m is GrupoMuscular => m !== undefined);
+    // Localizar el día actual por ID, nombre, o solapamiento muscular
+    const idx = activeRoutine.dias.findIndex(d =>
+      d.id === ultimo.diaRutinaId ||
+      d.nombre === ultimo.diaRutina ||
+      getMusculos(d).some(m => musculosRecientes.has(m))
+    );
 
-    if (!nextMuscles.some(m => lastMuscles.has(m))) return nextByOrder;
-
-    const sinSolapamiento = activeRoutine.dias.find(d => {
-      const muscles: GrupoMuscular[] = d.grupos?.length > 0
-        ? d.grupos
-        : (d.ejercicios ?? []).map(e => e.ejercicio?.grupoMuscular).filter((m): m is GrupoMuscular => m !== undefined);
-      return muscles.length > 0 && !muscles.some(m => lastMuscles.has(m));
+    // Candidatos: días que no solapan con la ventana de 48h
+    const candidatos = activeRoutine.dias.filter(d => {
+      const muscles = getMusculos(d);
+      return muscles.length > 0 && !muscles.some(m => musculosRecientes.has(m));
     });
 
-    return sinSolapamiento ?? nextByOrder;
+    if (candidatos.length > 0) {
+      if (idx >= 0) {
+        // Preferir el candidato que viene después del día actual en orden circular
+        const siguiente = candidatos.find((_, i) => {
+          const candIdx = activeRoutine.dias.indexOf(candidatos[i]);
+          return candIdx > idx;
+        });
+        return siguiente ?? candidatos[0];
+      }
+      return candidatos[0];
+    }
+
+    // Fallback: todos los días solapan (full body) — avanzar secuencialmente
+    const nextIdx = idx >= 0 ? (idx + 1) % activeRoutine.dias.length : 0;
+    return activeRoutine.dias[nextIdx];
   };
 
   const nextDay = getNextWorkoutDay();
