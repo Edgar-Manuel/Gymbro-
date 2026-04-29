@@ -94,13 +94,25 @@ function WeeklyTimeline({
     let dailyMuscles: string[] = [];
     if (trained && workoutDelDia) {
       const rd = diasRutina.find(d => d.id === workoutDelDia.diaRutinaId);
-      if (rd?.grupos) {
+      if (rd?.grupos?.length > 0) {
         dailyMuscles = rd.grupos;
-      } else if (workoutDelDia.ejercicios?.[0]?.ejercicio?.grupoMuscular) {
-        dailyMuscles = [workoutDelDia.ejercicios[0].ejercicio.grupoMuscular];
+      } else {
+        dailyMuscles = [...new Set(
+          (workoutDelDia.ejercicios ?? [])
+            .map(e => e.ejercicio?.grupoMuscular)
+            .filter(Boolean) as string[]
+        )];
       }
-    } else if (routineDay?.grupos) {
-      dailyMuscles = routineDay.grupos;
+    } else if (routineDay) {
+      if (routineDay.grupos?.length > 0) {
+        dailyMuscles = routineDay.grupos;
+      } else {
+        dailyMuscles = [...new Set(
+          (routineDay.ejercicios ?? [])
+            .map(e => e.ejercicio?.grupoMuscular)
+            .filter(Boolean) as string[]
+        )];
+      }
     }
 
     const muscleImages = dailyMuscles
