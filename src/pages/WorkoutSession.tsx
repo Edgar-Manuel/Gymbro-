@@ -16,6 +16,7 @@ import { notificationManager } from '@/utils/notificationManager';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
 import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular } from '@/types';
+import { inferirSiguienteDia } from '@/utils/workoutInference';
 import { INJURY_AFFECTS, LESION_ZONA_LABELS, REHAB_EXERCISES } from '@/utils/injuryData';
 import { CARDIO_RECOMENDACIONES } from '@/utils/cardioData';
 import CardioPanel from '@/components/CardioPanel';
@@ -134,65 +135,22 @@ export default function WorkoutSession() {
     setAffectedInjuries(affected);
   }, [selectedDay, activeInjuries]);
 
-  // Auto-preselect day based on 48h muscle recovery window, works across routine changes
+  // Auto-preselect day by muscle overlap — works across routine changes
   useEffect(() => {
     const autoSelectDay = async () => {
       if (!currentUser || !activeRoutine?.dias?.length) return;
+      const activeDias = activeRoutine.dias.filter(d => d.ejercicios.length > 0);
+      if (!activeDias.length) return;
 
       const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 10);
-      const ultimo = workouts.find(w => w.completado);
-      if (!ultimo) return;
+      const completados = workouts
+        .filter(w => w.completado)
+        .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
-      const hace48h = Date.now() - 48 * 3600 * 1000;
-      const recientes = workouts.filter(
-        w => w.completado && new Date(w.fecha).getTime() > hace48h
-      );
-      const musculosRecientes = new Set<string>(
-        recientes.flatMap(w =>
-          (w.ejercicios ?? [])
-            .map(e => e.ejercicio?.grupoMuscular)
-            .filter(Boolean) as string[]
-        )
-      );
+      if (!completados.length) return;
 
-      const getMusculos = (dia: DiaRutina): string[] => {
-        if (dia.grupos?.length > 0) return dia.grupos as string[];
-        return [...new Set(
-          (dia.ejercicios ?? [])
-            .map(e => e.ejercicio?.grupoMuscular)
-            .filter(Boolean) as string[]
-        )];
-      };
-
-      const activeDias = activeRoutine.dias.filter(d => d.ejercicios.length > 0);
-
-      const idx = activeDias.findIndex(d =>
-        d.id === ultimo.diaRutinaId ||
-        d.nombre === ultimo.diaRutina ||
-        getMusculos(d).some(m => musculosRecientes.has(m))
-      );
-
-      const candidatos = activeDias.filter(d => {
-        const muscles = getMusculos(d);
-        return muscles.length > 0 && !muscles.some(m => musculosRecientes.has(m));
-      });
-
-      if (candidatos.length > 0) {
-        if (idx >= 0) {
-          const siguiente = candidatos.find((_, i) => {
-            const candIdx = activeDias.indexOf(candidatos[i]);
-            return candIdx > idx;
-          });
-          setSelectedDay(siguiente ?? candidatos[0]);
-        } else {
-          setSelectedDay(candidatos[0]);
-        }
-        return;
-      }
-
-      // Fallback: todos los días solapan — avanzar secuencialmente
-      const nextIdx = idx >= 0 ? (idx + 1) % activeDias.length : 0;
-      setSelectedDay(activeDias[nextIdx]);
+      const nextDay = inferirSiguienteDia(activeDias, completados);
+      setSelectedDay(nextDay);
     };
     autoSelectDay();
   }, [activeRoutine, currentUser]);
