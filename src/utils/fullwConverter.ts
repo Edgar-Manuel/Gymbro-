@@ -128,13 +128,25 @@ function makeStubExercise(nombre: string, idx: number): ExerciseKnowledge {
   };
 }
 
+function shuffleSecondary<T>(arr: T[]): T[] {
+  if (arr.length <= 2) return arr;
+  const [first, ...rest] = arr;
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  return [first, ...rest];
+}
+
 export function fullWToRutinaSemanal(
   rutina: FullWRoutine,
   userId: string
 ): RutinaSemanal {
   let stubIdx = 0;
   const dias: DiaRutina[] = rutina.plan.map((dia, orden) => {
-    const ejercicios: EjercicioEnRutina[] = dia.ejercicios.map((ej: FullWExercise) => {
+    // Shuffle secondary exercises (keep the primary compound first)
+    const ejerciciosOrden = shuffleSecondary([...dia.ejercicios]);
+    const ejercicios: EjercicioEnRutina[] = ejerciciosOrden.map((ej: FullWExercise) => {
       const found = lookupExercise(ej.nombre);
       const ejercicio = found ?? makeStubExercise(ej.nombre, stubIdx++);
       return {
