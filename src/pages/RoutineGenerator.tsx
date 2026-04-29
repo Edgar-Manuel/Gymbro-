@@ -8,15 +8,103 @@ import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
 import { generarRutinaPersonalizada, obtenerResumenRutina, SPLITS_CONFIG } from '@/utils/routineGenerator';
-import type { RutinaSemanal, ExerciseKnowledge } from '@/types';
+import type { RutinaSemanal, ExerciseKnowledge, DiaRutina } from '@/types';
 import type { FullWRoutine } from '@/data/fullwRoutines';
-import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check, Brain, AlertCircle } from 'lucide-react';
+import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check, Brain, AlertCircle, GripVertical } from 'lucide-react';
 import ShareRoutineButton from '@/components/ShareRoutineButton';
 import FullWRoutineView from '@/components/training/FullWRoutineView';
 import { fullWToRutinaSemanal } from '@/utils/fullwConverter';
 import { generarRutinaFullWconIA } from '@/services/groq';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type ModoEntrenamiento = 'basico' | 'fullw' | 'ia_adaptativa';
+
+function SortableDayCard({ dia, index }: { dia: DiaRutina; index: number }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: dia.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 'auto' as const,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                type="button"
+                {...attributes}
+                {...listeners}
+                className="touch-none p-1.5 -ml-1 rounded hover:bg-accent cursor-grab active:cursor-grabbing shrink-0"
+                aria-label="Arrastrar para reordenar el día"
+              >
+                <GripVertical className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <div className="min-w-0">
+                <CardTitle className="text-lg truncate">Día {index + 1}: {dia.nombre}</CardTitle>
+                <CardDescription>
+                  {dia.ejercicios.length} ejercicios • ~{dia.duracionEstimada} min
+                </CardDescription>
+              </div>
+            </div>
+            <Badge variant={dia.ejercicios.length > 0 ? 'default' : 'secondary'} className="shrink-0">
+              {dia.ejercicios.length > 0 ? 'Activo' : 'Descanso'}
+            </Badge>
+          </div>
+        </CardHeader>
+        {dia.ejercicios.length > 0 && (
+          <CardContent>
+            <div className="space-y-2">
+              {dia.ejercicios.map((ej, idx) => (
+                <div
+                  key={ej.ejercicioId}
+                  className="p-3 rounded-lg border bg-accent/30 flex items-center justify-between"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{idx + 1}. {ej.ejercicio?.nombre}</span>
+                      <Badge variant={
+                        ej.ejercicio?.tier === 'S' ? 'success' :
+                          ej.ejercicio?.tier === 'A' ? 'default' :
+                            'secondary'
+                      } className="text-xs">
+                        {ej.ejercicio?.tier}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {ej.seriesObjetivo} series × {Array.isArray(ej.repsObjetivo)
+                        ? `${ej.repsObjetivo[0]}-${ej.repsObjetivo[1]}`
+                        : ej.repsObjetivo} reps
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        )}
+      </Card>
+    </div>
+  );
+}
 
 export default function RoutineGenerator() {
   const navigate = useNavigate();
@@ -27,6 +115,25 @@ export default function RoutineGenerator() {
   const [generatedRoutine, setGeneratedRoutine] = useState<RutinaSemanal | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [iaError, setIaError] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleReorderDias = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !generatedRoutine) return;
+    const oldIdx = generatedRoutine.dias.findIndex(d => d.id === active.id);
+    const newIdx = generatedRoutine.dias.findIndex(d => d.id === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const reordered = arrayMove(generatedRoutine.dias, oldIdx, newIdx).map((d, i) => ({
+      ...d,
+      orden: i + 1,
+    }));
+    setGeneratedRoutine({ ...generatedRoutine, dias: reordered });
+  };
 
   // Configuración personalizable
   const [diasDisponibles, setDiasDisponibles] = useState(currentUser?.diasDisponibles || 4);
@@ -514,56 +621,28 @@ export default function RoutineGenerator() {
             </CardContent>
           </Card>
 
-          {/* Desglose por días */}
-          <div className="space-y-4 mb-6">
-            {generatedRoutine.dias.map((dia) => (
-              <Card key={dia.orden}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">Día {dia.orden}: {dia.nombre}</CardTitle>
-                      <CardDescription>
-                        {dia.ejercicios.length} ejercicios • ~{dia.duracionEstimada} min
-                      </CardDescription>
-                    </div>
-                    <Badge variant={dia.ejercicios.length > 0 ? 'default' : 'secondary'}>
-                      {dia.ejercicios.length > 0 ? 'Activo' : 'Descanso'}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                {dia.ejercicios.length > 0 && (
-                  <CardContent>
-                    <div className="space-y-2">
-                      {dia.ejercicios.map((ej, idx) => (
-                        <div
-                          key={ej.ejercicioId}
-                          className="p-3 rounded-lg border bg-accent/30 flex items-center justify-between"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{idx + 1}. {ej.ejercicio?.nombre}</span>
-                              <Badge variant={
-                                ej.ejercicio?.tier === 'S' ? 'success' :
-                                  ej.ejercicio?.tier === 'A' ? 'default' :
-                                    'secondary'
-                              } className="text-xs">
-                                {ej.ejercicio?.tier}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {ej.seriesObjetivo} series × {Array.isArray(ej.repsObjetivo)
-                                ? `${ej.repsObjetivo[0]}-${ej.repsObjetivo[1]}`
-                                : ej.repsObjetivo} reps
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-            ))}
+          {/* Hint para reordenar */}
+          <div className="flex items-start gap-2 p-3 mb-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-muted-foreground">
+            <GripVertical className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+            <span>
+              Arrastra los días por el icono <span className="font-medium text-foreground">⋮⋮</span> para cambiar el orden antes de guardar
+              {' '}— útil si entrenaste un grupo similar ayer.
+            </span>
           </div>
+
+          {/* Desglose por días (drag-and-drop) */}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleReorderDias}>
+            <SortableContext
+              items={generatedRoutine.dias.map(d => d.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-4 mb-6">
+                {generatedRoutine.dias.map((dia, idx) => (
+                  <SortableDayCard key={dia.id} dia={dia} index={idx} />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
 
           {/* Acciones */}
           <div className="flex gap-3">
