@@ -9,9 +9,132 @@ import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { BodyMeasurement } from '@/types';
 import { Scale, Ruler, TrendingUp, TrendingDown, Plus, RefreshCw, Pencil, Trash2 } from 'lucide-react';
+import { RANGES } from '@/utils/bodyCalculations';
 
 interface BodyMeasurementsProps {
   onUpdate?: () => void;
+}
+
+type FormData = {
+  fecha: string;        // YYYY-MM-DD
+  peso: string;
+  grasaCorporal: string;
+  pecho: string;
+  cintura: string;
+  cadera: string;
+  brazoDerecho: string;
+  brazoIzquierdo: string;
+  musloDerecho: string;
+  musloIzquierdo: string;
+  pantorrillaDerecha: string;
+  pantorrillaIzquierda: string;
+  notas: string;
+};
+
+type FormErrors = Partial<Record<keyof FormData, string>>;
+
+const todayISO = () => {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+};
+
+const emptyForm: FormData = {
+  fecha: todayISO(),
+  peso: '', grasaCorporal: '',
+  pecho: '', cintura: '', cadera: '',
+  brazoDerecho: '', brazoIzquierdo: '',
+  musloDerecho: '', musloIzquierdo: '',
+  pantorrillaDerecha: '', pantorrillaIzquierda: '',
+  notas: '',
+};
+
+const readMeasurementField = (m: BodyMeasurement, k: string): number | undefined =>
+  (m as any)[k] ?? (m.medidas as any)?.[k];
+
+const measurementToFormData = (m: BodyMeasurement, fechaOverride?: string): FormData => {
+  const num = (v: number | undefined) => (v != null ? String(v) : '');
+  return {
+    fecha: fechaOverride ?? new Date(m.fecha).toISOString().slice(0, 10),
+    peso: num(m.peso),
+    grasaCorporal: num(m.grasaCorporal),
+    pecho: num(readMeasurementField(m, 'pecho')),
+    cintura: num(readMeasurementField(m, 'cintura')),
+    cadera: num(readMeasurementField(m, 'cadera')),
+    brazoDerecho: num(readMeasurementField(m, 'brazoDerecho')),
+    brazoIzquierdo: num(readMeasurementField(m, 'brazoIzquierdo')),
+    musloDerecho: num(readMeasurementField(m, 'musloDerecho')),
+    musloIzquierdo: num(readMeasurementField(m, 'musloIzquierdo')),
+    pantorrillaDerecha: num(readMeasurementField(m, 'pantorrillaDerecha')),
+    pantorrillaIzquierda: num(readMeasurementField(m, 'pantorrillaIzquierda')),
+    notas: m.notas ?? '',
+  };
+};
+
+const validateForm = (f: FormData): FormErrors => {
+  const errs: FormErrors = {};
+  if (!f.fecha) errs.fecha = 'Fecha requerida';
+  const peso = parseFloat(f.peso);
+  if (!f.peso || isNaN(peso) || peso < RANGES.peso.min || peso > RANGES.peso.max) {
+    errs.peso = `Peso entre ${RANGES.peso.min} y ${RANGES.peso.max} kg`;
+  }
+  if (f.grasaCorporal) {
+    const g = parseFloat(f.grasaCorporal);
+    if (isNaN(g) || g < RANGES.grasaCorporal.min || g > RANGES.grasaCorporal.max) {
+      errs.grasaCorporal = `Grasa entre ${RANGES.grasaCorporal.min} y ${RANGES.grasaCorporal.max}%`;
+    }
+  }
+  const medidaKeys: (keyof FormData)[] = [
+    'pecho', 'cintura', 'cadera',
+    'brazoDerecho', 'brazoIzquierdo',
+    'musloDerecho', 'musloIzquierdo',
+    'pantorrillaDerecha', 'pantorrillaIzquierda',
+  ];
+  for (const k of medidaKeys) {
+    const val = f[k];
+    if (!val) continue;
+    const n = parseFloat(val as string);
+    if (isNaN(n) || n < RANGES.medida.min || n > RANGES.medida.max) {
+      errs[k] = `Entre ${RANGES.medida.min} y ${RANGES.medida.max} cm`;
+    }
+  }
+  return errs;
+};
+
+type NumberFieldProps = {
+  field: keyof FormData;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (k: keyof FormData, v: string) => void;
+  error?: string;
+  required?: boolean;
+  compact?: boolean;
+  type?: string;
+  step?: string;
+};
+
+function NumberField({
+  field, label, placeholder, value, onChange, error, required, compact, type = 'number', step = '0.1',
+}: NumberFieldProps) {
+  return (
+    <div>
+      <Label htmlFor={field} className={compact ? 'text-xs' : ''}>{label}</Label>
+      <Input
+        id={field}
+        type={type}
+        step={step}
+        inputMode={type === 'number' ? 'decimal' : undefined}
+        value={value}
+        onChange={(e) => onChange(field, e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        aria-invalid={error ? true : undefined}
+        className={error ? 'border-destructive' : ''}
+      />
+      {error && <p className="text-xs text-destructive mt-1">{error}</p>}
+    </div>
+  );
 }
 
 export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
@@ -22,19 +145,13 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
   const [syncing, setSyncing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Formulario
-  const [peso, setPeso] = useState('');
-  const [grasaCorporal, setGrasaCorporal] = useState('');
-  const [pecho, setPecho] = useState('');
-  const [cintura, setCintura] = useState('');
-  const [cadera, setCadera] = useState('');
-  const [brazoDerecho, setBrazoDerecho] = useState('');
-  const [brazoIzquierdo, setBrazoIzquierdo] = useState('');
-  const [musloDerecho, setMusloDerecho] = useState('');
-  const [musloIzquierdo, setMusloIzquierdo] = useState('');
-  const [pantorrillaDerecha, setPantorrillaDerecha] = useState('');
-  const [pantorrillaIzquierda, setPantorrillaIzquierda] = useState('');
-  const [notas, setNotas] = useState('');
+  const [form, setForm] = useState<FormData>(emptyForm);
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const setField = (k: keyof FormData, v: string) => {
+    setForm(f => ({ ...f, [k]: v }));
+    if (errors[k]) setErrors(e => ({ ...e, [k]: undefined }));
+  };
 
   useEffect(() => {
     if (!currentUser) return;
@@ -83,38 +200,31 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
   };
 
   const resetForm = () => {
-    setPeso('');
-    setGrasaCorporal('');
-    setPecho('');
-    setCintura('');
-    setCadera('');
-    setBrazoDerecho('');
-    setBrazoIzquierdo('');
-    setMusloDerecho('');
-    setMusloIzquierdo('');
-    setPantorrillaDerecha('');
-    setPantorrillaIzquierda('');
-    setNotas('');
+    setForm(emptyForm);
+    setErrors({});
     setEditingId(null);
   };
 
   const startEdit = (m: BodyMeasurement) => {
     setEditingId(m.id);
-    setPeso(String(m.peso ?? ''));
-    setGrasaCorporal(m.grasaCorporal != null ? String(m.grasaCorporal) : '');
-    // Lee de campos planos primero (datos nuevos), fallback a medidas (datos legacy)
-    const get = (k: keyof NonNullable<BodyMeasurement['medidas']>) =>
-      (m as any)[k] ?? m.medidas?.[k];
-    setPecho(get('pecho') != null ? String(get('pecho')) : '');
-    setCintura(get('cintura') != null ? String(get('cintura')) : '');
-    setCadera(get('cadera') != null ? String(get('cadera')) : '');
-    setBrazoDerecho(get('brazoDerecho') != null ? String(get('brazoDerecho')) : '');
-    setBrazoIzquierdo(get('brazoIzquierdo') != null ? String(get('brazoIzquierdo')) : '');
-    setMusloDerecho(get('musloDerecho') != null ? String(get('musloDerecho')) : '');
-    setMusloIzquierdo(get('musloIzquierdo') != null ? String(get('musloIzquierdo')) : '');
-    setPantorrillaDerecha(get('pantorrillaDerecha') != null ? String(get('pantorrillaDerecha')) : '');
-    setPantorrillaIzquierda(get('pantorrillaIzquierda') != null ? String(get('pantorrillaIzquierda')) : '');
-    setNotas(m.notas ?? '');
+    setForm(measurementToFormData(m));
+    setErrors({});
+    setShowForm(true);
+  };
+
+  /**
+   * Abre el form en modo crear con los valores de la última medición pre-rellenados
+   * (sin notas, fecha = hoy). Reduce fricción para registros frecuentes.
+   */
+  const openCreate = () => {
+    const last = measurements[0];
+    if (last) {
+      setForm({ ...measurementToFormData(last, todayISO()), notas: '' });
+    } else {
+      setForm({ ...emptyForm, fecha: todayISO() });
+    }
+    setErrors({});
+    setEditingId(null);
     setShowForm(true);
   };
 
@@ -134,32 +244,38 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser || !peso) return;
+    if (!currentUser) return;
 
+    const errs = validateForm(form);
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
+    const num = (s: string) => (s ? parseFloat(s) : undefined);
     const medidasObj = {
-      pecho: pecho ? parseFloat(pecho) : undefined,
-      cintura: cintura ? parseFloat(cintura) : undefined,
-      cadera: cadera ? parseFloat(cadera) : undefined,
-      brazoDerecho: brazoDerecho ? parseFloat(brazoDerecho) : undefined,
-      brazoIzquierdo: brazoIzquierdo ? parseFloat(brazoIzquierdo) : undefined,
-      musloDerecho: musloDerecho ? parseFloat(musloDerecho) : undefined,
-      musloIzquierdo: musloIzquierdo ? parseFloat(musloIzquierdo) : undefined,
-      pantorrillaDerecha: pantorrillaDerecha ? parseFloat(pantorrillaDerecha) : undefined,
-      pantorrillaIzquierda: pantorrillaIzquierda ? parseFloat(pantorrillaIzquierda) : undefined,
+      pecho: num(form.pecho),
+      cintura: num(form.cintura),
+      cadera: num(form.cadera),
+      brazoDerecho: num(form.brazoDerecho),
+      brazoIzquierdo: num(form.brazoIzquierdo),
+      musloDerecho: num(form.musloDerecho),
+      musloIzquierdo: num(form.musloIzquierdo),
+      pantorrillaDerecha: num(form.pantorrillaDerecha),
+      pantorrillaIzquierda: num(form.pantorrillaIzquierda),
     };
 
     const isEditing = !!editingId;
-    const existing = isEditing ? measurements.find(x => x.id === editingId) : null;
+    // Mediodía local para evitar saltos de día por zona horaria
+    const fecha = new Date(form.fecha + 'T12:00:00');
 
     const measurement: BodyMeasurement = {
       id: editingId ?? `measurement-${Date.now()}`,
       userId: currentUser.id,
-      fecha: existing?.fecha ?? new Date(),
-      peso: parseFloat(peso),
-      grasaCorporal: grasaCorporal ? parseFloat(grasaCorporal) : undefined,
+      fecha,
+      peso: parseFloat(form.peso),
+      grasaCorporal: num(form.grasaCorporal),
       ...medidasObj,
       medidas: medidasObj,
-      notas: notas || undefined,
+      notas: form.notas || undefined,
     };
 
     try {
@@ -225,8 +341,12 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
               </Button>
               <Button
                 onClick={() => {
-                  if (showForm) resetForm();
-                  setShowForm(!showForm);
+                  if (showForm) {
+                    resetForm();
+                    setShowForm(false);
+                  } else {
+                    openCreate();
+                  }
                 }}
                 variant={showForm ? 'outline' : 'default'}
               >
@@ -243,162 +363,84 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
 
         <CardContent>
           {showForm && (
-            <form onSubmit={handleSubmit} className="space-y-4 mb-6 p-4 border rounded-lg bg-accent/20">
+            <form onSubmit={handleSubmit} className="space-y-4 mb-6 p-4 border rounded-lg bg-accent/20" noValidate>
               {editingId && (
                 <div className="flex items-center gap-2 p-2 rounded bg-primary/10 text-sm">
                   <Pencil className="w-3.5 h-3.5 text-primary" />
                   <span>Editando medición existente</span>
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="peso">Peso (kg) *</Label>
-                  <Input
-                    id="peso"
-                    type="number"
-                    step="0.1"
-                    value={peso}
-                    onChange={(e) => setPeso(e.target.value)}
-                    required
-                    placeholder="70.5"
-                  />
-                </div>
 
-                <div>
-                  <Label htmlFor="grasa">Grasa Corporal (%)</Label>
-                  <Input
-                    id="grasa"
-                    type="number"
-                    step="0.1"
-                    value={grasaCorporal}
-                    onChange={(e) => setGrasaCorporal(e.target.value)}
-                    placeholder="15.0"
-                  />
-                </div>
+              {/* Fecha + Peso + Grasa */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <NumberField
+                  field="fecha"
+                  label="Fecha *"
+                  type="date"
+                  step={undefined}
+                  placeholder=""
+                  value={form.fecha}
+                  onChange={setField}
+                  error={errors.fecha}
+                />
+                <NumberField
+                  field="peso"
+                  label="Peso (kg) *"
+                  placeholder="70.5"
+                  value={form.peso}
+                  onChange={setField}
+                  error={errors.peso}
+                  required
+                />
+                <NumberField
+                  field="grasaCorporal"
+                  label="Grasa Corporal (%)"
+                  placeholder="15.0"
+                  value={form.grasaCorporal}
+                  onChange={setField}
+                  error={errors.grasaCorporal}
+                />
               </div>
 
+              {/* Medidas */}
               <div className="space-y-2">
                 <h4 className="font-medium flex items-center gap-2">
                   <Ruler className="w-4 h-4" />
                   Medidas (cm)
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <div>
-                    <Label htmlFor="pecho" className="text-xs">Pecho</Label>
-                    <Input
-                      id="pecho"
-                      type="number"
-                      step="0.1"
-                      value={pecho}
-                      onChange={(e) => setPecho(e.target.value)}
-                      placeholder="100"
+                  {([
+                    ['pecho', 'Pecho', '100'],
+                    ['cintura', 'Cintura', '80'],
+                    ['cadera', 'Cadera', '95'],
+                    ['brazoDerecho', 'Brazo Derecho', '35'],
+                    ['brazoIzquierdo', 'Brazo Izquierdo', '35'],
+                    ['musloDerecho', 'Muslo Derecho', '55'],
+                    ['musloIzquierdo', 'Muslo Izquierdo', '55'],
+                    ['pantorrillaDerecha', 'Pantorrilla Derecha', '37'],
+                    ['pantorrillaIzquierda', 'Pantorrilla Izquierda', '37'],
+                  ] as const).map(([k, lbl, ph]) => (
+                    <NumberField
+                      key={k}
+                      field={k}
+                      label={lbl}
+                      placeholder={ph}
+                      value={form[k]}
+                      onChange={setField}
+                      error={errors[k]}
+                      compact
                     />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="cintura" className="text-xs">Cintura</Label>
-                    <Input
-                      id="cintura"
-                      type="number"
-                      step="0.1"
-                      value={cintura}
-                      onChange={(e) => setCintura(e.target.value)}
-                      placeholder="80"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="cadera" className="text-xs">Cadera</Label>
-                    <Input
-                      id="cadera"
-                      type="number"
-                      step="0.1"
-                      value={cadera}
-                      onChange={(e) => setCadera(e.target.value)}
-                      placeholder="95"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="brazoDerecho" className="text-xs">Brazo Derecho</Label>
-                    <Input
-                      id="brazoDerecho"
-                      type="number"
-                      step="0.1"
-                      value={brazoDerecho}
-                      onChange={(e) => setBrazoDerecho(e.target.value)}
-                      placeholder="35"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="brazoIzquierdo" className="text-xs">Brazo Izquierdo</Label>
-                    <Input
-                      id="brazoIzquierdo"
-                      type="number"
-                      step="0.1"
-                      value={brazoIzquierdo}
-                      onChange={(e) => setBrazoIzquierdo(e.target.value)}
-                      placeholder="35"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="musloDerecho" className="text-xs">Muslo Derecho</Label>
-                    <Input
-                      id="musloDerecho"
-                      type="number"
-                      step="0.1"
-                      value={musloDerecho}
-                      onChange={(e) => setMusloDerecho(e.target.value)}
-                      placeholder="55"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="musloIzquierdo" className="text-xs">Muslo Izquierdo</Label>
-                    <Input
-                      id="musloIzquierdo"
-                      type="number"
-                      step="0.1"
-                      value={musloIzquierdo}
-                      onChange={(e) => setMusloIzquierdo(e.target.value)}
-                      placeholder="55"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="pantorrillaDerecha" className="text-xs">Pantorrilla Derecha</Label>
-                    <Input
-                      id="pantorrillaDerecha"
-                      type="number"
-                      step="0.1"
-                      value={pantorrillaDerecha}
-                      onChange={(e) => setPantorrillaDerecha(e.target.value)}
-                      placeholder="37"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="pantorrillaIzquierda" className="text-xs">Pantorrilla Izquierda</Label>
-                    <Input
-                      id="pantorrillaIzquierda"
-                      type="number"
-                      step="0.1"
-                      value={pantorrillaIzquierda}
-                      onChange={(e) => setPantorrillaIzquierda(e.target.value)}
-                      placeholder="37"
-                    />
-                  </div>
+                  ))}
                 </div>
               </div>
 
+              {/* Notas */}
               <div>
                 <Label htmlFor="notas">Notas</Label>
                 <Textarea
                   id="notas"
-                  value={notas}
-                  onChange={(e) => setNotas(e.target.value)}
+                  value={form.notas}
+                  onChange={(e) => setField('notas', e.target.value)}
                   placeholder="Cualquier observación..."
                   rows={2}
                 />
@@ -608,7 +650,7 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
               <Scale className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
               <p className="text-muted-foreground mb-4">Aún no has registrado ninguna medición</p>
               <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                <Button onClick={() => setShowForm(true)}>
+                <Button onClick={openCreate}>
                   <Plus className="w-4 h-4 mr-2" />
                   Registrar Primera Medición
                 </Button>
