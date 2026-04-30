@@ -205,6 +205,12 @@ export interface ProgressAnalysis {
 
   recomendacion: RecomendacionProgresion;
   proximoObjetivo: string;
+
+  // Extended analytics
+  estimacion1RM: { actual: number; hace4Semanas: number; cambio: number };
+  sesionesTotales: number;
+  frecuenciaSemanal: number; // average sessions per week for this exercise
+  intensidadPromedio?: number; // % of estimated 1RM
 }
 
 // Nutrition Tracking
@@ -251,6 +257,8 @@ export interface ProgressDataPoint {
   pesoMaximo: number;
   volumenTotal: number;
   repeticionesPromedio: number;
+  estimated1RM: number;
+  numSeries: number;
 }
 
 // Achievements
@@ -287,6 +295,20 @@ export interface UserStatistics {
   grupoMuscularMasEntrenado?: GrupoMuscular;
   progresoGeneral?: number; // % de mejora desde inicio
   lastWorkoutDate?: Date; // Para Appwrite
+}
+
+// Body Goals (almacenados en UserProfile.preferencias.bodyGoals)
+export interface BodyGoal {
+  /** Clave de la métrica: peso, grasaCorporal, cintura, etc. */
+  metric: string;
+  /** Valor objetivo (en la unidad nativa de la métrica) */
+  target: number;
+  /** Fecha límite YYYY-MM-DD (opcional) */
+  deadline?: string;
+  /** Valor de la métrica cuando se creó el objetivo, para la barra de progreso */
+  startValue?: number;
+  /** ISO timestamp de creación */
+  createdAt: string;
 }
 
 // Body Measurements & Tracking
