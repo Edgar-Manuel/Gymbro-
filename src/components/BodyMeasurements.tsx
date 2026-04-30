@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { BodyMeasurement } from '@/types';
-import { Scale, Ruler, TrendingUp, TrendingDown, Plus, RefreshCw } from 'lucide-react';
+import { Scale, Ruler, TrendingUp, TrendingDown, Plus, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 
 interface BodyMeasurementsProps {
   onUpdate?: () => void;
@@ -20,6 +20,7 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Formulario
   const [peso, setPeso] = useState('');
@@ -81,6 +82,56 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
     if (upserted > 0) onUpdate?.();
   };
 
+  const resetForm = () => {
+    setPeso('');
+    setGrasaCorporal('');
+    setPecho('');
+    setCintura('');
+    setCadera('');
+    setBrazoDerecho('');
+    setBrazoIzquierdo('');
+    setMusloDerecho('');
+    setMusloIzquierdo('');
+    setPantorrillaDerecha('');
+    setPantorrillaIzquierda('');
+    setNotas('');
+    setEditingId(null);
+  };
+
+  const startEdit = (m: BodyMeasurement) => {
+    setEditingId(m.id);
+    setPeso(String(m.peso ?? ''));
+    setGrasaCorporal(m.grasaCorporal != null ? String(m.grasaCorporal) : '');
+    // Lee de campos planos primero (datos nuevos), fallback a medidas (datos legacy)
+    const get = (k: keyof NonNullable<BodyMeasurement['medidas']>) =>
+      (m as any)[k] ?? m.medidas?.[k];
+    setPecho(get('pecho') != null ? String(get('pecho')) : '');
+    setCintura(get('cintura') != null ? String(get('cintura')) : '');
+    setCadera(get('cadera') != null ? String(get('cadera')) : '');
+    setBrazoDerecho(get('brazoDerecho') != null ? String(get('brazoDerecho')) : '');
+    setBrazoIzquierdo(get('brazoIzquierdo') != null ? String(get('brazoIzquierdo')) : '');
+    setMusloDerecho(get('musloDerecho') != null ? String(get('musloDerecho')) : '');
+    setMusloIzquierdo(get('musloIzquierdo') != null ? String(get('musloIzquierdo')) : '');
+    setPantorrillaDerecha(get('pantorrillaDerecha') != null ? String(get('pantorrillaDerecha')) : '');
+    setPantorrillaIzquierda(get('pantorrillaIzquierda') != null ? String(get('pantorrillaIzquierda')) : '');
+    setNotas(m.notas ?? '');
+    setShowForm(true);
+  };
+
+  const handleDelete = async (m: BodyMeasurement) => {
+    if (!currentUser) return;
+    const fechaStr = new Date(m.fecha).toLocaleDateString('es-ES');
+    if (!window.confirm(`¿Borrar la medición del ${fechaStr} (${m.peso} kg)? Esta acción no se puede deshacer.`)) return;
+    try {
+      await dbHelpers.deleteBodyMeasurement(m.id);
+      await loadMeasurements();
+      onUpdate?.();
+    } catch (error) {
+      console.error('Error borrando medición:', error);
+      alert('No se pudo borrar la medición. Inténtalo de nuevo.');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser || !peso) return;
@@ -97,44 +148,33 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
       pantorrillaIzquierda: pantorrillaIzquierda ? parseFloat(pantorrillaIzquierda) : undefined,
     };
 
-    const newMeasurement: BodyMeasurement = {
-      id: `measurement-${Date.now()}`,
+    const isEditing = !!editingId;
+    const existing = isEditing ? measurements.find(x => x.id === editingId) : null;
+
+    const measurement: BodyMeasurement = {
+      id: editingId ?? `measurement-${Date.now()}`,
       userId: currentUser.id,
-      fecha: new Date(),
+      fecha: existing?.fecha ?? new Date(),
       peso: parseFloat(peso),
       grasaCorporal: grasaCorporal ? parseFloat(grasaCorporal) : undefined,
-      // Campos planos para Appwrite (lo que persiste en la nube)
       ...medidasObj,
-      // Objeto anidado para el display existente
       medidas: medidasObj,
       notas: notas || undefined,
     };
 
     try {
-      await dbHelpers.addBodyMeasurement(newMeasurement);
-      await loadMeasurements();
-
-      // Limpiar formulario
-      setPeso('');
-      setGrasaCorporal('');
-      setPecho('');
-      setCintura('');
-      setCadera('');
-      setBrazoDerecho('');
-      setBrazoIzquierdo('');
-      setMusloDerecho('');
-      setMusloIzquierdo('');
-      setPantorrillaDerecha('');
-      setPantorrillaIzquierda('');
-      setNotas('');
-      setShowForm(false);
-
-      if (onUpdate) {
-        onUpdate();
+      if (isEditing) {
+        await dbHelpers.updateBodyMeasurement(measurement);
+      } else {
+        await dbHelpers.addBodyMeasurement(measurement);
       }
+      await loadMeasurements();
+      resetForm();
+      setShowForm(false);
+      onUpdate?.();
     } catch (error) {
       console.error('Error guardando medición:', error);
-      alert('Error al guardar la medición');
+      alert(isEditing ? 'Error al actualizar la medición' : 'Error al guardar la medición');
     }
   };
 
@@ -184,7 +224,10 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
                 <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
               </Button>
               <Button
-                onClick={() => setShowForm(!showForm)}
+                onClick={() => {
+                  if (showForm) resetForm();
+                  setShowForm(!showForm);
+                }}
                 variant={showForm ? 'outline' : 'default'}
               >
                 {showForm ? 'Cancelar' : (
@@ -201,6 +244,12 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
         <CardContent>
           {showForm && (
             <form onSubmit={handleSubmit} className="space-y-4 mb-6 p-4 border rounded-lg bg-accent/20">
+              {editingId && (
+                <div className="flex items-center gap-2 p-2 rounded bg-primary/10 text-sm">
+                  <Pencil className="w-3.5 h-3.5 text-primary" />
+                  <span>Editando medición existente</span>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="peso">Peso (kg) *</Label>
@@ -356,7 +405,7 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
               </div>
 
               <Button type="submit" className="w-full">
-                Guardar Medición
+                {editingId ? 'Actualizar Medición' : 'Guardar Medición'}
               </Button>
             </form>
           )}
@@ -365,7 +414,29 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
           {latestMeasurement && (
             <div className="space-y-4">
               <div>
-                <h4 className="font-medium mb-2 text-sm text-muted-foreground">Última Medición</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium text-sm text-muted-foreground">Última Medición</h4>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => startEdit(latestMeasurement)}
+                      title="Editar medición"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => handleDelete(latestMeasurement)}
+                      title="Borrar medición"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
                 <p className="text-xs text-muted-foreground mb-3">
                   {new Date(latestMeasurement.fecha).toLocaleDateString('es-ES', {
                     weekday: 'long',
@@ -495,15 +566,35 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
                   <div className="space-y-2">
                     {measurements.slice(1, 5).map((m) => (
                       <div key={m.id} className="flex items-center justify-between p-3 border rounded-lg text-sm">
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="font-medium">{m.peso}kg</p>
                           <p className="text-xs text-muted-foreground">
                             {new Date(m.fecha).toLocaleDateString('es-ES')}
                           </p>
                         </div>
-                        {m.grasaCorporal && (
-                          <Badge variant="outline">{m.grasaCorporal}% grasa</Badge>
-                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {m.grasaCorporal && (
+                            <Badge variant="outline">{m.grasaCorporal}% grasa</Badge>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => startEdit(m)}
+                            title="Editar"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(m)}
+                            title="Borrar"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
