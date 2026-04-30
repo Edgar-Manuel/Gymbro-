@@ -10,6 +10,7 @@ import { useAppStore } from '@/store';
 import type { BodyMeasurement } from '@/types';
 import { Scale, Ruler, TrendingUp, TrendingDown, Plus, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 import { RANGES } from '@/utils/bodyCalculations';
+import BodyMetricsCards from './BodyMetricsCards';
 
 interface BodyMeasurementsProps {
   onUpdate?: () => void;
@@ -600,6 +601,11 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
                   </div>
                 )}
               </div>
+
+              {/* Métricas calculadas */}
+              {currentUser && (
+                <BodyMetricsCards measurements={measurements} user={currentUser} />
+              )}
 
               {/* Historial */}
               {measurements.length > 1 && (
