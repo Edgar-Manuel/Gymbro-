@@ -46,7 +46,8 @@ export const dbHelpers = {
 
   // Sync
   sync: SyncManager.syncAll,
-  getPendingSyncCount: SyncManager.getPendingCount
+  getPendingSyncCount: SyncManager.getPendingCount,
+  pullBodyMeasurements: BodyTrackingRepository.pullBodyMeasurements,
 };
 
 // Auto-sync on online

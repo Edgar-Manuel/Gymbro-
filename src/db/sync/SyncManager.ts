@@ -90,8 +90,24 @@ export const SyncManager = {
                     } catch (err) {
                         if ((err as { code?: number }).code !== 409) throw err;
                     }
+                    await db.bodyMeasurements.update(m.id, { syncStatus: 'synced' });
+                } else if (m.syncStatus === 'pending_update') {
+                    try {
+                        await appwriteDbHelpers.updateBodyMeasurement(m);
+                    } catch (err) {
+                        if ((err as { code?: number }).code === 404) {
+                            await appwriteDbHelpers.addBodyMeasurement(m);
+                        } else throw err;
+                    }
+                    await db.bodyMeasurements.update(m.id, { syncStatus: 'synced' });
+                } else if (m.syncStatus === 'pending_delete') {
+                    try {
+                        await appwriteDbHelpers.deleteBodyMeasurement(m.id);
+                    } catch (err) {
+                        if ((err as { code?: number }).code !== 404) throw err;
+                    }
+                    await db.bodyMeasurements.delete(m.id);
                 }
-                await db.bodyMeasurements.update(m.id, { syncStatus: 'synced' });
             } catch (e) { console.error('[Sync] measurement error', e); }
         }
 

@@ -750,6 +750,60 @@ export const appwriteDbHelpers = {
   },
 
   /**
+   * Actualizar medición corporal existente
+   */
+  async updateBodyMeasurement(measurement: BodyMeasurement): Promise<string> {
+    try {
+      const measurementData = {
+        fecha: measurement.fecha.toISOString(),
+        peso: measurement.peso,
+        datos: JSON.stringify({
+          cintura: measurement.cintura,
+          cadera: measurement.cadera,
+          pecho: measurement.pecho,
+          brazoDerecho: measurement.brazoDerecho,
+          brazoIzquierdo: measurement.brazoIzquierdo,
+          musloDerecho: measurement.musloDerecho,
+          musloIzquierdo: measurement.musloIzquierdo,
+          pantorrillaDerecha: measurement.pantorrillaDerecha,
+          pantorrillaIzquierda: measurement.pantorrillaIzquierda,
+          grasaCorporal: measurement.grasaCorporal,
+          masaMuscular: measurement.masaMuscular,
+          notas: measurement.notas || '',
+        }),
+      };
+
+      const response = await databases.updateDocument(
+        APPWRITE_DATABASE_ID,
+        COLLECTIONS.BODY_MEASUREMENTS,
+        measurement.id,
+        measurementData
+      );
+
+      return response.$id;
+    } catch (error) {
+      console.error('Error actualizando medición corporal:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Borrar medición corporal
+   */
+  async deleteBodyMeasurement(id: string): Promise<void> {
+    try {
+      await databases.deleteDocument(
+        APPWRITE_DATABASE_ID,
+        COLLECTIONS.BODY_MEASUREMENTS,
+        id
+      );
+    } catch (error) {
+      console.error('Error borrando medición corporal:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Obtener mediciones por rango de fechas
    */
   async getBodyMeasurementsByDateRange(

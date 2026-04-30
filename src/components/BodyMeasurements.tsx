@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { BodyMeasurement } from '@/types';
-import { Scale, Ruler, TrendingUp, TrendingDown, Plus } from 'lucide-react';
+import { Scale, Ruler, TrendingUp, TrendingDown, Plus, RefreshCw } from 'lucide-react';
 
 interface BodyMeasurementsProps {
   onUpdate?: () => void;
@@ -19,6 +19,7 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
   // Formulario
   const [peso, setPeso] = useState('');
@@ -35,12 +36,32 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
   const [notas, setNotas] = useState('');
 
   useEffect(() => {
-    loadMeasurements();
+    if (!currentUser) return;
+    // Al montar: 1) pull desde Appwrite (si online) 2) leer locales
+    (async () => {
+      setSyncing(true);
+      const upserted = await dbHelpers.pullBodyMeasurements(currentUser.id);
+      setSyncing(false);
+      await loadMeasurements();
+      // Si el pull trajo datos nuevos, notificar para refrescar el chart
+      if (upserted > 0) onUpdate?.();
+    })();
+
+    // Re-pull al volver online
+    const handleOnline = async () => {
+      setSyncing(true);
+      const upserted = await dbHelpers.pullBodyMeasurements(currentUser.id);
+      setSyncing(false);
+      await loadMeasurements();
+      if (upserted > 0) onUpdate?.();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   const loadMeasurements = async () => {
     if (!currentUser) return;
-
     try {
       const data = await dbHelpers.getBodyMeasurements(currentUser.id, 10);
       setMeasurements(data);
@@ -49,6 +70,15 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    if (!currentUser || syncing) return;
+    setSyncing(true);
+    const upserted = await dbHelpers.pullBodyMeasurements(currentUser.id);
+    await loadMeasurements();
+    setSyncing(false);
+    if (upserted > 0) onUpdate?.();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,17 +173,28 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
               </CardTitle>
               <CardDescription>Tracking de peso y medidas corporales</CardDescription>
             </div>
-            <Button
-              onClick={() => setShowForm(!showForm)}
-              variant={showForm ? 'outline' : 'default'}
-            >
-              {showForm ? 'Cancelar' : (
-                <>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nueva Medición
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                size="icon"
+                disabled={syncing}
+                title="Sincronizar con la nube"
+              >
+                <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button
+                onClick={() => setShowForm(!showForm)}
+                variant={showForm ? 'outline' : 'default'}
+              >
+                {showForm ? 'Cancelar' : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nueva Medición
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
 
@@ -475,10 +516,19 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
             <div className="text-center py-8">
               <Scale className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
               <p className="text-muted-foreground mb-4">Aún no has registrado ninguna medición</p>
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Registrar Primera Medición
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <Button onClick={() => setShowForm(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Registrar Primera Medición
+                </Button>
+                <Button onClick={handleRefresh} variant="outline" disabled={syncing}>
+                  <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                  {syncing ? 'Sincronizando…' : 'Sincronizar desde la nube'}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                ¿Registraste mediciones en otro dispositivo? Pulsa "Sincronizar".
+              </p>
             </div>
           )}
         </CardContent>
