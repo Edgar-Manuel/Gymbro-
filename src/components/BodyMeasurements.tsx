@@ -55,24 +55,29 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
     e.preventDefault();
     if (!currentUser || !peso) return;
 
+    const medidasObj = {
+      pecho: pecho ? parseFloat(pecho) : undefined,
+      cintura: cintura ? parseFloat(cintura) : undefined,
+      cadera: cadera ? parseFloat(cadera) : undefined,
+      brazoDerecho: brazoDerecho ? parseFloat(brazoDerecho) : undefined,
+      brazoIzquierdo: brazoIzquierdo ? parseFloat(brazoIzquierdo) : undefined,
+      musloDerecho: musloDerecho ? parseFloat(musloDerecho) : undefined,
+      musloIzquierdo: musloIzquierdo ? parseFloat(musloIzquierdo) : undefined,
+      pantorrillaDerecha: pantorrillaDerecha ? parseFloat(pantorrillaDerecha) : undefined,
+      pantorrillaIzquierda: pantorrillaIzquierda ? parseFloat(pantorrillaIzquierda) : undefined,
+    };
+
     const newMeasurement: BodyMeasurement = {
       id: `measurement-${Date.now()}`,
       userId: currentUser.id,
       fecha: new Date(),
       peso: parseFloat(peso),
       grasaCorporal: grasaCorporal ? parseFloat(grasaCorporal) : undefined,
-      medidas: {
-        pecho: pecho ? parseFloat(pecho) : undefined,
-        cintura: cintura ? parseFloat(cintura) : undefined,
-        cadera: cadera ? parseFloat(cadera) : undefined,
-        brazoDerecho: brazoDerecho ? parseFloat(brazoDerecho) : undefined,
-        brazoIzquierdo: brazoIzquierdo ? parseFloat(brazoIzquierdo) : undefined,
-        musloDerecho: musloDerecho ? parseFloat(musloDerecho) : undefined,
-        musloIzquierdo: musloIzquierdo ? parseFloat(musloIzquierdo) : undefined,
-        pantorrillaDerecha: pantorrillaDerecha ? parseFloat(pantorrillaDerecha) : undefined,
-        pantorrillaIzquierda: pantorrillaIzquierda ? parseFloat(pantorrillaIzquierda) : undefined,
-      },
-      notas: notas || undefined
+      // Campos planos para Appwrite (lo que persiste en la nube)
+      ...medidasObj,
+      // Objeto anidado para el display existente
+      medidas: medidasObj,
+      notas: notas || undefined,
     };
 
     try {
@@ -373,62 +378,62 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
                 </div>
 
                 {/* Medidas */}
-                {Object.keys(latestMeasurement.medidas).some(key => latestMeasurement.medidas[key as keyof typeof latestMeasurement.medidas]) && (
+                {latestMeasurement.medidas && Object.values(latestMeasurement.medidas).some(Boolean) && (
                   <div className="space-y-2">
                     <h5 className="font-medium text-sm">Medidas Corporales</h5>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {latestMeasurement.medidas.pecho && (
+                      {latestMeasurement.medidas?.pecho && (
                         <div className="p-2 border rounded text-sm">
                           <span className="text-muted-foreground">Pecho:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas.pecho}cm</span>
+                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.pecho}cm</span>
                         </div>
                       )}
-                      {latestMeasurement.medidas.cintura && (
+                      {latestMeasurement.medidas?.cintura && (
                         <div className="p-2 border rounded text-sm">
                           <span className="text-muted-foreground">Cintura:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas.cintura}cm</span>
+                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.cintura}cm</span>
                         </div>
                       )}
-                      {latestMeasurement.medidas.cadera && (
+                      {latestMeasurement.medidas?.cadera && (
                         <div className="p-2 border rounded text-sm">
                           <span className="text-muted-foreground">Cadera:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas.cadera}cm</span>
+                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.cadera}cm</span>
                         </div>
                       )}
-                      {latestMeasurement.medidas.brazoDerecho && (
+                      {latestMeasurement.medidas?.brazoDerecho && (
                         <div className="p-2 border rounded text-sm">
                           <span className="text-muted-foreground">Brazo D:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas.brazoDerecho}cm</span>
+                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.brazoDerecho}cm</span>
                         </div>
                       )}
-                      {latestMeasurement.medidas.brazoIzquierdo && (
+                      {latestMeasurement.medidas?.brazoIzquierdo && (
                         <div className="p-2 border rounded text-sm">
                           <span className="text-muted-foreground">Brazo I:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas.brazoIzquierdo}cm</span>
+                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.brazoIzquierdo}cm</span>
                         </div>
                       )}
-                      {latestMeasurement.medidas.musloDerecho && (
+                      {latestMeasurement.medidas?.musloDerecho && (
                         <div className="p-2 border rounded text-sm">
                           <span className="text-muted-foreground">Muslo D:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas.musloDerecho}cm</span>
+                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.musloDerecho}cm</span>
                         </div>
                       )}
-                      {latestMeasurement.medidas.musloIzquierdo && (
+                      {latestMeasurement.medidas?.musloIzquierdo && (
                         <div className="p-2 border rounded text-sm">
                           <span className="text-muted-foreground">Muslo I:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas.musloIzquierdo}cm</span>
+                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.musloIzquierdo}cm</span>
                         </div>
                       )}
-                      {latestMeasurement.medidas.pantorrillaDerecha && (
+                      {latestMeasurement.medidas?.pantorrillaDerecha && (
                         <div className="p-2 border rounded text-sm">
                           <span className="text-muted-foreground">Pantorrilla D:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas.pantorrillaDerecha}cm</span>
+                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.pantorrillaDerecha}cm</span>
                         </div>
                       )}
-                      {latestMeasurement.medidas.pantorrillaIzquierda && (
+                      {latestMeasurement.medidas?.pantorrillaIzquierda && (
                         <div className="p-2 border rounded text-sm">
                           <span className="text-muted-foreground">Pantorrilla I:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas.pantorrillaIzquierda}cm</span>
+                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.pantorrillaIzquierda}cm</span>
                         </div>
                       )}
                     </div>
