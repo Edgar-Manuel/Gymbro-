@@ -50,7 +50,7 @@ function formatCell(m: BodyMeasurement, col: ColumnDef): string {
   }
   const v = getCellValue(m, col.key);
   if (v == null) return '—';
-  return col.key === 'fecha' ? String(v) : v.toFixed(1);
+  return v.toFixed(1);
 }
 
 function exportToCsv(measurements: BodyMeasurement[]) {

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { BodyMeasurement } from '@/types';
@@ -363,38 +364,39 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
               >
                 <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
               </Button>
-              <Button
-                onClick={() => {
-                  if (showForm) {
-                    resetForm();
-                    setShowForm(false);
-                  } else {
-                    openCreate();
-                  }
-                }}
-                variant={showForm ? 'outline' : 'default'}
-              >
-                {showForm ? 'Cancelar' : (
-                  <>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nueva Medición
-                  </>
-                )}
+              <Button onClick={openCreate}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nueva Medición
               </Button>
             </div>
           </div>
         </CardHeader>
 
         <CardContent>
-          {showForm && (
-            <form onSubmit={handleSubmit} className="space-y-4 mb-6 p-4 border rounded-lg bg-accent/20" noValidate>
-              {editingId && (
-                <div className="flex items-center gap-2 p-2 rounded bg-primary/10 text-sm">
-                  <Pencil className="w-3.5 h-3.5 text-primary" />
-                  <span>Editando medición existente</span>
-                </div>
-              )}
-
+          <Dialog
+            open={showForm}
+            onOpenChange={(open) => {
+              if (!open) resetForm();
+              setShowForm(open);
+            }}
+          >
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  {editingId ? (
+                    <>
+                      <Pencil className="w-4 h-4" />
+                      Editar medición
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Nueva medición
+                    </>
+                  )}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               {/* Fecha + Peso + Grasa */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <NumberField
@@ -473,8 +475,9 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
               <Button type="submit" className="w-full">
                 {editingId ? 'Actualizar Medición' : 'Guardar Medición'}
               </Button>
-            </form>
-          )}
+              </form>
+            </DialogContent>
+          </Dialog>
 
           {/* Última medición */}
           {latestMeasurement && (
