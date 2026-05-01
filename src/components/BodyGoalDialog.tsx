@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { BodyGoal } from '@/types';
 import { Target, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface BodyGoalDialogProps {
   open: boolean;
@@ -25,6 +27,7 @@ export default function BodyGoalDialog({
   const [target, setTarget] = useState('');
   const [deadline, setDeadline] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -57,17 +60,19 @@ export default function BodyGoalDialog({
       createdAt: existingGoal?.createdAt ?? new Date().toISOString(),
     };
     await onSave(goal);
+    toast.success(existingGoal ? 'Objetivo actualizado' : 'Objetivo creado');
     onOpenChange(false);
   };
 
   const handleDelete = async () => {
     if (!onDelete) return;
-    if (!window.confirm('¿Borrar este objetivo?')) return;
     await onDelete();
+    toast.success('Objetivo borrado');
     onOpenChange(false);
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -119,7 +124,7 @@ export default function BodyGoalDialog({
           {existingGoal && onDelete && (
             <Button
               variant="ghost"
-              onClick={handleDelete}
+              onClick={() => setConfirmDelete(true)}
               className="text-destructive hover:text-destructive sm:mr-auto"
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -131,5 +136,15 @@ export default function BodyGoalDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <ConfirmDialog
+      open={confirmDelete}
+      onOpenChange={setConfirmDelete}
+      title="¿Borrar este objetivo?"
+      description="Perderás el progreso registrado contra esta meta."
+      confirmLabel="Borrar"
+      onConfirm={handleDelete}
+    />
+    </>
   );
 }

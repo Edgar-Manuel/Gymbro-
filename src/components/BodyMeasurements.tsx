@@ -11,6 +11,9 @@ import type { BodyMeasurement } from '@/types';
 import { Scale, Ruler, TrendingUp, TrendingDown, Plus, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 import { RANGES } from '@/utils/bodyCalculations';
 import BodyMetricsCards from './BodyMetricsCards';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { toast } from 'sonner';
 
 interface BodyMeasurementsProps {
   onUpdate?: () => void;
@@ -145,6 +148,7 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const [form, setForm] = useState<FormData>(emptyForm);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -229,19 +233,24 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
     setShowForm(true);
   };
 
-  const handleDelete = async (m: BodyMeasurement) => {
-    if (!currentUser) return;
-    const fechaStr = new Date(m.fecha).toLocaleDateString('es-ES');
-    if (!window.confirm(`¿Borrar la medición del ${fechaStr} (${m.peso} kg)? Esta acción no se puede deshacer.`)) return;
+  const requestDelete = (m: BodyMeasurement) => setConfirmDeleteId(m.id);
+
+  const performDelete = async () => {
+    if (!currentUser || !confirmDeleteId) return;
+    const m = measurements.find(x => x.id === confirmDeleteId);
+    if (!m) return;
     try {
       await dbHelpers.deleteBodyMeasurement(m.id);
       await loadMeasurements();
       onUpdate?.();
+      toast.success('Medición borrada');
     } catch (error) {
       console.error('Error borrando medición:', error);
-      alert('No se pudo borrar la medición. Inténtalo de nuevo.');
+      toast.error('No se pudo borrar la medición');
     }
   };
+
+  const measurementToDelete = measurements.find(m => m.id === confirmDeleteId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,8 +291,10 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
     try {
       if (isEditing) {
         await dbHelpers.updateBodyMeasurement(measurement);
+        toast.success('Medición actualizada');
       } else {
         await dbHelpers.addBodyMeasurement(measurement);
+        toast.success('Medición guardada');
       }
       await loadMeasurements();
       resetForm();
@@ -291,7 +302,7 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
       onUpdate?.();
     } catch (error) {
       console.error('Error guardando medición:', error);
-      alert(isEditing ? 'Error al actualizar la medición' : 'Error al guardar la medición');
+      toast.error(isEditing ? 'Error al actualizar' : 'Error al guardar');
     }
   };
 
@@ -311,8 +322,18 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
   if (loading) {
     return (
       <Card>
-        <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">Cargando mediciones...</p>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-64 mt-2" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Skeleton className="h-24 rounded-lg" />
+            <Skeleton className="h-24 rounded-lg" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}
+          </div>
         </CardContent>
       </Card>
     );
@@ -473,7 +494,7 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(latestMeasurement)}
+                      onClick={() => requestDelete(latestMeasurement)}
                       title="Borrar medición"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -637,7 +658,7 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(m)}
+                            onClick={() => requestDelete(m)}
                             title="Borrar"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -672,6 +693,23 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}
+        title="¿Borrar esta medición?"
+        description={measurementToDelete && (
+          <>
+            Vas a borrar la medición del{' '}
+            <strong>
+              {new Date(measurementToDelete.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </strong>
+            {' '}({measurementToDelete.peso} kg). Esta acción no se puede deshacer.
+          </>
+        )}
+        confirmLabel="Borrar"
+        onConfirm={performDelete}
+      />
     </div>
   );
 }

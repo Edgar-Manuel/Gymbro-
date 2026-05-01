@@ -15,6 +15,8 @@ import {
 } from '@/utils/bodyGoals';
 import BodyGoalDialog from './BodyGoalDialog';
 import BodyGoalProgress from './BodyGoalProgress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 // ─── Configuración ───────────────────────────────────────────────────────────
 type MetricKey =
@@ -108,6 +110,7 @@ export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartP
       await dbHelpers.updateUser(updated);
     } catch (err) {
       console.error('Error guardando objetivo:', err);
+      toast.error('No se pudo guardar el objetivo');
     }
   };
 
@@ -175,8 +178,12 @@ export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartP
   if (loading) {
     return (
       <Card>
-        <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">Cargando datos…</p>
+        <CardHeader>
+          <Skeleton className="h-6 w-44" />
+          <Skeleton className="h-4 w-56 mt-2" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-[260px] rounded-md" />
         </CardContent>
       </Card>
     );
