@@ -11,6 +11,7 @@ import type { BodyMeasurement } from '@/types';
 import { Scale, Ruler, TrendingUp, TrendingDown, Plus, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 import { RANGES } from '@/utils/bodyCalculations';
 import BodyMetricsCards from './BodyMetricsCards';
+import BodyMeasurementsTable from './BodyMeasurementsTable';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toast } from 'sonner';
@@ -186,7 +187,8 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
   const loadMeasurements = async () => {
     if (!currentUser) return;
     try {
-      const data = await dbHelpers.getBodyMeasurements(currentUser.id, 10);
+      // Sin límite: el historial completo se renderiza en la tabla con sort
+      const data = await dbHelpers.getBodyMeasurements(currentUser.id, 200);
       setMeasurements(data);
     } catch (error) {
       console.error('Error cargando mediciones:', error);
@@ -628,46 +630,13 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
                 <BodyMetricsCards measurements={measurements} user={currentUser} />
               )}
 
-              {/* Historial */}
+              {/* Historial completo */}
               {measurements.length > 1 && (
-                <div className="mt-6">
-                  <h4 className="font-medium mb-3">Historial</h4>
-                  <div className="space-y-2">
-                    {measurements.slice(1, 5).map((m) => (
-                      <div key={m.id} className="flex items-center justify-between p-3 border rounded-lg text-sm">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium">{m.peso}kg</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(m.fecha).toLocaleDateString('es-ES')}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {m.grasaCorporal && (
-                            <Badge variant="outline">{m.grasaCorporal}% grasa</Badge>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => startEdit(m)}
-                            title="Editar"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => requestDelete(m)}
-                            title="Borrar"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <BodyMeasurementsTable
+                  measurements={measurements}
+                  onEdit={startEdit}
+                  onDelete={requestDelete}
+                />
               )}
             </div>
           )}
