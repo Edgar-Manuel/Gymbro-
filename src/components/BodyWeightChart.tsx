@@ -7,9 +7,14 @@ import {
 } from 'recharts';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
-import type { BodyMeasurement } from '@/types';
-import { TrendingUp, TrendingDown, Minus, BarChart3 } from 'lucide-react';
+import type { BodyMeasurement, BodyGoal } from '@/types';
+import { TrendingUp, TrendingDown, Minus, BarChart3, Target } from 'lucide-react';
 import { calculateDelta, movingAverage, readField } from '@/utils/bodyCalculations';
+import {
+  getGoalForMetric, withUpdatedGoal, withoutGoal, calculateGoalProgress,
+} from '@/utils/bodyGoals';
+import BodyGoalDialog from './BodyGoalDialog';
+import BodyGoalProgress from './BodyGoalProgress';
 
 // ─── Configuración ───────────────────────────────────────────────────────────
 type MetricKey =
@@ -87,11 +92,34 @@ function CustomTooltip({ active, payload, metric }: { active?: boolean; payload?
 
 // ─── Componente principal ────────────────────────────────────────────────────
 export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartProps) {
-  const { currentUser } = useAppStore();
+  const { currentUser, setCurrentUser } = useAppStore();
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [loading, setLoading] = useState(true);
   const [metricKey, setMetricKey] = useState<MetricKey>('peso');
   const [rangeKey, setRangeKey] = useState<string>('3m');
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+
+  const goal = currentUser ? getGoalForMetric(currentUser, metricKey) : undefined;
+
+  const persistUserChange = async (updated: typeof currentUser) => {
+    if (!updated) return;
+    setCurrentUser(updated);
+    try {
+      await dbHelpers.updateUser(updated);
+    } catch (err) {
+      console.error('Error guardando objetivo:', err);
+    }
+  };
+
+  const handleSaveGoal = async (g: BodyGoal) => {
+    if (!currentUser) return;
+    await persistUserChange(withUpdatedGoal(currentUser, g));
+  };
+
+  const handleDeleteGoal = async () => {
+    if (!currentUser) return;
+    await persistUserChange(withoutGoal(currentUser, metricKey));
+  };
 
   useEffect(() => {
     (async () => {
@@ -184,8 +212,8 @@ export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartP
             </CardDescription>
           </div>
 
-          {/* Selectores: métrica + rango */}
-          <div className="flex items-center gap-2">
+          {/* Selectores: métrica + rango + objetivo */}
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={metricKey} onValueChange={(v) => setMetricKey(v as MetricKey)}>
               <SelectTrigger className="h-8 w-[140px] text-xs">
                 <SelectValue />
@@ -209,6 +237,15 @@ export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartP
                 </Button>
               ))}
             </div>
+            <Button
+              variant={goal ? 'default' : 'outline'}
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setGoalDialogOpen(true)}
+            >
+              <Target className="w-3.5 h-3.5 mr-1.5" />
+              {goal ? `Meta: ${goal.target} ${metric.unit}` : 'Definir objetivo'}
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -255,6 +292,21 @@ export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartP
                   />
                 )}
 
+                {/* Línea del objetivo */}
+                {goal && (
+                  <ReferenceLine
+                    y={goal.target}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={1.5}
+                    strokeDasharray="6 3"
+                    label={{
+                      value: `🎯 ${goal.target}${metric.unit}`,
+                      position: 'right',
+                      style: { fontSize: 10, fill: 'hsl(var(--primary))' },
+                    }}
+                  />
+                )}
+
                 {/* Media móvil 7d */}
                 <Line
                   type="monotone"
@@ -287,9 +339,35 @@ export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartP
           <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center text-xs mt-3">
             <LegendItem color={metric.color} label={metric.label} />
             <LegendItem color="hsl(var(--muted-foreground))" label="Media móvil 7 días" dashed />
+            {goal && <LegendItem color="hsl(var(--primary))" label="Objetivo" dashed />}
           </div>
         )}
+
+        {/* Bloque de progreso del objetivo */}
+        {goal && stats && (
+          <BodyGoalProgress
+            goal={goal}
+            progress={calculateGoalProgress(goal, stats.last, measurements.slice().reverse())}
+            metricLabel={metric.label}
+            metricUnit={metric.unit}
+            currentValue={stats.last}
+            onEdit={() => setGoalDialogOpen(true)}
+          />
+        )}
       </CardContent>
+
+      {/* Dialog de objetivo */}
+      <BodyGoalDialog
+        open={goalDialogOpen}
+        onOpenChange={setGoalDialogOpen}
+        metricKey={metricKey}
+        metricLabel={metric.label}
+        metricUnit={metric.unit}
+        currentValue={stats?.last}
+        existingGoal={goal}
+        onSave={handleSaveGoal}
+        onDelete={goal ? handleDeleteGoal : undefined}
+      />
     </Card>
   );
 }

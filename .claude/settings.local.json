@@ -33,7 +33,8 @@
       "mcp__appwrite-api__appwrite_call_tool",
       "Bash(cat .env.example)",
       "Bash(cat .env.local)",
-      "Bash(ls .env*)"
+      "Bash(ls .env*)",
+      "Bash(npx vitest *)"
     ],
     "deny": [],
     "ask": []
