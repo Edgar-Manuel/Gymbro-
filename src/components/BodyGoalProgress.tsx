@@ -9,27 +9,39 @@ interface Props {
   progress: GoalProgress;
   metricLabel: string;
   metricUnit: string;
+  /** Valor actual ya en la unidad de display */
   currentValue: number;
+  /** Convierte un valor desde la unidad base (kg/cm) a la unidad de display.
+   *  goal.target, goal.startValue y los `pace*` vienen en base. */
+  convertFromBase?: (baseValue: number) => number;
   onEdit: () => void;
 }
 
 export default function BodyGoalProgress({
-  goal, progress, metricLabel, metricUnit, currentValue, onEdit,
+  goal, progress, metricLabel, metricUnit, currentValue, convertFromBase = (v) => v, onEdit,
 }: Props) {
   const { percent, remaining, daysToDeadline, paceRequired, paceCurrent, isReached, direction } = progress;
 
-  // Mensaje principal
-  const remainingAbs = Math.abs(remaining);
+  // Convertir valores en base a unidad de display
+  const targetDisplay = convertFromBase(goal.target);
+  const startDisplay = goal.startValue != null ? convertFromBase(goal.startValue) : undefined;
+  const remainingDisplay = convertFromBase(0) === 0
+    ? convertFromBase(Math.abs(remaining)) - convertFromBase(0)
+    : Math.abs(remaining); // fallback (afín lineal: f(x)−f(0) preserva diferencias correctamente)
+  const paceRequiredDisplay = paceRequired != null
+    ? convertFromBase(paceRequired) - convertFromBase(0)
+    : null;
+  const paceCurrentDisplay = paceCurrent != null
+    ? convertFromBase(paceCurrent) - convertFromBase(0)
+    : null;
+
   const verb = direction === 'down' ? 'bajar' : direction === 'up' ? 'subir' : 'mantener';
 
-  // Comparación de ritmo
+  // Comparación de ritmo (usa los valores base; los signos no cambian al convertir)
   let paceVerdict: { label: string; color: string } | null = null;
   if (paceRequired != null && paceCurrent != null && !isReached) {
-    // Convierte a "magnitud absoluta hacia el target"
     const requiredMag = Math.abs(paceRequired);
-    const currentMag = direction === 'down'
-      ? -paceCurrent  // si bajas peso, paceCurrent negativo → magnitud positiva
-      : paceCurrent;  // si subes peso, paceCurrent positivo
+    const currentMag = direction === 'down' ? -paceCurrent : paceCurrent;
 
     if (currentMag >= requiredMag * 0.9) {
       paceVerdict = { label: '✓ Vas en buen ritmo', color: 'text-green-600 dark:text-green-400' };
@@ -46,7 +58,7 @@ export default function BodyGoalProgress({
         <div className="flex items-center gap-2">
           <Target className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium">
-            Objetivo: {goal.target} {metricUnit}
+            Objetivo: {targetDisplay.toFixed(1)} {metricUnit}
           </span>
           {isReached && (
             <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
@@ -65,8 +77,8 @@ export default function BodyGoalProgress({
 
       <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
         <span>
-          {goal.startValue != null && (
-            <>{goal.startValue} {metricUnit} → </>
+          {startDisplay != null && (
+            <>{startDisplay.toFixed(1)} {metricUnit} → </>
           )}
           <strong className="text-foreground">{currentValue.toFixed(1)} {metricUnit}</strong>
         </span>
@@ -78,7 +90,7 @@ export default function BodyGoalProgress({
           <div className="flex items-center gap-1.5">
             <span className="text-muted-foreground">Falta:</span>
             <strong className="text-foreground">
-              {verb} {remainingAbs.toFixed(1)} {metricUnit}
+              {verb} {remainingDisplay.toFixed(1)} {metricUnit}
             </strong>
           </div>
 
@@ -100,20 +112,20 @@ export default function BodyGoalProgress({
             </div>
           )}
 
-          {paceRequired != null && (
+          {paceRequiredDisplay != null && (
             <div className="flex items-center gap-1.5">
               <span className="text-muted-foreground">Ritmo necesario:</span>
               <strong className="text-foreground">
-                {paceRequired > 0 ? '+' : ''}{paceRequired.toFixed(2)} {metricUnit}/sem
+                {paceRequiredDisplay > 0 ? '+' : ''}{paceRequiredDisplay.toFixed(2)} {metricUnit}/sem
               </strong>
             </div>
           )}
 
-          {paceCurrent != null && (
+          {paceCurrentDisplay != null && (
             <div className="flex items-center gap-1.5">
               <span className="text-muted-foreground">Tu ritmo actual:</span>
               <strong className="text-foreground">
-                {paceCurrent > 0 ? '+' : ''}{paceCurrent.toFixed(2)} {metricUnit}/sem
+                {paceCurrentDisplay > 0 ? '+' : ''}{paceCurrentDisplay.toFixed(2)} {metricUnit}/sem
               </strong>
               {paceVerdict && <span className={`ml-1 ${paceVerdict.color}`}>{paceVerdict.label}</span>}
             </div>

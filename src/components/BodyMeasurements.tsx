@@ -16,6 +16,7 @@ import BodyMeasurementsTable from './BodyMeasurementsTable';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toast } from 'sonner';
+import { getUnits, withUnits, formatWeight, formatLength } from '@/utils/units';
 
 interface BodyMeasurementsProps {
   onUpdate?: () => void;
@@ -144,7 +145,24 @@ function NumberField({
 }
 
 export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
-  const { currentUser } = useAppStore();
+  const { currentUser, setCurrentUser } = useAppStore();
+  const units = getUnits(currentUser);
+
+  const toggleWeightUnit = async () => {
+    if (!currentUser) return;
+    const updated = withUnits(currentUser, { ...units, weight: units.weight === 'kg' ? 'lb' : 'kg' });
+    setCurrentUser(updated);
+    try { await dbHelpers.updateUser(updated); }
+    catch { toast.error('No se pudo guardar la preferencia'); }
+  };
+
+  const toggleLengthUnit = async () => {
+    if (!currentUser) return;
+    const updated = withUnits(currentUser, { ...units, length: units.length === 'cm' ? 'in' : 'cm' });
+    setCurrentUser(updated);
+    try { await dbHelpers.updateUser(updated); }
+    catch { toast.error('No se pudo guardar la preferencia'); }
+  };
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -354,7 +372,39 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
               </CardTitle>
               <CardDescription>Tracking de peso y medidas corporales</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center flex-wrap justify-end">
+              <div className="flex rounded-md border bg-muted/30 p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={toggleWeightUnit}
+                  className={`px-2 py-1 rounded transition-colors ${units.weight === 'kg' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  kg
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleWeightUnit}
+                  className={`px-2 py-1 rounded transition-colors ${units.weight === 'lb' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  lb
+                </button>
+              </div>
+              <div className="flex rounded-md border bg-muted/30 p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={toggleLengthUnit}
+                  className={`px-2 py-1 rounded transition-colors ${units.length === 'cm' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  cm
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleLengthUnit}
+                  className={`px-2 py-1 rounded transition-colors ${units.length === 'in' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  in
+                </button>
+              </div>
               <Button
                 onClick={handleRefresh}
                 variant="outline"
@@ -520,14 +570,14 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
                   <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
                     <p className="text-sm text-muted-foreground mb-1">Peso Corporal</p>
                     <div className="flex items-baseline gap-2">
-                      <p className="text-3xl font-bold">{latestMeasurement.peso}kg</p>
+                      <p className="text-3xl font-bold">{formatWeight(latestMeasurement.peso, units)}</p>
                       {previousMeasurement && (() => {
                         const change = getChange(latestMeasurement.peso, previousMeasurement.peso);
                         if (change) {
                           return (
                             <Badge variant={change.isPositive ? 'default' : 'success'} className="flex items-center gap-1">
                               {change.isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                              {change.value.toFixed(1)}kg
+                              {formatWeight(change.value, units)}
                             </Badge>
                           );
                         }
@@ -559,67 +609,39 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
                 </div>
 
                 {/* Medidas */}
-                {latestMeasurement.medidas && Object.values(latestMeasurement.medidas).some(Boolean) && (
-                  <div className="space-y-2">
-                    <h5 className="font-medium text-sm">Medidas Corporales</h5>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {latestMeasurement.medidas?.pecho && (
-                        <div className="p-2 border rounded text-sm">
-                          <span className="text-muted-foreground">Pecho:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.pecho}cm</span>
-                        </div>
-                      )}
-                      {latestMeasurement.medidas?.cintura && (
-                        <div className="p-2 border rounded text-sm">
-                          <span className="text-muted-foreground">Cintura:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.cintura}cm</span>
-                        </div>
-                      )}
-                      {latestMeasurement.medidas?.cadera && (
-                        <div className="p-2 border rounded text-sm">
-                          <span className="text-muted-foreground">Cadera:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.cadera}cm</span>
-                        </div>
-                      )}
-                      {latestMeasurement.medidas?.brazoDerecho && (
-                        <div className="p-2 border rounded text-sm">
-                          <span className="text-muted-foreground">Brazo D:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.brazoDerecho}cm</span>
-                        </div>
-                      )}
-                      {latestMeasurement.medidas?.brazoIzquierdo && (
-                        <div className="p-2 border rounded text-sm">
-                          <span className="text-muted-foreground">Brazo I:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.brazoIzquierdo}cm</span>
-                        </div>
-                      )}
-                      {latestMeasurement.medidas?.musloDerecho && (
-                        <div className="p-2 border rounded text-sm">
-                          <span className="text-muted-foreground">Muslo D:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.musloDerecho}cm</span>
-                        </div>
-                      )}
-                      {latestMeasurement.medidas?.musloIzquierdo && (
-                        <div className="p-2 border rounded text-sm">
-                          <span className="text-muted-foreground">Muslo I:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.musloIzquierdo}cm</span>
-                        </div>
-                      )}
-                      {latestMeasurement.medidas?.pantorrillaDerecha && (
-                        <div className="p-2 border rounded text-sm">
-                          <span className="text-muted-foreground">Pantorrilla D:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.pantorrillaDerecha}cm</span>
-                        </div>
-                      )}
-                      {latestMeasurement.medidas?.pantorrillaIzquierda && (
-                        <div className="p-2 border rounded text-sm">
-                          <span className="text-muted-foreground">Pantorrilla I:</span>
-                          <span className="font-semibold ml-2">{latestMeasurement.medidas?.pantorrillaIzquierda}cm</span>
-                        </div>
-                      )}
+                {(() => {
+                  const fields: Array<[string, string]> = [
+                    ['pecho', 'Pecho'],
+                    ['cintura', 'Cintura'],
+                    ['cadera', 'Cadera'],
+                    ['brazoDerecho', 'Brazo D'],
+                    ['brazoIzquierdo', 'Brazo I'],
+                    ['musloDerecho', 'Muslo D'],
+                    ['musloIzquierdo', 'Muslo I'],
+                    ['pantorrillaDerecha', 'Pantorrilla D'],
+                    ['pantorrillaIzquierda', 'Pantorrilla I'],
+                  ];
+                  const visibles = fields
+                    .map(([k, lbl]): [string, string, number | undefined] => {
+                      const v = (latestMeasurement as any)[k] ?? (latestMeasurement.medidas as any)?.[k];
+                      return [k, lbl, typeof v === 'number' ? v : undefined];
+                    })
+                    .filter(([, , v]) => v != null) as Array<[string, string, number]>;
+                  if (visibles.length === 0) return null;
+                  return (
+                    <div className="space-y-2">
+                      <h5 className="font-medium text-sm">Medidas Corporales</h5>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {visibles.map(([k, lbl, v]) => (
+                          <div key={k} className="p-2 border rounded text-sm">
+                            <span className="text-muted-foreground">{lbl}:</span>
+                            <span className="font-semibold ml-2">{formatLength(v, units)}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {latestMeasurement.notas && (
                   <div className="mt-3 p-3 bg-accent/30 rounded-lg">
@@ -637,6 +659,7 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
               {measurements.length > 1 && (
                 <BodyMeasurementsTable
                   measurements={measurements}
+                  units={units}
                   onEdit={startEdit}
                   onDelete={requestDelete}
                 />

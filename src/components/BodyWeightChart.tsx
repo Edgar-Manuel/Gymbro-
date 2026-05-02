@@ -13,6 +13,7 @@ import { calculateDelta, movingAverage, readField } from '@/utils/bodyCalculatio
 import {
   getGoalForMetric, withUpdatedGoal, withoutGoal, calculateGoalProgress,
 } from '@/utils/bodyGoals';
+import { getUnits, unitForMetric, metricFromBase } from '@/utils/units';
 import BodyGoalDialog from './BodyGoalDialog';
 import BodyGoalProgress from './BodyGoalProgress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -139,8 +140,22 @@ export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartP
     })();
   }, [currentUser, refreshTrigger]);
 
-  const metric = useMemo(() => METRICS.find(m => m.key === metricKey)!, [metricKey]);
+  const userUnits = getUnits(currentUser);
+  const metricBase = useMemo(() => METRICS.find(m => m.key === metricKey)!, [metricKey]);
+  // Sustituye la unidad estática por la unidad activa según preferencia
+  const metric = useMemo(
+    () => ({ ...metricBase, unit: unitForMetric(metricKey, userUnits) }),
+    [metricBase, metricKey, userUnits],
+  );
   const range = useMemo(() => RANGES.find(r => r.key === rangeKey)!, [rangeKey]);
+
+  // Helpers de conversión basados en la métrica activa
+  const toDisplay = (baseValue: number) => metricFromBase(metricKey, baseValue, userUnits);
+  const toBaseFromDisplay = (displayValue: number) => {
+    if (metricKey === 'peso') return userUnits.weight === 'lb' ? displayValue / 2.20462 : displayValue;
+    if (metricKey === 'grasaCorporal') return displayValue;
+    return userUnits.length === 'in' ? displayValue / 0.393701 : displayValue;
+  };
 
   // Filtra mediciones al rango activo y construye los puntos del chart
   const chartData = useMemo<ChartPoint[]>(() => {
@@ -150,7 +165,9 @@ export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartP
       : Date.now() - range.days * 24 * 60 * 60 * 1000;
 
     const filtered = measurements.filter(m => new Date(m.fecha).getTime() >= cutoff);
-    const values = filtered.map(m => readField(m, metric.key) ?? null);
+    // Lectura en base, luego conversión a unidad activa
+    const baseValues = filtered.map(m => readField(m, metricKey) ?? null);
+    const values = baseValues.map(v => v == null ? null : toDisplay(v));
     const trend = movingAverage(values, 7);
 
     return filtered.map((m, i) => ({
@@ -160,7 +177,8 @@ export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartP
       value: values[i],
       trend: trend[i],
     }));
-  }, [measurements, metric, range]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [measurements, metric, range, userUnits]);
 
   // Estadísticas resumen del rango actual
   const stats = useMemo(() => {
@@ -299,15 +317,15 @@ export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartP
                   />
                 )}
 
-                {/* Línea del objetivo */}
+                {/* Línea del objetivo (target almacenado en base, lo convertimos a display) */}
                 {goal && (
                   <ReferenceLine
-                    y={goal.target}
+                    y={toDisplay(goal.target)}
                     stroke="hsl(var(--primary))"
                     strokeWidth={1.5}
                     strokeDasharray="6 3"
                     label={{
-                      value: `🎯 ${goal.target}${metric.unit}`,
+                      value: `🎯 ${toDisplay(goal.target).toFixed(1)} ${metric.unit}`,
                       position: 'right',
                       style: { fontSize: 10, fill: 'hsl(var(--primary))' },
                     }}
@@ -354,10 +372,15 @@ export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartP
         {goal && stats && (
           <BodyGoalProgress
             goal={goal}
-            progress={calculateGoalProgress(goal, stats.last, measurements.slice().reverse())}
+            progress={calculateGoalProgress(
+              goal,
+              toBaseFromDisplay(stats.last),
+              measurements.slice().reverse(),
+            )}
             metricLabel={metric.label}
             metricUnit={metric.unit}
             currentValue={stats.last}
+            convertFromBase={toDisplay}
             onEdit={() => setGoalDialogOpen(true)}
           />
         )}
@@ -370,6 +393,8 @@ export default function BodyWeightChart({ refreshTrigger = 0 }: BodyWeightChartP
         metricKey={metricKey}
         metricLabel={metric.label}
         metricUnit={metric.unit}
+        toBase={toBaseFromDisplay}
+        fromBase={toDisplay}
         currentValue={stats?.last}
         existingGoal={goal}
         onSave={handleSaveGoal}

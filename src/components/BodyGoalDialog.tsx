@@ -13,15 +13,20 @@ interface BodyGoalDialogProps {
   onOpenChange: (open: boolean) => void;
   metricKey: string;
   metricLabel: string;
-  metricUnit: string;
-  currentValue?: number;          // valor actual de la métrica
-  existingGoal?: BodyGoal;
+  metricUnit: string;              // unidad para mostrar (ej: 'lb' si user prefiere lb)
+  /** Convierte valor desde la unidad de display a la unidad base (kg/cm) */
+  toBase?: (v: number) => number;
+  /** Convierte valor desde la unidad base (kg/cm) a la unidad de display */
+  fromBase?: (v: number) => number;
+  currentValue?: number;          // valor actual en la unidad de display
+  existingGoal?: BodyGoal;        // target almacenado en unidad BASE
   onSave: (goal: BodyGoal) => void | Promise<void>;
   onDelete?: () => void | Promise<void>;
 }
 
 export default function BodyGoalDialog({
   open, onOpenChange, metricKey, metricLabel, metricUnit,
+  toBase = (v) => v, fromBase = (v) => v,
   currentValue, existingGoal, onSave, onDelete,
 }: BodyGoalDialogProps) {
   const [target, setTarget] = useState('');
@@ -31,19 +36,20 @@ export default function BodyGoalDialog({
 
   useEffect(() => {
     if (open) {
-      setTarget(existingGoal ? String(existingGoal.target) : '');
+      setTarget(existingGoal ? String(fromBase(existingGoal.target).toFixed(1)) : '');
       setDeadline(existingGoal?.deadline ?? '');
       setError(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, existingGoal]);
 
   const handleSave = async () => {
-    const t = parseFloat(target);
-    if (isNaN(t) || t <= 0) {
+    const tDisplay = parseFloat(target);
+    if (isNaN(tDisplay) || tDisplay <= 0) {
       setError('Introduce un valor objetivo válido');
       return;
     }
-    if (currentValue != null && Math.abs(currentValue - t) < 0.01) {
+    if (currentValue != null && Math.abs(currentValue - tDisplay) < 0.01) {
       setError('El objetivo coincide con tu valor actual');
       return;
     }
@@ -52,11 +58,15 @@ export default function BodyGoalDialog({
       return;
     }
 
+    // Convertir a unidad base antes de almacenar
+    const targetBase = toBase(tDisplay);
+    const startBase = existingGoal?.startValue ?? (currentValue != null ? toBase(currentValue) : undefined);
+
     const goal: BodyGoal = {
       metric: metricKey,
-      target: t,
+      target: targetBase,
       deadline: deadline || undefined,
-      startValue: existingGoal?.startValue ?? currentValue,
+      startValue: startBase,
       createdAt: existingGoal?.createdAt ?? new Date().toISOString(),
     };
     await onSave(goal);

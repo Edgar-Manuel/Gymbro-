@@ -14,6 +14,7 @@ import {
   calculateTrend,
   readField,
 } from '@/utils/bodyCalculations';
+import { getUnits, weightFromBase } from '@/utils/units';
 import { TrendingUp, TrendingDown, Minus, Activity, Ruler, Scale, Flame, Droplet } from 'lucide-react';
 
 const colorToBadgeClass: Record<string, string> = {
@@ -104,6 +105,7 @@ export default function BodyMetricsCards({ measurements, user }: Props) {
   if (!measurements.length) return null;
   const latest = measurements[0];
   const prev = measurements[1];
+  const units = getUnits(user);
 
   const bmi = calculateBMI(latest.peso, user.altura);
   const bmiCat = getBMICategory(bmi);
@@ -126,6 +128,10 @@ export default function BodyMetricsCards({ measurements, user }: Props) {
   const trend30 = calculateTrend(measurements, 'peso', 30);
   const trend90 = calculateTrend(measurements, 'peso', 90);
 
+  // Convertir deltas de peso de kg → unidad activa
+  const wU = units.weight;
+  const conv = (kg: number | undefined) => kg == null ? undefined : weightFromBase(kg, wU);
+
   return (
     <div className="space-y-3">
       <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-1.5">
@@ -146,8 +152,8 @@ export default function BodyMetricsCards({ measurements, user }: Props) {
           <MetricCard
             icon={Droplet}
             label="Masa grasa"
-            value={fatMass.toFixed(1)}
-            unit="kg"
+            value={weightFromBase(fatMass, wU).toFixed(1)}
+            unit={wU}
             hint={`${latest.grasaCorporal?.toFixed(1)}%`}
           />
         )}
@@ -155,8 +161,8 @@ export default function BodyMetricsCards({ measurements, user }: Props) {
           <MetricCard
             icon={Flame}
             label="Masa magra"
-            value={leanMass.toFixed(1)}
-            unit="kg"
+            value={weightFromBase(leanMass, wU).toFixed(1)}
+            unit={wU}
           />
         )}
       </div>
@@ -193,10 +199,10 @@ export default function BodyMetricsCards({ measurements, user }: Props) {
             </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-            <TrendCol label="Anterior" delta={pesoDelta?.abs} />
-            <TrendCol label="7 días" delta={trend7?.abs} />
-            <TrendCol label="30 días" delta={trend30?.abs} />
-            <TrendCol label="90 días" delta={trend90?.abs} />
+            <TrendCol label="Anterior" delta={conv(pesoDelta?.abs)} suffix={wU} />
+            <TrendCol label="7 días" delta={conv(trend7?.abs)} suffix={wU} />
+            <TrendCol label="30 días" delta={conv(trend30?.abs)} suffix={wU} />
+            <TrendCol label="90 días" delta={conv(trend90?.abs)} suffix={wU} />
           </div>
           {grasaDelta != null && (
             <div className="mt-2 pt-2 border-t flex items-center justify-between text-sm">
@@ -210,12 +216,12 @@ export default function BodyMetricsCards({ measurements, user }: Props) {
   );
 }
 
-function TrendCol({ label, delta }: { label: string; delta?: number }) {
+function TrendCol({ label, delta, suffix }: { label: string; delta?: number; suffix: string }) {
   return (
     <div className="flex flex-col items-start gap-0.5">
       <span className="text-[10px] text-muted-foreground">{label}</span>
       {delta != null
-        ? <DeltaPill abs={delta} suffix="kg" lowerIsBetter />
+        ? <DeltaPill abs={delta} suffix={suffix} lowerIsBetter />
         : <span className="text-xs text-muted-foreground/60">—</span>}
     </div>
   );
