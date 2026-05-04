@@ -14,7 +14,6 @@ import InjuryPanel from '@/components/InjuryPanel';
 import { ID } from 'appwrite';
 import {
   DndContext,
-  DragEndEvent,
   useDraggable,
   useDroppable,
   PointerSensor,
@@ -22,6 +21,7 @@ import {
   useSensors,
   pointerWithin,
 } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
 
 // ─── Weekly Timeline ──────────────────────────────────────────────────────────
 
