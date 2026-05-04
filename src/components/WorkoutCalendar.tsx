@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { WorkoutLog } from '@/types';
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell } from 'lucide-react';
+import WorkoutHeatmap from './WorkoutHeatmap';
 
 const DAYS_OF_WEEK = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MONTHS = [
@@ -17,11 +19,33 @@ export default function WorkoutCalendar() {
   const { currentUser } = useAppStore();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [workouts, setWorkouts] = useState<WorkoutLog[]>([]);
+  const [yearWorkouts, setYearWorkouts] = useState<WorkoutLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [yearLoading, setYearLoading] = useState(true);
 
   useEffect(() => {
     loadWorkouts();
   }, [currentUser, currentDate]);
+
+  useEffect(() => {
+    loadYearWorkouts();
+  }, [currentUser]);
+
+  const loadYearWorkouts = async () => {
+    if (!currentUser) return;
+    try {
+      const start = new Date();
+      start.setFullYear(start.getFullYear() - 1);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date();
+      const data = await dbHelpers.getWorkoutsByDateRange(currentUser.id, start, end);
+      setYearWorkouts(data);
+    } catch (error) {
+      console.error('Error cargando workouts del año:', error);
+    } finally {
+      setYearLoading(false);
+    }
+  };
 
   const loadWorkouts = async () => {
     if (!currentUser) return;
@@ -111,16 +135,30 @@ export default function WorkoutCalendar() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">Cargando calendario...</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-5 w-40" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-[140px] rounded-md" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="py-8">
+            <Skeleton className="h-[300px] rounded-md" />
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Card>
+    <div className="space-y-4">
+      {/* Heatmap anual */}
+      <WorkoutHeatmap workouts={yearWorkouts} loading={yearLoading} />
+
+      <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -323,5 +361,6 @@ export default function WorkoutCalendar() {
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }
