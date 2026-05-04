@@ -17,6 +17,45 @@ import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
 import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular, WorkoutSetType } from '@/types';
 
+// Item sortable de ejercicio en la pre-sesión
+function SortableSessionExercise({ id, nombre, index, series, reps }: {
+  id: string;
+  nombre: string;
+  index: number;
+  series: number;
+  reps: number | [number, number];
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 5 : 'auto' as const,
+  };
+  const repsStr = Array.isArray(reps) ? `${reps[0]}-${reps[1]}` : String(reps);
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 p-3 rounded-lg border bg-background"
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="touch-none p-1 -ml-1 rounded hover:bg-accent cursor-grab active:cursor-grabbing shrink-0"
+        aria-label="Arrastrar para reordenar"
+      >
+        <GripVertical className="w-4 h-4 text-muted-foreground" />
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm truncate">{index + 1}. {nombre}</p>
+        <p className="text-xs text-muted-foreground">{series} series × {repsStr} reps</p>
+      </div>
+    </div>
+  );
+}
+
 // Detecta el tipo de set basándose en tags y equipamiento del ejercicio
 function detectSetType(ej: { tags?: string[]; equipamiento?: string[] } | undefined): WorkoutSetType {
   if (!ej) return 'WEIGHT';
@@ -29,6 +68,10 @@ function detectSetType(ej: { tags?: string[]; equipamiento?: string[] } | undefi
 }
 import { inferirSiguienteDia } from '@/utils/workoutInference';
 import { getVideoForExercise, getVolumenSesion } from '@/utils/exerciseUtils';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical } from 'lucide-react';
 import { INJURY_AFFECTS, LESION_ZONA_LABELS, REHAB_EXERCISES } from '@/utils/injuryData';
 import { CARDIO_RECOMENDACIONES } from '@/utils/cardioData';
 import CardioPanel from '@/components/CardioPanel';
@@ -202,6 +245,24 @@ export default function WorkoutSession() {
     autoSelectDay();
   }, [activeRoutine, currentUser]);
 
+  // Drag and drop pre-sesión: reordena ejercicios del día seleccionado
+  const reorderSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
+
+  const handleReorderExerciseInDay = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !selectedDay) return;
+    const oldIdx = selectedDay.ejercicios.findIndex(ej => ej.ejercicioId === active.id);
+    const newIdx = selectedDay.ejercicios.findIndex(ej => ej.ejercicioId === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    setSelectedDay({
+      ...selectedDay,
+      ejercicios: arrayMove(selectedDay.ejercicios, oldIdx, newIdx),
+    });
+  };
+
   const handleSelectDay = (dia: DiaRutina) => {
     setSelectedDay(dia);
   };
@@ -285,6 +346,39 @@ export default function WorkoutSession() {
             </div>
           );
         })()}
+
+        {/* Lista de ejercicios reordenable (pre-sesión) */}
+        {selectedDay && !hasStarted && selectedDay.ejercicios.length > 0 && (
+          <div className="mx-4 mt-4 mb-32">
+            <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+              <GripVertical className="w-3.5 h-3.5" />
+              <span>Arrastra para reordenar antes de empezar</span>
+            </div>
+            <DndContext
+              sensors={reorderSensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleReorderExerciseInDay}
+            >
+              <SortableContext
+                items={selectedDay.ejercicios.map(ej => ej.ejercicioId)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {selectedDay.ejercicios.map((ej, idx) => (
+                    <SortableSessionExercise
+                      key={ej.ejercicioId}
+                      id={ej.ejercicioId}
+                      nombre={ej.ejercicio?.nombre ?? ej.ejercicioId}
+                      index={idx}
+                      series={ej.seriesObjetivo}
+                      reps={ej.repsObjetivo}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </div>
+        )}
 
         {selectedDay && !hasStarted && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg">
