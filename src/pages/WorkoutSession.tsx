@@ -15,7 +15,18 @@ import { checkAndAwardAchievements, type EarnedAchievement } from '@/utils/achie
 import { notificationManager } from '@/utils/notificationManager';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
-import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular } from '@/types';
+import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular, WorkoutSetType } from '@/types';
+
+// Detecta el tipo de set basándose en tags y equipamiento del ejercicio
+function detectSetType(ej: { tags?: string[]; equipamiento?: string[] } | undefined): WorkoutSetType {
+  if (!ej) return 'WEIGHT';
+  const tags = ej.tags ?? [];
+  if (tags.some(t => /isometr|cardio|tiempo|plancha/i.test(t))) return 'TIME';
+  const eq = ej.equipamiento ?? [];
+  // Solo peso corporal sin pesa adicional → BODYWEIGHT
+  if (eq.length === 1 && eq[0] === 'peso_corporal') return 'BODYWEIGHT';
+  return 'WEIGHT';
+}
 import { inferirSiguienteDia } from '@/utils/workoutInference';
 import { getVideoForExercise, getVolumenSesion } from '@/utils/exerciseUtils';
 import { INJURY_AFFECTS, LESION_ZONA_LABELS, REHAB_EXERCISES } from '@/utils/injuryData';
@@ -54,6 +65,7 @@ export default function WorkoutSession() {
   // Formulario de serie actual
   const [reps, setReps] = useState('');
   const [peso, setPeso] = useState('');
+  const [tiempoSegundos, setTiempoSegundos] = useState('');
   const [rir, setRir] = useState<number>(2);
 
   // Estado del entrenamiento
@@ -358,18 +370,35 @@ export default function WorkoutSession() {
   const totalSeries = ejercicioActual.seriesObjetivo;
 
   const handleRegistrarSerie = () => {
-    if (!reps || !peso) {
-      alert('Por favor completa repeticiones y peso');
-      return;
+    const setType = detectSetType(ejercicioActual.ejercicio);
+
+    // Validación según tipo
+    if (setType === 'TIME') {
+      if (!tiempoSegundos || parseInt(tiempoSegundos) <= 0) {
+        alert('Introduce la duración en segundos');
+        return;
+      }
+    } else if (setType === 'BODYWEIGHT') {
+      if (!reps) {
+        alert('Introduce las repeticiones');
+        return;
+      }
+    } else {
+      if (!reps || !peso) {
+        alert('Por favor completa repeticiones y peso');
+        return;
+      }
     }
 
     const nuevaSerie: SerieLog = {
       numero: currentSetNumber,
-      repeticiones: parseInt(reps),
-      peso: parseFloat(peso),
+      repeticiones: setType === 'TIME' ? 0 : parseInt(reps || '0'),
+      peso: setType === 'WEIGHT' ? parseFloat(peso || '0') : 0,
       RIR: rir,
       tiempoDescanso: ejercicioActual.ejercicio?.descansoSugerido || 90,
-      completada: true
+      completada: true,
+      tipo: setType,
+      tiempoSegundos: setType === 'TIME' ? parseInt(tiempoSegundos) : undefined,
     };
 
     // Actualizar o crear ejercicio log
@@ -395,6 +424,7 @@ export default function WorkoutSession() {
 
     // Limpiar formulario
     setReps('');
+    setTiempoSegundos('');
     setRir(2);
 
     // Incrementar número de serie
@@ -711,57 +741,137 @@ export default function WorkoutSession() {
                 </Badge>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label htmlFor="reps" className="text-xs">Repeticiones</Label>
-                  <Input
-                    id="reps"
-                    type="number"
-                    value={reps}
-                    onChange={(e) => setReps(e.target.value)}
-                    placeholder={repsObjetivo.toString()}
-                    className="text-lg font-semibold text-center h-14"
-                    min="1"
-                    max="50"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="peso" className="text-xs">Peso (kg)</Label>
-                  <Input
-                    id="peso"
-                    type="number"
-                    step="0.25"
-                    value={peso}
-                    onChange={(e) => setPeso(e.target.value)}
-                    placeholder={pesoSugerido?.toString() || "0"}
-                    className="text-lg font-semibold text-center h-14"
-                    min="0"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="rir" className="text-xs">RIR</Label>
-                  <Select value={rir.toString()} onValueChange={(v) => setRir(parseInt(v))}>
-                    <SelectTrigger id="rir" className="h-14">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">RIR 0 (fallo)</SelectItem>
-                      <SelectItem value="1">RIR 1</SelectItem>
-                      <SelectItem value="2">RIR 2</SelectItem>
-                      <SelectItem value="3">RIR 3</SelectItem>
-                      <SelectItem value="4">RIR 4+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              {(() => {
+                const setType = detectSetType(ejercicioActual.ejercicio);
+                if (setType === 'TIME') {
+                  return (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="tiempo" className="text-xs">Duración (segundos)</Label>
+                        <Input
+                          id="tiempo"
+                          type="number"
+                          inputMode="numeric"
+                          value={tiempoSegundos}
+                          onChange={(e) => setTiempoSegundos(e.target.value)}
+                          placeholder="60"
+                          className="text-lg font-semibold text-center h-14"
+                          min="1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="rir" className="text-xs">RIR</Label>
+                        <Select value={rir.toString()} onValueChange={(v) => setRir(parseInt(v))}>
+                          <SelectTrigger id="rir" className="h-14">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">RIR 0 (fallo)</SelectItem>
+                            <SelectItem value="1">RIR 1</SelectItem>
+                            <SelectItem value="2">RIR 2</SelectItem>
+                            <SelectItem value="3">RIR 3</SelectItem>
+                            <SelectItem value="4">RIR 4+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  );
+                }
+                if (setType === 'BODYWEIGHT') {
+                  return (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="reps" className="text-xs">Repeticiones</Label>
+                        <Input
+                          id="reps"
+                          type="number"
+                          inputMode="numeric"
+                          value={reps}
+                          onChange={(e) => setReps(e.target.value)}
+                          placeholder={repsObjetivo.toString()}
+                          className="text-lg font-semibold text-center h-14"
+                          min="1"
+                          max="50"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="rir" className="text-xs">RIR</Label>
+                        <Select value={rir.toString()} onValueChange={(v) => setRir(parseInt(v))}>
+                          <SelectTrigger id="rir" className="h-14">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">RIR 0 (fallo)</SelectItem>
+                            <SelectItem value="1">RIR 1</SelectItem>
+                            <SelectItem value="2">RIR 2</SelectItem>
+                            <SelectItem value="3">RIR 3</SelectItem>
+                            <SelectItem value="4">RIR 4+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  );
+                }
+                // WEIGHT: comportamiento por defecto (3 columnas)
+                return (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label htmlFor="reps" className="text-xs">Repeticiones</Label>
+                      <Input
+                        id="reps"
+                        type="number"
+                        inputMode="numeric"
+                        value={reps}
+                        onChange={(e) => setReps(e.target.value)}
+                        placeholder={repsObjetivo.toString()}
+                        className="text-lg font-semibold text-center h-14"
+                        min="1"
+                        max="50"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="peso" className="text-xs">Peso (kg)</Label>
+                      <Input
+                        id="peso"
+                        type="number"
+                        step="0.25"
+                        inputMode="decimal"
+                        value={peso}
+                        onChange={(e) => setPeso(e.target.value)}
+                        placeholder={pesoSugerido?.toString() || "0"}
+                        className="text-lg font-semibold text-center h-14"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="rir" className="text-xs">RIR</Label>
+                      <Select value={rir.toString()} onValueChange={(v) => setRir(parseInt(v))}>
+                        <SelectTrigger id="rir" className="h-14">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">RIR 0 (fallo)</SelectItem>
+                          <SelectItem value="1">RIR 1</SelectItem>
+                          <SelectItem value="2">RIR 2</SelectItem>
+                          <SelectItem value="3">RIR 3</SelectItem>
+                          <SelectItem value="4">RIR 4+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <Button
                 onClick={handleRegistrarSerie}
                 size="lg"
                 className="w-full h-14 text-lg"
-                disabled={!reps || !peso}
+                disabled={(() => {
+                  const t = detectSetType(ejercicioActual.ejercicio);
+                  if (t === 'TIME') return !tiempoSegundos || parseInt(tiempoSegundos) <= 0;
+                  if (t === 'BODYWEIGHT') return !reps;
+                  return !reps || !peso;
+                })()}
               >
                 <Check className="w-5 h-5 mr-2" />
                 Completar Serie {currentSetNumber}
@@ -780,9 +890,17 @@ export default function WorkoutSession() {
                     >
                       <span className="font-medium">Serie {serie.numero}</span>
                       <div className="text-sm">
-                        <span className="font-semibold">{serie.repeticiones} reps</span>
-                        {' × '}
-                        <span className="font-semibold">{serie.peso}kg</span>
+                        {serie.tipo === 'TIME' ? (
+                          <span className="font-semibold">{serie.tiempoSegundos}s</span>
+                        ) : serie.tipo === 'BODYWEIGHT' ? (
+                          <span className="font-semibold">{serie.repeticiones} reps (peso corporal)</span>
+                        ) : (
+                          <>
+                            <span className="font-semibold">{serie.repeticiones} reps</span>
+                            {' × '}
+                            <span className="font-semibold">{serie.peso}kg</span>
+                          </>
+                        )}
                         {' • '}
                         <span className="text-muted-foreground">RIR {serie.RIR}</span>
                       </div>

@@ -35,7 +35,7 @@ export function calcular1RM(
  */
 export function getVideoForExercise(
   ejercicioId: string,
-  ejercicio?: ExerciseKnowledge & { videoId?: string },
+  ejercicio?: ExerciseKnowledge,
 ): ExerciseVideo | undefined {
   if (ejercicio?.videoId) {
     const direct = exerciseVideos.find(v => v.id === ejercicio.videoId);

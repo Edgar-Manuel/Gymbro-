@@ -45,6 +45,8 @@ export interface ExerciseKnowledge {
   id: string;
   nombre: string;
   grupoMuscular: GrupoMuscular;
+  /** Músculos secundarios trabajados (cuentan al 0.5× en volumen por grupo) */
+  musculosSecundarios?: GrupoMuscular[];
   categoria: Categoria;
   tier: Tier;
 
@@ -59,6 +61,8 @@ export interface ExerciseKnowledge {
   variantes: ExerciseVariante[];
   descansoSugerido: number; // segundos
   tags?: string[]; // ej: ["tiron_vertical", "tiron_horizontal"]
+  /** Id del video del catálogo exerciseVideos (alternativa a relatedExercises) */
+  videoId?: string;
 }
 
 // User Profile
@@ -145,13 +149,19 @@ export interface SharedRoutine {
 }
 
 // Workout Logging
+export type WorkoutSetType = 'WEIGHT' | 'REPS' | 'TIME' | 'BODYWEIGHT';
+
 export interface SerieLog {
   numero: number;
   repeticiones: number;
-  peso: number; // kg
+  peso: number; // kg (0 para BODYWEIGHT y TIME)
   RIR: number; // Reps In Reserve (0-3)
   tiempoDescanso: number; // segundos
   completada: boolean;
+  /** Tipo de set. Default WEIGHT para retrocompatibilidad. */
+  tipo?: WorkoutSetType;
+  /** Para sets tipo TIME (plancha, isometricos): duración en segundos */
+  tiempoSegundos?: number;
 }
 
 export interface ExerciseLog {

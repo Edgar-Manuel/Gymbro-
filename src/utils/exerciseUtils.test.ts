@@ -63,7 +63,7 @@ describe('getVideoForExercise', () => {
     const ejercicio = {
       id: 'cualquier-cosa',
       videoId: 'hombros-crecimiento',  // existe en el catálogo
-    } as ExerciseKnowledge & { videoId?: string };
+    } as ExerciseKnowledge;
     const v = getVideoForExercise('cualquier-cosa', ejercicio);
     expect(v?.id).toBe('hombros-crecimiento');
   });
