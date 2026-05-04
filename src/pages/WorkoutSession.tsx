@@ -17,6 +17,7 @@ import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
 import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular } from '@/types';
 import { inferirSiguienteDia } from '@/utils/workoutInference';
+import { getVideoForExercise, getVolumenSesion } from '@/utils/exerciseUtils';
 import { INJURY_AFFECTS, LESION_ZONA_LABELS, REHAB_EXERCISES } from '@/utils/injuryData';
 import { CARDIO_RECOMENDACIONES } from '@/utils/cardioData';
 import CardioPanel from '@/components/CardioPanel';
@@ -501,9 +502,22 @@ export default function WorkoutSession() {
             </div>
           </div>
           <Progress value={progreso} className="h-2 bg-primary-foreground/20" />
-          <p className="text-sm mt-2 opacity-90">
-            Ejercicio {currentExerciseIndex + 1} de {ejerciciosDelDia.length}
-          </p>
+          <div className="flex items-center justify-between mt-2 text-sm opacity-90">
+            <span>Ejercicio {currentExerciseIndex + 1} de {ejerciciosDelDia.length}</span>
+            {(() => {
+              const currentVolumen = getVolumenSesion({
+                id: '', userId: '', fecha: new Date(),
+                ejercicios: Array.from(ejercicioLogs.values()),
+                completado: false,
+              });
+              if (currentVolumen <= 0) return null;
+              return (
+                <span className="font-semibold tabular-nums">
+                  Volumen: {currentVolumen >= 1000 ? `${(currentVolumen / 1000).toFixed(1)}t` : `${Math.round(currentVolumen)} kg`}
+                </span>
+              );
+            })()}
+          </div>
         </div>
       </div>
 
@@ -827,6 +841,28 @@ export default function WorkoutSession() {
             </div>
 
             <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
+              {/* Video de YouTube si está disponible */}
+              {(() => {
+                const video = getVideoForExercise(ejercicioActual.ejercicioId, ejercicioActual.ejercicio);
+                if (!video?.youtubeId) return null;
+                return (
+                  <div>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
+                      🎥 {video.title}
+                    </p>
+                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                      <iframe
+                        src={`https://www.youtube.com/embed/${video.youtubeId}?rel=0`}
+                        title={video.title}
+                        className="absolute top-0 left-0 w-full h-full rounded-lg"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Posición inicial */}
               {ejercicioActual.ejercicio.tecnica.posicionInicial && (
                 <div>
