@@ -264,7 +264,7 @@ export default function ExerciseAnalysis({ workouts, exercises }: Props) {
                   />
                   <Legend />
                   {max1RM > 0 && (
-                    <ReferenceLine y={max1RM} stroke="#f59e0b" strokeDasharray="5 5" label={{ value: 'PR', position: 'right', fill: '#f59e0b' }} />
+                    <ReferenceLine y={max1RM} stroke="#f59e0b" strokeDasharray="5 5" label={{ value: '🏆 PR', position: 'right', fill: '#f59e0b' }} />
                   )}
                   <Line type="monotone" dataKey="pesoMaximo" stroke="#3b82f6" strokeWidth={2} name="Peso Máximo (kg)" dot={{ r: 3 }} />
                   <Line type="monotone" dataKey="estimated1RM" stroke="#93c5fd" strokeWidth={2} strokeDasharray="5 5" name="1RM Estimado (kg)" dot={false} />
@@ -284,7 +284,7 @@ export default function ExerciseAnalysis({ workouts, exercises }: Props) {
                 <ComposedChart data={volumeWithMA}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="semana" interval={volumeWithMA.length > 20 ? Math.floor(volumeWithMA.length / 10) : 0} />
-                  <YAxis />
+                  <YAxis tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}K` : String(v)} />
                   <Tooltip
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
@@ -306,6 +306,44 @@ export default function ExerciseAnalysis({ workouts, exercises }: Props) {
                   </Bar>
                   <Line type="monotone" dataKey="mediaMovil" stroke="#f59e0b" strokeWidth={2} dot={false} name="Media Móvil" />
                 </ComposedChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Chart 3: Reps promedio */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg">Reps Promedio por Sesión</CardTitle>
+              <CardDescription>Útil para detectar progresión en repeticiones a peso constante</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="semana" interval={chartData.length > 20 ? Math.floor(chartData.length / 10) : 0} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0].payload as ProgressDataPoint;
+                      return (
+                        <div className="bg-popover border rounded-lg p-3 shadow-lg text-sm">
+                          <p className="font-medium mb-1">{d.semana}</p>
+                          <p>Reps promedio: <strong>{d.repeticionesPromedio}</strong></p>
+                          <p className="text-muted-foreground">{d.numSeries} series</p>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="repeticionesPromedio"
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: '#8b5cf6' }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>

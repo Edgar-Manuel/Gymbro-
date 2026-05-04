@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import StatsCards from './workout-analytics/StatsCards';
 import MuscleGroupSummary from './workout-analytics/MuscleGroupSummary';
 import ExerciseAnalysis from './workout-analytics/ExerciseAnalysis';
-import WorkoutHeatmap from './workout-analytics/WorkoutHeatmap';
+import WorkoutHeatmap from './WorkoutHeatmap';
 import RecentWorkoutsList from './workout-analytics/RecentWorkoutsList';
 
 interface Props {
