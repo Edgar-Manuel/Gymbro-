@@ -81,6 +81,15 @@ export default function WorkoutSession() {
     }
   }, [currentUser, activeRoutine, navigate]);
 
+  const [previousRef, setPreviousRef] = useState<{
+    peso: number;
+    reps: number;
+    rir: number;
+    fecha: Date;
+    best1RM: number;
+    pesoMaxHistorico: number;
+  } | null>(null);
+
   const loadPesoSugerido = async () => {
     if (!currentUser || !selectedDay) return;
 
@@ -88,22 +97,47 @@ export default function WorkoutSession() {
     if (!ejercicioActual) return;
 
     try {
-      // Obtener últimos workouts
-      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 10);
+      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 30);
+      const sorted = [...workouts].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
-      // Buscar última vez que se hizo este ejercicio
-      for (const workout of workouts) {
+      // Última sesión con este ejercicio
+      let lastLog: typeof workouts[0]['ejercicios'][0] | null = null;
+      let lastFecha: Date | null = null;
+      let pesoMaxHistorico = 0;
+      let best1RM = 0;
+
+      for (const workout of sorted) {
         const ejercicioLog = workout.ejercicios.find(e => e.ejercicioId === ejercicioActual.ejercicioId);
-        if (ejercicioLog && ejercicioLog.series.length > 0) {
-          // Tomar el peso promedio de la primera serie
-          const pesoPromedio = ejercicioLog.series[0].peso;
-          setPesoSugerido(pesoPromedio);
-          setPeso(pesoPromedio.toString());
-          return;
+        if (!ejercicioLog || ejercicioLog.series.length === 0) continue;
+        if (!lastLog) {
+          lastLog = ejercicioLog;
+          lastFecha = new Date(workout.fecha);
+        }
+        for (const s of ejercicioLog.series) {
+          if (s.peso > pesoMaxHistorico) pesoMaxHistorico = s.peso;
+          const e1rm = s.peso * (1 + s.repeticiones / 30);
+          if (e1rm > best1RM) best1RM = e1rm;
         }
       }
 
-      setPesoSugerido(null);
+      if (!lastLog || !lastFecha) {
+        setPesoSugerido(null);
+        setPreviousRef(null);
+        return;
+      }
+
+      // Pesos representativos de la primera serie
+      const firstSerie = lastLog.series[0];
+      setPesoSugerido(firstSerie.peso);
+      setPeso(firstSerie.peso.toString());
+      setPreviousRef({
+        peso: firstSerie.peso,
+        reps: firstSerie.repeticiones,
+        rir: firstSerie.RIR,
+        fecha: lastFecha,
+        best1RM: Math.round(best1RM),
+        pesoMaxHistorico,
+      });
     } catch (error) {
       console.error('Error cargando peso sugerido:', error);
     }
@@ -627,6 +661,34 @@ export default function WorkoutSession() {
               </div>
             )}
 
+            {/* Referencia última sesión */}
+            {previousRef && (
+              <div className="bg-muted/50 p-3 rounded-lg mb-4 border text-sm flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="font-medium text-xs text-muted-foreground">Última vez ({(() => {
+                    const days = Math.round((Date.now() - previousRef.fecha.getTime()) / (24 * 60 * 60 * 1000));
+                    return days === 0 ? 'hoy' : days === 1 ? 'ayer' : `hace ${days}d`;
+                  })()})</p>
+                  <p className="font-semibold">
+                    {previousRef.peso}kg × {previousRef.reps} reps
+                    <span className="text-xs text-muted-foreground ml-1">RIR {previousRef.rir}</span>
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {previousRef.best1RM > 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      ⚡ Mejor 1RM: {previousRef.best1RM}kg
+                    </Badge>
+                  )}
+                  {peso && parseFloat(peso) > previousRef.pesoMaxHistorico && previousRef.pesoMaxHistorico > 0 && (
+                    <Badge variant="success" className="text-xs animate-pulse">
+                      🏆 ¡Nuevo PR!
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Consejo clave */}
             {ejercicioActual.notas && (
               <div className="bg-primary/10 p-4 rounded-lg mb-4 flex gap-3">
@@ -729,6 +791,38 @@ export default function WorkoutSession() {
                 </div>
               </div>
             )}
+
+            {/* Notas del ejercicio */}
+            <div className="mt-6">
+              <details className="group">
+                <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none flex items-center gap-1">
+                  <span className="group-open:hidden">+ Añadir notas</span>
+                  <span className="hidden group-open:inline">− Notas del ejercicio</span>
+                  {ejercicioLog?.notas && <span className="text-primary">●</span>}
+                </summary>
+                <textarea
+                  className="mt-2 w-full text-sm p-2 rounded-md border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                  rows={2}
+                  placeholder="Sensaciones, ajustes técnicos, etc."
+                  value={ejercicioLog?.notas ?? ''}
+                  onChange={(e) => {
+                    const notasValue = e.target.value;
+                    setEjercicioLogs(prev => {
+                      const next = new Map(prev);
+                      const existing = next.get(ejercicioActual.ejercicioId) ?? {
+                        ejercicioId: ejercicioActual.ejercicioId,
+                        ejercicio: ejercicioActual.ejercicio,
+                        series: [],
+                        tecnicaCorrecta: true,
+                        sensacionMuscular: 3 as const,
+                      };
+                      next.set(ejercicioActual.ejercicioId, { ...existing, notas: notasValue });
+                      return next;
+                    });
+                  }}
+                />
+              </details>
+            </div>
           </CardContent>
         </Card>
 

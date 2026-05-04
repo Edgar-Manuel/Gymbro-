@@ -8,9 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
 import { generarRutinaPersonalizada, obtenerResumenRutina, SPLITS_CONFIG } from '@/utils/routineGenerator';
-import type { RutinaSemanal, ExerciseKnowledge, DiaRutina } from '@/types';
+import type { RutinaSemanal, ExerciseKnowledge, DiaRutina, EjercicioEnRutina } from '@/types';
 import type { FullWRoutine } from '@/data/fullwRoutines';
-import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check, Brain, AlertCircle, GripVertical } from 'lucide-react';
+import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check, Brain, AlertCircle, GripVertical, Play, Repeat } from 'lucide-react';
 import ShareRoutineButton from '@/components/ShareRoutineButton';
 import FullWRoutineView from '@/components/training/FullWRoutineView';
 import { fullWToRutinaSemanal } from '@/utils/fullwConverter';
@@ -33,10 +33,21 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { getVideoForExercise } from '@/utils/exerciseUtils';
+import SwapExerciseModal from '@/components/SwapExerciseModal';
+import RoutineStats from '@/components/RoutineStats';
 
 type ModoEntrenamiento = 'basico' | 'fullw' | 'ia_adaptativa';
 
-function SortableExerciseRow({ ej, index, dayId }: { ej: any; index: number; dayId: string }) {
+function SortableExerciseRow({
+  ej, index, dayId, doneCount, onSwap,
+}: {
+  ej: EjercicioEnRutina;
+  index: number;
+  dayId: string;
+  doneCount?: number;
+  onSwap: (nuevo: EjercicioEnRutina) => void;
+}) {
   const id = `${dayId}::${ej.ejercicioId}::${index}`;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -45,23 +56,31 @@ function SortableExerciseRow({ ej, index, dayId }: { ej: any; index: number; day
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 5 : 'auto' as const,
   };
+
+  const [showSwap, setShowSwap] = useState(false);
+  const video = getVideoForExercise(ej.ejercicioId, ej.ejercicio);
+
+  const equipamiento = ej.ejercicio?.equipamiento ?? [];
+  const equipoVisibles = equipamiento.slice(0, 2);
+  const equipoExtra = Math.max(0, equipamiento.length - 2);
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="p-3 rounded-lg border bg-accent/30 flex items-center gap-2"
+      className="p-3 rounded-lg border bg-accent/30 flex items-start gap-2"
     >
       <button
         type="button"
         {...attributes}
         {...listeners}
-        className="touch-none p-1 rounded hover:bg-accent cursor-grab active:cursor-grabbing shrink-0"
+        className="touch-none p-1 mt-0.5 rounded hover:bg-accent cursor-grab active:cursor-grabbing shrink-0"
         aria-label="Arrastrar para reordenar este ejercicio"
       >
         <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
       </button>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium truncate">{index + 1}. {ej.ejercicio?.nombre}</span>
           <Badge variant={
             ej.ejercicio?.tier === 'S' ? 'success' :
@@ -76,17 +95,74 @@ function SortableExerciseRow({ ej, index, dayId }: { ej: any; index: number; day
             ? `${ej.repsObjetivo[0]}-${ej.repsObjetivo[1]}`
             : ej.repsObjetivo} reps
         </p>
+        {/* Badges enriquecidos */}
+        <div className="flex flex-wrap items-center gap-1 mt-2">
+          {ej.ejercicio?.grupoMuscular && (
+            <Badge variant="outline" className="text-[10px] capitalize">
+              {ej.ejercicio.grupoMuscular.replace('_', ' ')}
+            </Badge>
+          )}
+          {ej.ejercicio?.categoria && (
+            <Badge variant="outline" className="text-[10px] capitalize">
+              {ej.ejercicio.categoria === 'compuesto' ? 'Compuesto' : 'Aislamiento'}
+            </Badge>
+          )}
+          {equipoVisibles.map(e => (
+            <Badge key={e} variant="outline" className="text-[10px] capitalize">
+              {e.replace('_', ' ')}
+            </Badge>
+          ))}
+          {equipoExtra > 0 && (
+            <Badge variant="outline" className="text-[10px]">+{equipoExtra}</Badge>
+          )}
+          {doneCount != null && doneCount > 0 && (
+            <Badge variant="secondary" className="text-[10px]">
+              {doneCount}× hecho
+            </Badge>
+          )}
+        </div>
       </div>
+      {/* Acciones rápidas */}
+      <div className="flex flex-col gap-1 shrink-0">
+        {video?.youtubeId && (
+          <a
+            href={video.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-7 h-7 rounded-md bg-background border flex items-center justify-center hover:bg-accent transition-colors"
+            title={`Ver video: ${video.title}`}
+          >
+            <Play className="w-3 h-3" />
+          </a>
+        )}
+        <button
+          type="button"
+          onClick={() => setShowSwap(true)}
+          className="w-7 h-7 rounded-md bg-background border flex items-center justify-center hover:bg-accent transition-colors"
+          title="Intercambiar ejercicio"
+        >
+          <Repeat className="w-3 h-3" />
+        </button>
+      </div>
+
+      <SwapExerciseModal
+        open={showSwap}
+        onClose={() => setShowSwap(false)}
+        ejercicioActual={ej}
+        onSwap={(nuevo) => { onSwap(nuevo); setShowSwap(false); }}
+      />
     </div>
   );
 }
 
 function SortableDayCard({
-  dia, index, onReorderEjercicios,
+  dia, index, onReorderEjercicios, onSwapEjercicio, doneCounts,
 }: {
   dia: DiaRutina;
   index: number;
   onReorderEjercicios: (dayId: string, oldIdx: number, newIdx: number) => void;
+  onSwapEjercicio: (dayId: string, idx: number, nuevo: EjercicioEnRutina) => void;
+  doneCounts: Record<string, number>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: dia.id });
   const style = {
@@ -152,6 +228,8 @@ function SortableDayCard({
                       ej={ej}
                       index={idx}
                       dayId={dia.id}
+                      doneCount={doneCounts[ej.ejercicioId]}
+                      onSwap={(nuevo) => onSwapEjercicio(dia.id, idx, nuevo)}
                     />
                   ))}
                 </div>
@@ -201,6 +279,34 @@ export default function RoutineGenerator() {
     });
     setGeneratedRoutine({ ...generatedRoutine, dias: reorderedDias });
   };
+
+  const handleSwapEjercicio = (dayId: string, idx: number, nuevo: EjercicioEnRutina) => {
+    if (!generatedRoutine) return;
+    const updatedDias = generatedRoutine.dias.map(d => {
+      if (d.id !== dayId) return d;
+      const nuevosEj = [...d.ejercicios];
+      nuevosEj[idx] = nuevo;
+      return { ...d, ejercicios: nuevosEj };
+    });
+    setGeneratedRoutine({ ...generatedRoutine, dias: updatedDias });
+  };
+
+  // Conteo de cuántas veces el usuario ha hecho cada ejercicio (para el badge)
+  const [doneCounts, setDoneCounts] = useState<Record<string, number>>({});
+  useEffect(() => {
+    if (!currentUser) return;
+    dbHelpers.getWorkoutsByUser(currentUser.id, 100)
+      .then(workouts => {
+        const counts: Record<string, number> = {};
+        for (const w of workouts) {
+          for (const ej of w.ejercicios ?? []) {
+            counts[ej.ejercicioId] = (counts[ej.ejercicioId] ?? 0) + 1;
+          }
+        }
+        setDoneCounts(counts);
+      })
+      .catch(() => {});
+  }, [currentUser]);
 
   // Configuración personalizable
   const [diasDisponibles, setDiasDisponibles] = useState(currentUser?.diasDisponibles || 4);
@@ -688,6 +794,9 @@ export default function RoutineGenerator() {
             </CardContent>
           </Card>
 
+          {/* Estadísticas de la rutina */}
+          <RoutineStats rutina={generatedRoutine} />
+
           {/* Hint para reordenar */}
           <div className="flex items-start gap-2 p-3 mb-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-muted-foreground">
             <GripVertical className="w-4 h-4 mt-0.5 text-primary shrink-0" />
@@ -710,6 +819,8 @@ export default function RoutineGenerator() {
                     dia={dia}
                     index={idx}
                     onReorderEjercicios={handleReorderEjercicios}
+                    onSwapEjercicio={handleSwapEjercicio}
+                    doneCounts={doneCounts}
                   />
                 ))}
               </div>
