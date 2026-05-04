@@ -461,7 +461,8 @@ export function calcularEstadisticasGenerales(todosWorkouts: WorkoutLog[]): {
 }
 
 /**
- * Calcula sets por grupo muscular en las últimas N semanas
+ * Calcula sets por grupo muscular en las últimas N semanas.
+ * Los músculos secundarios cuentan al 0.5× de los primarios.
  */
 export function calcularSetsPorGrupoMuscular(
   workouts: WorkoutLog[],
@@ -477,9 +478,14 @@ export function calcularSetsPorGrupoMuscular(
   recientes.forEach(w => {
     w.ejercicios.forEach(ej => {
       const info = exerciseMap.get(ej.ejercicioId);
-      if (info) {
-        const grupo = info.grupoMuscular;
-        mapa.set(grupo, (mapa.get(grupo) || 0) + ej.series.length);
+      if (!info) return;
+      const sets = ej.series.length;
+      // Primario: cuenta al 100%
+      mapa.set(info.grupoMuscular, (mapa.get(info.grupoMuscular) ?? 0) + sets);
+      // Secundarios: cuentan al 50%
+      for (const sec of info.musculosSecundarios ?? []) {
+        if (sec === info.grupoMuscular) continue; // evita doble conteo
+        mapa.set(sec, (mapa.get(sec) ?? 0) + sets * 0.5);
       }
     });
   });
