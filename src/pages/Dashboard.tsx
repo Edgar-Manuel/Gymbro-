@@ -1,16 +1,27 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
+import type { WeeklyOverride } from '@/store';
 import type { RutinaSemanal, WorkoutLog, ProgressPhoto, DiaRutina } from '@/types';
 import { inferirSiguienteDia } from '@/utils/workoutInference';
-import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw, CheckCircle } from 'lucide-react';
+import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw, CheckCircle, RotateCcw } from 'lucide-react';
 import StatsShareCard from '@/components/StatsShareCard';
 import InjuryPanel from '@/components/InjuryPanel';
 import { ID } from 'appwrite';
+import {
+  DndContext,
+  DragEndEvent,
+  useDraggable,
+  useDroppable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  pointerWithin,
+} from '@dnd-kit/core';
 
 // ─── Weekly Timeline ──────────────────────────────────────────────────────────
 
@@ -36,17 +47,148 @@ const isTrainingDay = (dayOfWeek: number, totalDays: number) => {
   }
 };
 
+export function getWeekKey(date: Date = new Date()): string {
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+  monday.setHours(0, 0, 0, 0);
+  return monday.toISOString().split('T')[0];
+}
+
+type WeekDay = {
+  label: string;
+  date: Date;
+  isToday: boolean;
+  isPast: boolean;
+  trained: boolean;
+  isRest: boolean;
+  routineDay: DiaRutina | null;
+  muscleImages: string[];
+};
+
+// ─── DayCell ─────────────────────────────────────────────────────────────────
+
+interface DayCellProps extends WeekDay {
+  i: number;
+  isOverrideFrom: boolean;
+  isOverrideTo: boolean;
+  canDrag: boolean;
+}
+
+const DayCell = memo(function DayCell({
+  i, label, isToday, isPast, trained, isRest,
+  routineDay, muscleImages,
+  isOverrideFrom, isOverrideTo, canDrag,
+}: DayCellProps) {
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id: `drop-${i}`,
+    disabled: isPast || trained,
+  });
+  const {
+    attributes, listeners,
+    setNodeRef: setDragRef,
+    isDragging,
+    transform,
+  } = useDraggable({
+    id: `day-${i}`,
+    disabled: !canDrag,
+  });
+
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    setDragRef(node);
+    setDropRef(node);
+  }, [setDragRef, setDropRef]);
+
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50, position: 'relative' as const }
+    : undefined;
+
+  const cellClass = [
+    'relative w-full aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all overflow-hidden select-none',
+    canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default',
+    isDragging ? 'opacity-30 ring-2 ring-primary scale-95' :
+    isOver ? 'ring-2 ring-primary/80 ring-offset-1 bg-primary/15 scale-105' :
+    isOverrideFrom ? 'opacity-40 bg-amber-100 dark:bg-amber-950/30 border-2 border-dashed border-amber-400/60' :
+    isOverrideTo ? 'ring-2 ring-amber-400 bg-amber-50 dark:bg-amber-950/20' :
+    isToday && !trained ? 'ring-2 ring-primary ring-offset-2 bg-primary/10' :
+    trained ? 'bg-green-500/20' :
+    isRest ? 'bg-muted/30 border-dashed border border-muted-foreground/20' :
+    'bg-muted/50',
+  ].join(' ');
+
+  return (
+    <div className="flex-1 flex flex-col items-center gap-1">
+      <span className={`text-xs font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
+        {label}
+      </span>
+      <div ref={ref} style={style} className={cellClass} {...attributes} {...listeners}>
+        {isOverrideFrom ? (
+          <span className="text-[9px] text-amber-600 dark:text-amber-400 font-normal text-center leading-tight px-0.5">
+            Movido
+          </span>
+        ) : isRest && !trained ? (
+          <span className="text-[10px] text-muted-foreground/40 font-normal">Zzz</span>
+        ) : muscleImages.length > 0 ? (
+          <div className={`w-full h-full p-0.5 grid gap-0.5 ${muscleImages.length === 1 ? 'grid-cols-1' : 'grid-cols-2 grid-rows-2'}`}>
+            {muscleImages.map((img, idx) => (
+              <img
+                key={idx}
+                src={img}
+                alt="Muscle"
+                className={`w-full h-full object-cover ${
+                  trained ? 'opacity-100 scale-105 drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]' :
+                  isPast ? 'opacity-30 grayscale' : 'opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all'
+                } ${muscleImages.length === 3 && idx === 2 ? 'row-span-2 col-start-2 row-start-1' : ''
+                } ${muscleImages.length === 2 && (idx === 0 || idx === 1) ? 'row-span-2' : ''}`}
+              />
+            ))}
+            {trained && (
+              <div className="absolute inset-0 bg-green-500/10 flex items-end justify-end p-0.5">
+                <CheckCircle className="w-2.5 h-2.5 text-green-500 drop-shadow-md bg-white rounded-full" />
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className={trained ? 'text-green-500' : isToday ? 'text-primary' : 'text-muted-foreground/50'}>
+            {trained ? '✓' : isToday ? '→' : '·'}
+          </span>
+        )}
+      </div>
+      {isOverrideFrom ? (
+        <span className="text-[9px] text-amber-500 italic">Movido</span>
+      ) : isRest && !trained ? (
+        <span className="text-[9px] text-muted-foreground/60 italic">Descanso</span>
+      ) : routineDay ? (
+        <span className="text-[9px] text-muted-foreground text-center leading-tight truncate w-full">
+          {routineDay.nombre.split(' ')[0]}
+        </span>
+      ) : null}
+    </div>
+  );
+});
+
+// ─── WeeklyTimeline ───────────────────────────────────────────────────────────
+
 function WeeklyTimeline({
   workouts,
   routine,
   nextDay,
+  weeklyOverride,
+  onOverrideChange,
+  weekKey,
 }: {
   workouts: WorkoutLog[];
   routine: RutinaSemanal | null;
   nextDay: DiaRutina | null;
+  weeklyOverride: WeeklyOverride;
+  onOverrideChange: (o: WeeklyOverride) => void;
+  weekKey: string;
 }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
   const today = new Date();
-  const todayWeekIndex = (today.getDay() + 6) % 7; // 0=Mon … 6=Sun
+  const todayWeekIndex = (today.getDay() + 6) % 7;
   const days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
   const dayMs = 24 * 60 * 60 * 1000;
 
@@ -57,9 +199,6 @@ function WeeklyTimeline({
   const totalDays = routine?.diasPorSemana || routine?.dias?.length || 4;
   const diasRutina = routine?.dias ?? [];
 
-  // Anchor on the NEXT training day in the calendar (today if today is a
-  // training day, else look forward). Using "today" as anchor when today is
-  // a rest day causes the offset loop to double-count the next training day.
   let anchorWeekIdx = todayWeekIndex;
   if (!isTrainingDay(todayWeekIndex, totalDays)) {
     for (let k = 1; k <= 7; k++) {
@@ -71,7 +210,7 @@ function WeeklyTimeline({
     ? diasRutina.findIndex(d => d.id === nextDay.id)
     : -1;
 
-  const week = days.map((label, i) => {
+  const week: WeekDay[] = days.map((label, i) => {
     const date = new Date(monday.getTime() + i * dayMs);
     const dateStr = date.toDateString();
     const isToday = i === todayWeekIndex;
@@ -81,8 +220,6 @@ function WeeklyTimeline({
     const trained = !!workoutDelDia;
     const isRest = !isTrainingDay(i, totalDays);
 
-    // Compute the routine slot for this day by counting training-day steps
-    // from the anchor (today) and offsetting todayRoutineIdx accordingly.
     let routineDay: DiaRutina | null = null;
     if (!isRest && anchorRoutineIdx !== -1 && diasRutina.length > 0) {
       let offset = 0;
@@ -99,7 +236,6 @@ function WeeklyTimeline({
       routineDay = diasRutina[((anchorRoutineIdx + offset) % len + len) % len];
     }
 
-    // Muscles: real workout muscles take priority, then scheduled routine
     let dailyMuscles: string[] = [];
     if (trained && workoutDelDia) {
       const rd = diasRutina.find(d => d.id === workoutDelDia.diaRutinaId);
@@ -124,76 +260,109 @@ function WeeklyTimeline({
       }
     }
 
-    const muscleImages = dailyMuscles
-      .map(m => MUSCLE_IMAGES[m])
-      .filter(Boolean)
-      .slice(0, 4);
-
+    const muscleImages = dailyMuscles.map(m => MUSCLE_IMAGES[m]).filter(Boolean).slice(0, 4);
     return { label, date, isToday, isPast, trained, isRest, routineDay, muscleImages };
   });
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    const fromIdx = parseInt((active.id as string).replace('day-', ''));
+    const toIdx = parseInt((over.id as string).replace('drop-', ''));
+    if (fromIdx === toIdx || isNaN(fromIdx) || isNaN(toIdx)) return;
+
+    const sourceDay = week[fromIdx];
+    if (!sourceDay?.routineDay) return;
+
+    onOverrideChange({
+      from: fromIdx,
+      to: toIdx,
+      routineDayId: sourceDay.routineDay.id,
+      weekKey,
+    });
+  };
+
   return (
-    <div className="flex gap-1.5 justify-between mt-4">
-      {week.map(({ label, isToday, isPast, trained, isRest, routineDay, muscleImages }) => (
-        <div key={label} className="flex-1 flex flex-col items-center gap-1">
-          <span className={`text-xs font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
-            {label}
-          </span>
-          <div
-            className={`relative w-full aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all overflow-hidden ${
-              isToday && !trained
-                ? 'ring-2 ring-primary ring-offset-2 bg-primary/10'
-                : trained
-                ? 'bg-green-500/20'
-                : isRest
-                ? 'bg-muted/30 border-dashed border border-muted-foreground/20'
-                : isPast
-                ? 'bg-muted/50'
-                : 'bg-muted/50'
-            }`}
-          >
-            {isRest && !trained ? (
-              <span className="text-[10px] text-muted-foreground/40 font-normal">Zzz</span>
-            ) : muscleImages.length > 0 ? (
-              <div className={`w-full h-full p-0.5 grid gap-0.5 ${muscleImages.length === 1 ? 'grid-cols-1' : 'grid-cols-2 grid-rows-2'}`}>
-                {muscleImages.map((img, idx) => (
-                  <img 
-                    key={idx}
-                    src={img} 
-                    alt="Muscle" 
-                    className={`w-full h-full object-cover ${
-                      trained ? 'opacity-100 scale-105 drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]' :
-                      isPast ? 'opacity-30 grayscale' : 'opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all'
-                    } ${
-                      muscleImages.length === 3 && idx === 2 
-                        ? 'row-span-2 col-start-2 row-start-1' 
-                        : ''
-                    } ${
-                      muscleImages.length === 2 && (idx === 0 || idx === 1) ? 'row-span-2' : ''
-                    }`}
-                  />
-                ))}
-                {trained && (
-                  <div className="absolute inset-0 bg-green-500/10 flex items-end justify-end p-0.5">
-                    <CheckCircle className="w-2.5 h-2.5 text-green-500 drop-shadow-md bg-white rounded-full" />
-                  </div>
-                )}
-              </div>
-            ) : (
-              <span className={trained ? 'text-green-500' : isToday ? 'text-primary' : 'text-muted-foreground/50'}>
-                {trained ? '✓' : isToday ? '→' : '·'}
-              </span>
-            )}
-          </div>
-          {isRest && !trained ? (
-            <span className="text-[9px] text-muted-foreground/60 italic">Descanso</span>
-          ) : routineDay && (
-            <span className="text-[9px] text-muted-foreground text-center leading-tight truncate w-full">
-              {routineDay.nombre.split(' ')[0]}
+    <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
+      <div className="flex gap-1.5 justify-between mt-4">
+        {week.map((day, i) => {
+          const isOverrideFrom = weeklyOverride?.from === i;
+          const isOverrideTo = weeklyOverride?.to === i;
+
+          // For override target: show source day's routine
+          let displayRoutineDay = day.routineDay;
+          let displayMuscleImages = day.muscleImages;
+          if (isOverrideTo && weeklyOverride) {
+            const src = week[weeklyOverride.from];
+            displayRoutineDay = src?.routineDay ?? day.routineDay;
+            displayMuscleImages = src?.muscleImages ?? day.muscleImages;
+          }
+
+          // Only non-trained, non-past training days (or override source) are draggable
+          const canDrag = !day.trained && !day.isPast && (!!day.routineDay || isOverrideTo);
+
+          return (
+            <DayCell
+              key={i}
+              i={i}
+              {...day}
+              routineDay={displayRoutineDay}
+              muscleImages={displayMuscleImages}
+              isOverrideFrom={isOverrideFrom}
+              isOverrideTo={isOverrideTo}
+              canDrag={canDrag}
+            />
+          );
+        })}
+      </div>
+    </DndContext>
+  );
+}
+
+// ─── TrainAnywayButton ────────────────────────────────────────────────────────
+// Shown on rest days. Asks which routine day to do before starting.
+
+function TrainAnywayButton({
+  diasRutina,
+  onSelect,
+}: {
+  diasRutina: DiaRutina[];
+  onSelect: (diaId: string) => void;
+}) {
+  const [picking, setPicking] = useState(false);
+  const available = diasRutina.filter(d => d.ejercicios.length > 0);
+
+  if (!picking) {
+    return (
+      <Button variant="outline" size="lg" className="w-full" onClick={() => setPicking(true)}>
+        Entrenar de todos modos
+        <ChevronRight className="w-4 h-4 ml-1" />
+      </Button>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm text-muted-foreground text-center">¿Qué día de la rutina quieres hacer?</p>
+      {available.map(dia => (
+        <Button
+          key={dia.id}
+          variant="outline"
+          className="w-full justify-start gap-2"
+          onClick={() => onSelect(dia.id)}
+        >
+          <Dumbbell className="w-4 h-4 text-primary shrink-0" />
+          <span className="truncate">{dia.nombre}</span>
+          {dia.grupos?.length > 0 && (
+            <span className="text-xs text-muted-foreground ml-auto shrink-0">
+              {dia.grupos.slice(0, 2).join(', ')}
             </span>
           )}
-        </div>
+        </Button>
       ))}
+      <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => setPicking(false)}>
+        Cancelar
+      </Button>
     </div>
   );
 }
@@ -202,7 +371,11 @@ function WeeklyTimeline({
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { currentUser, statistics, setStatistics, setActiveRoutine: setStoreRoutine } = useAppStore();
+  const {
+    currentUser, statistics, setStatistics,
+    setActiveRoutine: setStoreRoutine,
+    weeklyOverride, setWeeklyOverride,
+  } = useAppStore();
   const [activeRoutine, setActiveRoutine] = useState<RutinaSemanal | null>(null);
   const [recentWorkouts, setRecentWorkouts] = useState<WorkoutLog[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
@@ -210,6 +383,8 @@ export default function Dashboard() {
   const [showShareCard, setShowShareCard] = useState(false);
   const [photoSaved, setPhotoSaved] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const currentWeekKey = getWeekKey();
 
   const loadDashboardData = async () => {
     if (!currentUser) return;
@@ -244,6 +419,13 @@ export default function Dashboard() {
   };
 
   useEffect(() => { loadDashboardData(); }, [currentUser]);
+
+  // Clear override when a new week starts
+  useEffect(() => {
+    if (weeklyOverride && weeklyOverride.weekKey !== currentWeekKey) {
+      setWeeklyOverride(null);
+    }
+  }, [currentWeekKey]);
 
   const handleQuickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -285,8 +467,19 @@ export default function Dashboard() {
   // ¿Hoy toca entrenar o es día de descanso según el calendario semanal?
   const todayWeekIdx = (new Date().getDay() + 6) % 7;
   const totalTrainingDays = activeRoutine?.diasPorSemana || activeRoutine?.dias?.length || 0;
+
+  // Override: if workout was moved TO today, override rest day status
+  const isOverrideActiveThisWeek = weeklyOverride?.weekKey === currentWeekKey;
+  const overrideMoveToToday = isOverrideActiveThisWeek && weeklyOverride?.to === todayWeekIdx;
+
   const isRestToday = !!activeRoutine && totalTrainingDays > 0
-    && !isTrainingDay(todayWeekIdx, totalTrainingDays);
+    && !isTrainingDay(todayWeekIdx, totalTrainingDays)
+    && !overrideMoveToToday;
+
+  // If override moved a routine day to today, use that as the effective next day
+  const effectiveNextDay = overrideMoveToToday && activeRoutine
+    ? (activeRoutine.dias.find(d => d.id === weeklyOverride!.routineDayId) ?? nextDay)
+    : nextDay;
 
   let nextTrainingWeekIdx = todayWeekIdx;
   if (isRestToday) {
@@ -297,6 +490,19 @@ export default function Dashboard() {
   }
   const dayNames = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
   const nextTrainingDayName = dayNames[nextTrainingWeekIdx];
+
+  // Missed workout detection: yesterday was a training day but no workout logged
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayWeekIdx = (yesterday.getDay() + 6) % 7;
+  const yesterdayWasTrainingDay = totalTrainingDays > 0 && isTrainingDay(yesterdayWeekIdx, totalTrainingDays);
+  const trainedYesterday = recentWorkouts.some(
+    w => new Date(w.fecha).toDateString() === yesterday.toDateString()
+  );
+  const showMissedBanner = !!activeRoutine
+    && yesterdayWasTrainingDay
+    && !trainedYesterday
+    && !isOverrideActiveThisWeek;
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -363,48 +569,102 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Banner: entreno perdido ayer */}
+      {showMissedBanner && (
+        <Card className="border-amber-400/60 bg-amber-50/60 dark:bg-amber-950/20">
+          <CardContent className="py-3 px-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-lg shrink-0">😅</span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium leading-tight">Ayer no pudiste entrenar</p>
+                <p className="text-xs text-muted-foreground">¿Recuperar el entreno hoy?</p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40 shrink-0"
+              onClick={() => {
+                if (!activeRoutine || !nextDay) return;
+                setWeeklyOverride({
+                  from: yesterdayWeekIdx,
+                  to: todayWeekIdx,
+                  routineDayId: nextDay.id,
+                  weekKey: currentWeekKey,
+                });
+              }}
+            >
+              Recuperar hoy
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Banner: override activo */}
+      {isOverrideActiveThisWeek && (
+        <Card className="border-amber-400/40 bg-amber-50/40 dark:bg-amber-950/10">
+          <CardContent className="py-2 px-4 flex items-center justify-between gap-2">
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              Entreno reprogramado para hoy
+            </p>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1"
+              onClick={() => setWeeklyOverride(null)}
+            >
+              <RotateCcw className="w-3 h-3" />
+              Deshacer
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Entrenamiento de hoy */}
       <Card className="border-primary/50">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div>
               <CardTitle>
-                {!nextDay
+                {!effectiveNextDay
                   ? 'Sin rutina activa'
                   : isRestToday
                     ? '💤 Hoy descansas'
-                    : nextDay.nombre}
+                    : effectiveNextDay.nombre}
               </CardTitle>
               <CardDescription>
-                {!nextDay
+                {!effectiveNextDay
                   ? 'Genera una rutina para empezar'
                   : isRestToday
-                    ? <>Próximo entreno <span className="capitalize">{nextTrainingDayName}</span>: {nextDay.nombre}</>
-                    : `${nextDay.ejercicios.length} ejercicios · ~${nextDay.duracionEstimada} min`}
+                    ? <>Próximo entreno <span className="capitalize">{nextTrainingDayName}</span>: {effectiveNextDay.nombre}</>
+                    : `${effectiveNextDay.ejercicios.length} ejercicios · ~${effectiveNextDay.duracionEstimada} min`}
               </CardDescription>
             </div>
             <Dumbbell className="w-8 h-8 text-primary/60 shrink-0" />
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {nextDay ? (
+          {effectiveNextDay ? (
             <>
               <div className="flex flex-wrap gap-1.5">
-                {nextDay.grupos?.map((g) => (
+                {effectiveNextDay.grupos?.map((g) => (
                   <Badge key={g} variant="secondary" className="capitalize">{g}</Badge>
                 ))}
               </div>
               <div className="flex flex-col gap-2">
                 {isRestToday ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate('/workout-session')}
-                    size="lg"
-                    className="w-full"
-                  >
-                    Entrenar de todos modos
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
+                  <TrainAnywayButton
+                    diasRutina={activeRoutine?.dias ?? []}
+                    onSelect={(diaId) => {
+                      setWeeklyOverride({
+                        from: todayWeekIdx,
+                        to: todayWeekIdx,
+                        routineDayId: diaId,
+                        weekKey: currentWeekKey,
+                      });
+                      navigate('/workout-session');
+                    }}
+                  />
                 ) : (
                   <Button onClick={() => navigate('/workout-session')} size="lg" className="w-full">
                     Comenzar Entrenamiento
@@ -429,7 +689,14 @@ export default function Dashboard() {
           )}
 
           {/* Timeline semanal */}
-          <WeeklyTimeline workouts={recentWorkouts} routine={activeRoutine} nextDay={nextDay ?? null} />
+          <WeeklyTimeline
+            workouts={recentWorkouts}
+            routine={activeRoutine}
+            nextDay={nextDay ?? null}
+            weeklyOverride={isOverrideActiveThisWeek ? weeklyOverride : null}
+            onOverrideChange={setWeeklyOverride}
+            weekKey={currentWeekKey}
+          />
         </CardContent>
       </Card>
 
