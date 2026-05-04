@@ -36,7 +36,58 @@ import { CSS } from '@dnd-kit/utilities';
 
 type ModoEntrenamiento = 'basico' | 'fullw' | 'ia_adaptativa';
 
-function SortableDayCard({ dia, index }: { dia: DiaRutina; index: number }) {
+function SortableExerciseRow({ ej, index, dayId }: { ej: any; index: number; dayId: string }) {
+  const id = `${dayId}::${ej.ejercicioId}::${index}`;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 5 : 'auto' as const,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-3 rounded-lg border bg-accent/30 flex items-center gap-2"
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="touch-none p-1 rounded hover:bg-accent cursor-grab active:cursor-grabbing shrink-0"
+        aria-label="Arrastrar para reordenar este ejercicio"
+      >
+        <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
+      </button>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-medium truncate">{index + 1}. {ej.ejercicio?.nombre}</span>
+          <Badge variant={
+            ej.ejercicio?.tier === 'S' ? 'success' :
+              ej.ejercicio?.tier === 'A' ? 'default' :
+                'secondary'
+          } className="text-xs">
+            {ej.ejercicio?.tier}
+          </Badge>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">
+          {ej.seriesObjetivo} series × {Array.isArray(ej.repsObjetivo)
+            ? `${ej.repsObjetivo[0]}-${ej.repsObjetivo[1]}`
+            : ej.repsObjetivo} reps
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SortableDayCard({
+  dia, index, onReorderEjercicios,
+}: {
+  dia: DiaRutina;
+  index: number;
+  onReorderEjercicios: (dayId: string, oldIdx: number, newIdx: number) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: dia.id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -44,6 +95,25 @@ function SortableDayCard({ dia, index }: { dia: DiaRutina; index: number }) {
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 10 : 'auto' as const,
   };
+
+  // Sensores aislados para el drag de ejercicios dentro del día
+  const innerSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
+
+  const handleInnerDrag = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const items = dia.ejercicios.map((ej, i) => `${dia.id}::${ej.ejercicioId}::${i}`);
+    const oldIdx = items.indexOf(String(active.id));
+    const newIdx = items.indexOf(String(over.id));
+    if (oldIdx < 0 || newIdx < 0) return;
+    onReorderEjercicios(dia.id, oldIdx, newIdx);
+  };
+
+  const exerciseIds = dia.ejercicios.map((ej, i) => `${dia.id}::${ej.ejercicioId}::${i}`);
+
   return (
     <div ref={setNodeRef} style={style}>
       <Card>
@@ -73,32 +143,20 @@ function SortableDayCard({ dia, index }: { dia: DiaRutina; index: number }) {
         </CardHeader>
         {dia.ejercicios.length > 0 && (
           <CardContent>
-            <div className="space-y-2">
-              {dia.ejercicios.map((ej, idx) => (
-                <div
-                  key={ej.ejercicioId}
-                  className="p-3 rounded-lg border bg-accent/30 flex items-center justify-between"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{idx + 1}. {ej.ejercicio?.nombre}</span>
-                      <Badge variant={
-                        ej.ejercicio?.tier === 'S' ? 'success' :
-                          ej.ejercicio?.tier === 'A' ? 'default' :
-                            'secondary'
-                      } className="text-xs">
-                        {ej.ejercicio?.tier}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {ej.seriesObjetivo} series × {Array.isArray(ej.repsObjetivo)
-                        ? `${ej.repsObjetivo[0]}-${ej.repsObjetivo[1]}`
-                        : ej.repsObjetivo} reps
-                    </p>
-                  </div>
+            <DndContext sensors={innerSensors} collisionDetection={closestCenter} onDragEnd={handleInnerDrag}>
+              <SortableContext items={exerciseIds} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {dia.ejercicios.map((ej, idx) => (
+                    <SortableExerciseRow
+                      key={`${dia.id}::${ej.ejercicioId}::${idx}`}
+                      ej={ej}
+                      index={idx}
+                      dayId={dia.id}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           </CardContent>
         )}
       </Card>
@@ -133,6 +191,15 @@ export default function RoutineGenerator() {
       orden: i + 1,
     }));
     setGeneratedRoutine({ ...generatedRoutine, dias: reordered });
+  };
+
+  const handleReorderEjercicios = (dayId: string, oldIdx: number, newIdx: number) => {
+    if (!generatedRoutine) return;
+    const reorderedDias = generatedRoutine.dias.map(d => {
+      if (d.id !== dayId) return d;
+      return { ...d, ejercicios: arrayMove(d.ejercicios, oldIdx, newIdx) };
+    });
+    setGeneratedRoutine({ ...generatedRoutine, dias: reorderedDias });
   };
 
   // Configuración personalizable
@@ -638,7 +705,12 @@ export default function RoutineGenerator() {
             >
               <div className="space-y-4 mb-6">
                 {generatedRoutine.dias.map((dia, idx) => (
-                  <SortableDayCard key={dia.id} dia={dia} index={idx} />
+                  <SortableDayCard
+                    key={dia.id}
+                    dia={dia}
+                    index={idx}
+                    onReorderEjercicios={handleReorderEjercicios}
+                  />
                 ))}
               </div>
             </SortableContext>
