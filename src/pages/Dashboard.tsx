@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback, memo } from 'react';
+import type { CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -99,9 +100,13 @@ const DayCell = memo(function DayCell({
     setDropRef(node);
   }, [setDragRef, setDropRef]);
 
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50, position: 'relative' as const }
-    : undefined;
+  const style: CSSProperties = {
+    // Prevents the browser from stealing the touch for scrolling on mobile
+    touchAction: canDrag ? 'none' : 'auto',
+    ...(transform
+      ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50, position: 'relative' as const }
+      : {}),
+  };
 
   const cellClass = [
     'relative w-full aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all overflow-hidden select-none',
@@ -167,28 +172,13 @@ const DayCell = memo(function DayCell({
   );
 });
 
-// ─── WeeklyTimeline ───────────────────────────────────────────────────────────
+// ─── Week computation & override helpers (module-level so banner + drag share them)
 
-function WeeklyTimeline({
-  workouts,
-  routine,
-  nextDay,
-  weeklyOverride,
-  onOverrideChange,
-  weekKey,
-}: {
-  workouts: WorkoutLog[];
-  routine: RutinaSemanal | null;
-  nextDay: DiaRutina | null;
-  weeklyOverride: WeeklyOverride;
-  onOverrideChange: (o: WeeklyOverride) => void;
-  weekKey: string;
-}) {
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
-  );
-
+function computeWeek(
+  routine: RutinaSemanal | null,
+  workouts: WorkoutLog[],
+  nextDay: DiaRutina | null,
+): { week: WeekDay[]; diasRutina: DiaRutina[] } {
   const today = new Date();
   const todayWeekIndex = (today.getDay() + 6) % 7;
   const days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -266,73 +256,131 @@ function WeeklyTimeline({
     return { label, date, isToday, isPast, trained, isRest, routineDay, muscleImages };
   });
 
-  // Returns the muscle groups for day i, considering pending assignments
-  const getMusclesForDay = (i: number, pendingAssignments: Record<number, string>): Set<string> => {
-    if (i < 0 || i > 6) return new Set();
-    const assignedId = pendingAssignments[i];
-    if (assignedId) {
-      const rd = diasRutina.find(d => d.id === assignedId);
-      return new Set(rd?.grupos ?? []);
-    }
-    return new Set(week[i]?.routineDay?.grupos ?? []);
-  };
+  return { week, diasRutina };
+}
 
-  // Finds the best rest/displaced day after `afterIdx` to cascade a displaced workout,
-  // preferring slots that avoid same-muscle-group on adjacent days.
-  const findCascadeTarget = (
-    afterIdx: number,
-    displaced: number[],
-    pendingAssignments: Record<number, string>,
-    routineDay: DiaRutina,
-  ): number | null => {
-    const muscles = new Set(routineDay.grupos ?? []);
-    const candidates: number[] = [];
-    for (let i = afterIdx + 1; i <= 6; i++) {
-      const d = week[i];
-      if (!d || d.trained) continue;
-      if (pendingAssignments[i] !== undefined) continue;
-      if (d.isRest || displaced.includes(i)) candidates.push(i);
+function getMusclesForDay(
+  i: number,
+  week: WeekDay[],
+  diasRutina: DiaRutina[],
+  pendingAssignments: Record<number, string>,
+): Set<string> {
+  if (i < 0 || i > 6) return new Set();
+  const assignedId = pendingAssignments[i];
+  if (assignedId) {
+    const rd = diasRutina.find(d => d.id === assignedId);
+    return new Set(rd?.grupos ?? []);
+  }
+  return new Set(week[i]?.routineDay?.grupos ?? []);
+}
+
+function findCascadeTarget(
+  week: WeekDay[],
+  diasRutina: DiaRutina[],
+  afterIdx: number,
+  displaced: number[],
+  pendingAssignments: Record<number, string>,
+  routineDay: DiaRutina,
+): number | null {
+  const muscles = new Set(routineDay.grupos ?? []);
+  const candidates: number[] = [];
+  for (let i = afterIdx + 1; i <= 6; i++) {
+    const d = week[i];
+    if (!d || d.trained) continue;
+    if (pendingAssignments[i] !== undefined) continue;
+    if (d.isRest || displaced.includes(i)) candidates.push(i);
+  }
+  for (const c of candidates) {
+    const prev = getMusclesForDay(c - 1, week, diasRutina, pendingAssignments);
+    const next = getMusclesForDay(c + 1, week, diasRutina, pendingAssignments);
+    const conflict = [...muscles].some(m => prev.has(m) || next.has(m));
+    if (!conflict) return c;
+  }
+  return candidates[0] ?? null;
+}
+
+/**
+ * Apply a single day move (fromIdx → toIdx) to a WeeklyOverride.
+ * Cascades any workout originally on `toIdx` to the next available rest day,
+ * preferring slots without same-muscle-group on adjacent days.
+ */
+export function applyMoveToOverride(
+  week: WeekDay[],
+  diasRutina: DiaRutina[],
+  fromIdx: number,
+  toIdx: number,
+  current: WeeklyOverride,
+  weekKey: string,
+): WeeklyOverride {
+  if (fromIdx === toIdx) return current;
+
+  // What routine sits on fromIdx right now? (override assignment > original)
+  const sourceRoutineId = current?.assignments[fromIdx]
+    ?? week[fromIdx]?.routineDay?.id;
+  if (!sourceRoutineId) return current;
+
+  const newAssignments: Record<number, string> = { ...(current?.assignments ?? {}) };
+  const newDisplaced: number[] = [...(current?.displaced ?? [])];
+
+  // Move source onto target
+  newAssignments[toIdx] = sourceRoutineId;
+  delete newAssignments[fromIdx]; // fromIdx no longer holds a routine
+  if (!newDisplaced.includes(fromIdx)) newDisplaced.push(fromIdx);
+  // toIdx is no longer "displaced" — it now has a workout
+  const dispIdx = newDisplaced.indexOf(toIdx);
+  if (dispIdx !== -1) newDisplaced.splice(dispIdx, 1);
+
+  // What was on toIdx before this move? Could be original routine OR a previous override
+  const previousOnTargetId = current?.assignments[toIdx] ?? week[toIdx]?.routineDay?.id;
+  const wasTrainingSlot = previousOnTargetId
+    && !week[toIdx]?.trained
+    && (current?.assignments[toIdx] !== undefined || !week[toIdx]?.isRest);
+
+  if (wasTrainingSlot && previousOnTargetId) {
+    const previousRoutine = diasRutina.find(d => d.id === previousOnTargetId);
+    if (previousRoutine) {
+      const cascadeIdx = findCascadeTarget(
+        week, diasRutina, toIdx, newDisplaced, newAssignments, previousRoutine
+      );
+      if (cascadeIdx !== null) {
+        newAssignments[cascadeIdx] = previousRoutine.id;
+        const cIdx = newDisplaced.indexOf(cascadeIdx);
+        if (cIdx !== -1) newDisplaced.splice(cIdx, 1);
+      }
     }
-    // Prefer conflict-free slot
-    for (const c of candidates) {
-      const prev = getMusclesForDay(c - 1, pendingAssignments);
-      const next = getMusclesForDay(c + 1, pendingAssignments);
-      const conflict = [...muscles].some(m => prev.has(m) || next.has(m));
-      if (!conflict) return c;
-    }
-    // Fall back to any available slot even if there's a muscle overlap
-    return candidates[0] ?? null;
-  };
+  }
+
+  return { assignments: newAssignments, displaced: newDisplaced, weekKey };
+}
+
+// ─── WeeklyTimeline ───────────────────────────────────────────────────────────
+
+function WeeklyTimeline({
+  week,
+  diasRutina,
+  weeklyOverride,
+  onOverrideChange,
+  weekKey,
+}: {
+  week: WeekDay[];
+  diasRutina: DiaRutina[];
+  weeklyOverride: WeeklyOverride;
+  onOverrideChange: (o: WeeklyOverride) => void;
+  weekKey: string;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+  );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over) return;
     const fromIdx = parseInt((active.id as string).replace('day-', ''));
     const toIdx = parseInt((over.id as string).replace('drop-', ''));
-    if (fromIdx === toIdx || isNaN(fromIdx) || isNaN(toIdx)) return;
-
-    const sourceDay = week[fromIdx];
-    if (!sourceDay?.routineDay) return;
-
-    const newAssignments: Record<number, string> = { ...weeklyOverride?.assignments };
-    const newDisplaced: number[] = [...(weeklyOverride?.displaced ?? [])];
-
-    // Place source routine on target day
-    newAssignments[toIdx] = sourceDay.routineDay.id;
-    if (!newDisplaced.includes(fromIdx)) newDisplaced.push(fromIdx);
-
-    // If target had a training day scheduled, cascade it to the next available rest slot
-    const targetOriginal = week[toIdx].routineDay;
-    if (targetOriginal && !week[toIdx].isRest && !week[toIdx].trained) {
-      const cascadeIdx = findCascadeTarget(toIdx, newDisplaced, newAssignments, targetOriginal);
-      if (cascadeIdx !== null) {
-        newAssignments[cascadeIdx] = targetOriginal.id;
-        // The day that was originally at toIdx is now displaced
-        if (!newDisplaced.includes(toIdx)) newDisplaced.push(toIdx);
-      }
-    }
-
-    onOverrideChange({ assignments: newAssignments, displaced: newDisplaced, weekKey });
+    if (isNaN(fromIdx) || isNaN(toIdx)) return;
+    const next = applyMoveToOverride(week, diasRutina, fromIdx, toIdx, weeklyOverride, weekKey);
+    onOverrideChange(next);
   };
 
   return (
@@ -357,7 +405,6 @@ function WeeklyTimeline({
             }
           }
 
-          // Draggable: non-trained, non-past days that have a routine (original or overridden)
           const canDrag = !day.trained && !day.isPast && (!!displayRoutineDay) && !isOverrideFrom;
 
           return (
@@ -523,6 +570,9 @@ export default function Dashboard() {
 
   const nextDay = getNextWorkoutDay();
 
+  // Compute week + diasRutina once for both timeline and banner cascade
+  const { week, diasRutina } = computeWeek(activeRoutine, recentWorkouts, nextDay);
+
   // ¿Hoy toca entrenar o es día de descanso según el calendario semanal?
   const todayWeekIdx = (new Date().getDay() + 6) % 7;
   const totalTrainingDays = activeRoutine?.diasPorSemana || activeRoutine?.dias?.length || 0;
@@ -645,12 +695,14 @@ export default function Dashboard() {
               variant="outline"
               className="border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40 shrink-0"
               onClick={() => {
-                if (!activeRoutine || !nextDay) return;
-                setWeeklyOverride({
-                  assignments: { [todayWeekIdx]: nextDay.id },
-                  displaced: [yesterdayWeekIdx],
-                  weekKey: currentWeekKey,
-                });
+                if (!activeRoutine) return;
+                const next = applyMoveToOverride(
+                  week, diasRutina,
+                  yesterdayWeekIdx, todayWeekIdx,
+                  isOverrideActiveThisWeek ? weeklyOverride : null,
+                  currentWeekKey,
+                );
+                setWeeklyOverride(next);
               }}
             >
               Recuperar hoy
@@ -748,9 +800,8 @@ export default function Dashboard() {
 
           {/* Timeline semanal */}
           <WeeklyTimeline
-            workouts={recentWorkouts}
-            routine={activeRoutine}
-            nextDay={nextDay ?? null}
+            week={week}
+            diasRutina={diasRutina}
             weeklyOverride={isOverrideActiveThisWeek ? weeklyOverride : null}
             onOverrideChange={setWeeklyOverride}
             weekKey={currentWeekKey}
