@@ -17,6 +17,7 @@ import {
   useDraggable,
   useDroppable,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   pointerWithin,
@@ -125,7 +126,7 @@ const DayCell = memo(function DayCell({
           <span className="text-[9px] text-amber-600 dark:text-amber-400 font-normal text-center leading-tight px-0.5">
             Movido
           </span>
-        ) : isRest && !trained ? (
+        ) : isRest && !trained && !isOverrideTo ? (
           <span className="text-[10px] text-muted-foreground/40 font-normal">Zzz</span>
         ) : muscleImages.length > 0 ? (
           <div className={`w-full h-full p-0.5 grid gap-0.5 ${muscleImages.length === 1 ? 'grid-cols-1' : 'grid-cols-2 grid-rows-2'}`}>
@@ -155,7 +156,7 @@ const DayCell = memo(function DayCell({
       </div>
       {isOverrideFrom ? (
         <span className="text-[9px] text-amber-500 italic">Movido</span>
-      ) : isRest && !trained ? (
+      ) : isRest && !trained && !isOverrideTo ? (
         <span className="text-[9px] text-muted-foreground/60 italic">Descanso</span>
       ) : routineDay ? (
         <span className="text-[9px] text-muted-foreground text-center leading-tight truncate w-full">
@@ -184,7 +185,8 @@ function WeeklyTimeline({
   weekKey: string;
 }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
   );
 
   const today = new Date();
