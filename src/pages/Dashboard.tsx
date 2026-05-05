@@ -336,7 +336,11 @@ export function applyMoveToOverride(
     && !week[toIdx]?.trained
     && (current?.assignments[toIdx] !== undefined || !week[toIdx]?.isRest);
 
-  if (wasTrainingSlot && previousOnTargetId) {
+  // Only cascade if this routine isn't already placed somewhere else in the week
+  const alreadyPlacedElsewhere = previousOnTargetId
+    && Object.values(newAssignments).includes(previousOnTargetId);
+
+  if (wasTrainingSlot && previousOnTargetId && !alreadyPlacedElsewhere) {
     const previousRoutine = diasRutina.find(d => d.id === previousOnTargetId);
     if (previousRoutine) {
       const cascadeIdx = findCascadeTarget(
