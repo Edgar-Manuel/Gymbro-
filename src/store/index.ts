@@ -9,10 +9,9 @@ import type {
 } from '@/types';
 
 export type WeeklyOverride = {
-  from: number;        // dayIdx 0-6 (Mon=0) — day moved away from
-  to: number;          // dayIdx 0-6 — day moved to
-  routineDayId: string;
-  weekKey: string;     // "YYYY-MM-DD" of Monday of the week
+  assignments: Record<number, string>;  // dayIdx (0=Mon…6=Sun) → routineDayId
+  displaced: number[];                   // dayIdxs whose workout was moved away
+  weekKey: string;
 } | null;
 
 interface AppState {
