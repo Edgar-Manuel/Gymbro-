@@ -7,7 +7,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Camera, ChevronLeft, ChevronRight, Pencil, Trash2, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Trash2, Plus } from 'lucide-react';
 import type { MachinePhoto } from '@/types';
 
 const TIPO_LABELS: Record<string, string> = {

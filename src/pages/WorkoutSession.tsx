@@ -137,7 +137,8 @@ export default function WorkoutSession() {
       }
       const ejercicioActual = selectedDay.ejercicios[currentExerciseIndex];
       if (!ejercicioActual) return;
-      const esMaquina = ['maquina', 'polea'].includes(ejercicioActual.ejercicio?.equipamiento ?? '');
+      const equip = ejercicioActual.ejercicio?.equipamiento ?? [];
+      const esMaquina = equip.includes('maquina') || equip.includes('polea');
       if (!esMaquina) {
         setMachinePhoto(null);
         setMachineTodasFotos([]);
@@ -616,7 +617,8 @@ export default function WorkoutSession() {
               const key = `${ej?.ejercicioId ?? ''}-dismissed`;
               const dismissed = dismissedMachineKey === key;
               if (!machinePhoto || dismissed) {
-                const esMaquina = ['maquina', 'polea'].includes(ej?.ejercicio?.equipamiento ?? '');
+                const ejEquip = ej?.ejercicio?.equipamiento ?? [];
+                const esMaquina = ejEquip.includes('maquina') || ejEquip.includes('polea');
                 if (!esMaquina) return null;
                 if (!currentUser?.gymActual) {
                   return (
