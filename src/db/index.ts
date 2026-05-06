@@ -9,6 +9,7 @@ import { AchievementRepository } from './repositories/AchievementRepository';
 import { InjuryRepository } from './repositories/InjuryRepository';
 import { CardioRepository } from './repositories/CardioRepository';
 import { MachinePhotoRepository } from './repositories/MachinePhotoRepository';
+import { GymRepository } from './repositories/GymRepository';
 import { SyncManager } from './sync/SyncManager';
 export { setStorageMode, getStorageMode } from './config';
 
@@ -27,6 +28,7 @@ export const dbHelpers = {
   ...InjuryRepository,
   ...CardioRepository,
   ...MachinePhotoRepository,
+  ...GymRepository,
 
   // Utilities
   clearAllData: async () => {
@@ -42,6 +44,7 @@ export const dbHelpers = {
     await db.lesiones.clear();
     await db.cardioSessions.clear();
     await db.machinePhotos.clear();
+    await db.gyms?.clear();
   },
 
   // Recalculate stats from local workouts

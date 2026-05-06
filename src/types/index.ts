@@ -408,3 +408,13 @@ export interface MachinePhoto {
   syncStatus?: 'pending_create' | 'synced' | 'pending_delete' | 'pending_update';
   lastUpdated?: number;
 }
+
+export interface GymRecord {
+  id: string;        // gymId = slugifyGym(userId, nombre)
+  userId: string;
+  nombre: string;
+  lat?: number;
+  lng?: number;
+  syncStatus?: 'pending_create' | 'synced' | 'pending_update' | 'pending_delete';
+  lastUpdated?: number;
+}
