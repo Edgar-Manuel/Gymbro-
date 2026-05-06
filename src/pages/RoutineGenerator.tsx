@@ -10,9 +10,10 @@ import { dbHelpers } from '@/db';
 import { generarRutinaPersonalizada, obtenerResumenRutina, SPLITS_CONFIG } from '@/utils/routineGenerator';
 import type { RutinaSemanal, ExerciseKnowledge, DiaRutina, EjercicioEnRutina } from '@/types';
 import type { FullWRoutine } from '@/data/fullwRoutines';
-import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check, Brain, AlertCircle, GripVertical, Play, Repeat } from 'lucide-react';
+import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check, Brain, AlertCircle, GripVertical, Play, Repeat, Trophy } from 'lucide-react';
 import ShareRoutineButton from '@/components/ShareRoutineButton';
 import FullWRoutineView from '@/components/training/FullWRoutineView';
+import CbumRoutineView from '@/components/training/CbumRoutineView';
 import { fullWToRutinaSemanal } from '@/utils/fullwConverter';
 import { generarRutinaFullWconIA } from '@/services/groq';
 import {
@@ -37,7 +38,7 @@ import { getVideoForExercise } from '@/utils/exerciseUtils';
 import SwapExerciseModal from '@/components/SwapExerciseModal';
 import RoutineStats from '@/components/RoutineStats';
 
-type ModoEntrenamiento = 'basico' | 'fullw' | 'ia_adaptativa';
+type ModoEntrenamiento = 'basico' | 'fullw' | 'cbum' | 'ia_adaptativa';
 
 function SortableExerciseRow({
   ej, index, dayId, doneCount, onSwap,
@@ -422,10 +423,10 @@ export default function RoutineGenerator() {
     <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-4xl">
 
       {/* ── Selector de modo ── */}
-      <div className="flex gap-2 mb-6 p-1 bg-muted rounded-xl">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 p-1 bg-muted rounded-xl">
         <button
           onClick={() => setModo('basico')}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+          className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
             modo === 'basico'
               ? 'bg-background shadow text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -436,7 +437,7 @@ export default function RoutineGenerator() {
         </button>
         <button
           onClick={() => setModo('fullw')}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+          className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
             modo === 'fullw'
               ? 'bg-background shadow text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -446,8 +447,19 @@ export default function RoutineGenerator() {
           Full W
         </button>
         <button
+          onClick={() => setModo('cbum')}
+          className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+            modo === 'cbum'
+              ? 'bg-background shadow text-amber-600 dark:text-amber-400'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Trophy className="w-4 h-4 inline mr-1.5" />
+          CBum
+        </button>
+        <button
           onClick={() => setModo('ia_adaptativa')}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+          className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
             modo === 'ia_adaptativa'
               ? 'bg-background shadow text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -460,6 +472,9 @@ export default function RoutineGenerator() {
 
       {/* ── Modo Full W: selector de plantilla ── */}
       {modo === 'fullw' && !generatedRoutine && <FullWRoutineView onUseRoutine={handleUseFullW} />}
+
+      {/* ── Modo CBum: rutina de Chris Bumstead ── */}
+      {modo === 'cbum' && !generatedRoutine && <CbumRoutineView onUseRoutine={handleUseFullW} />}
 
       {/* ── Modo IA Adaptativa ── */}
       {modo === 'ia_adaptativa' && !generatedRoutine && (
@@ -834,7 +849,10 @@ export default function RoutineGenerator() {
               onClick={() => setGeneratedRoutine(null)}
               className="flex-1"
             >
-              {modo === 'fullw' ? 'Elegir otra plantilla' : modo === 'ia_adaptativa' ? 'Regenerar con IA' : 'Generar Otra'}
+              {modo === 'fullw' ? 'Elegir otra plantilla'
+                : modo === 'cbum' ? 'Volver a CBum'
+                : modo === 'ia_adaptativa' ? 'Regenerar con IA'
+                : 'Generar Otra'}
             </Button>
             <Button
               onClick={handleSaveRoutine}
