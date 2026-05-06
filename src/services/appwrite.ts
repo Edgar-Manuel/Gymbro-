@@ -19,22 +19,15 @@ export const account = new Account(client);
 export const databases = new Databases(client);
 export const storage = new Storage(client);
 
-// IDs de la base de datos y colecciones (configurar en Appwrite Console)
-export const DATABASE_ID = 'gymbro-db';
-
-export const COLLECTIONS = {
-  USERS: 'users',
-  ROUTINES: 'routines',
-  WORKOUTS: 'workouts',
-  BODY_MEASUREMENTS: 'body-measurements',
-  PROGRESS_PHOTOS: 'progress-photos',
-  ACHIEVEMENTS: 'achievements',
-  NUTRITION: 'nutrition',
-  STATISTICS: 'statistics'
-};
+// IDs de la base de datos y colecciones — fuente única en appwriteSchema.ts.
+// Las constantes que vivían aquí estaban en kebab-case (`body-measurements`,
+// `progress-photos`) y entraban en conflicto con las reales en camelCase
+// (`bodyMeasurements`, `progressPhotos`) usadas por SyncManager y
+// appwriteDb. Reexportadas para evitar duplicación silenciosa.
+export { APPWRITE_DATABASE_ID as DATABASE_ID, COLLECTIONS } from '@/config/appwriteSchema';
 
 export const STORAGE_BUCKETS = {
-  PROGRESS_PHOTOS: 'progress-photos'
+  PROGRESS_PHOTOS: 'progress-photos',
 };
 
 export { client };

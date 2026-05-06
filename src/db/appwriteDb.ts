@@ -18,6 +18,23 @@ import type {
 } from '@/types';
 
 /**
+ * Convierte un valor de fecha a ISO 8601 string de forma defensiva.
+ *
+ * Cuando los registros vienen de Dexie/IndexedDB, los campos `Date`
+ * pueden estar serializados como string (a través de structured clone
+ * o reads previos). Llamar `.toISOString()` directamente sobre un
+ * string lanza `TypeError` y rompe la sincronización en silencio.
+ */
+function toISO(value: Date | string | number | null | undefined): string | undefined {
+  if (value == null) return undefined;
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? undefined : value.toISOString();
+  }
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? undefined : d.toISOString();
+}
+
+/**
  * Helpers para interactuar con Appwrite Database
  * Este módulo maneja todas las operaciones de base de datos en la nube
  */
@@ -326,7 +343,7 @@ export const appwriteDbHelpers = {
 
       const workoutData = {
         userId,
-        fecha: workout.fecha.toISOString(),
+        fecha: toISO(workout.fecha),
         completado: workout.completado,
         datos: JSON.stringify({
           rutinaId: workout.rutinaId || '',
@@ -486,7 +503,7 @@ export const appwriteDbHelpers = {
           volumenEsteMes: stats.volumenEsteMes ?? 0,
           favoriteExercises: stats.favoriteExercises || {},
           muscleGroupStats: stats.muscleGroupStats || {},
-          lastWorkoutDate: stats.lastWorkoutDate?.toISOString(),
+          lastWorkoutDate: toISO(stats.lastWorkoutDate),
         }),
       };
 
@@ -564,7 +581,7 @@ export const appwriteDbHelpers = {
       const achievementData = {
         userId,
         tipo: achievement.tipo,
-        fecha: achievement.fecha.toISOString(),
+        fecha: toISO(achievement.fecha),
         datos: JSON.stringify({
           nombre: achievement.nombre,
           descripcion: achievement.descripcion,
@@ -594,7 +611,9 @@ export const appwriteDbHelpers = {
    */
   async getNutritionByDate(userId: string, fecha: Date): Promise<NutritionTracker | undefined> {
     try {
-      const dateStr = fecha.toISOString().split('T')[0];
+      const isoFecha = toISO(fecha);
+      if (!isoFecha) return undefined;
+      const dateStr = isoFecha.split('T')[0];
       const response = await databases.listDocuments(
         APPWRITE_DATABASE_ID,
         COLLECTIONS.NUTRITION,
@@ -623,7 +642,9 @@ export const appwriteDbHelpers = {
   async updateNutrition(nutrition: NutritionTracker): Promise<string> {
     try {
       const userId = await this.getCurrentUserId();
-      const dateStr = nutrition.fecha.toISOString().split('T')[0];
+      const isoFecha = toISO(nutrition.fecha);
+      if (!isoFecha) throw new Error('Fecha de nutrición inválida');
+      const dateStr = isoFecha.split('T')[0];
 
       // Buscar si ya existe un registro para esta fecha
       const existing = await databases.listDocuments(
@@ -639,7 +660,7 @@ export const appwriteDbHelpers = {
 
       const nutritionData = {
         userId,
-        fecha: nutrition.fecha.toISOString(),
+        fecha: isoFecha,
         datos: JSON.stringify({
           calorias: nutrition.calorias,
           proteinas: nutrition.proteinas,
@@ -717,7 +738,7 @@ export const appwriteDbHelpers = {
 
       const measurementData = {
         userId,
-        fecha: measurement.fecha.toISOString(),
+        fecha: toISO(measurement.fecha),
         peso: measurement.peso,
         datos: JSON.stringify({
           cintura: measurement.cintura,
@@ -755,7 +776,7 @@ export const appwriteDbHelpers = {
   async updateBodyMeasurement(measurement: BodyMeasurement): Promise<string> {
     try {
       const measurementData = {
-        fecha: measurement.fecha.toISOString(),
+        fecha: toISO(measurement.fecha),
         peso: measurement.peso,
         datos: JSON.stringify({
           cintura: measurement.cintura,
@@ -866,7 +887,7 @@ export const appwriteDbHelpers = {
 
       const photoData = {
         userId,
-        fecha: photo.fecha.toISOString(),
+        fecha: toISO(photo.fecha),
         tipo: photo.tipo,
         datos: JSON.stringify({
           fileId: photo.fileId,

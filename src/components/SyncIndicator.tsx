@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Cloud, CloudOff, RefreshCw } from 'lucide-react';
+import { Cloud, CloudOff, RefreshCw, AlertTriangle } from 'lucide-react';
 import { dbHelpers } from '@/db';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 export function SyncIndicator() {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [pendingCount, setPendingCount] = useState(0);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [lastErrors, setLastErrors] = useState<string[]>([]);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -36,9 +38,30 @@ export function SyncIndicator() {
         if (!isOnline) return;
         setIsSyncing(true);
         try {
-            await dbHelpers.sync();
+            const result = await dbHelpers.sync();
             const count = await dbHelpers.getPendingSyncCount();
             setPendingCount(count);
+            setLastErrors(result.errorMessages);
+
+            if (result.errors > 0) {
+                toast.error(`Sincronización con errores`, {
+                    description: result.synced > 0
+                        ? `${result.synced} subidos · ${result.errors} fallidos. Revisa la consola para detalles.`
+                        : `${result.errors} cambios no se pudieron subir. Revisa la consola para detalles.`,
+                });
+            } else if (result.synced > 0) {
+                toast.success(`${result.synced} ${result.synced === 1 ? 'cambio sincronizado' : 'cambios sincronizados'}`);
+                if (count === 0) setLastErrors([]); // limpia errores antiguos si todo está al día
+            } else if (count === 0) {
+                toast.info('Todo ya estaba al día');
+                setLastErrors([]);
+            }
+        } catch (e) {
+            // Excepción inesperada (no controlada por SyncManager)
+            console.error('[SyncIndicator] sync threw:', e);
+            const msg = e instanceof Error ? e.message : String(e);
+            setLastErrors([msg]);
+            toast.error('Error al sincronizar', { description: msg });
         } finally {
             setIsSyncing(false);
         }
@@ -70,17 +93,27 @@ export function SyncIndicator() {
     }
 
     if (pendingCount > 0) {
+        const hasErrors = lastErrors.length > 0;
+        const tone = hasErrors ? 'text-destructive' : 'text-amber-500';
+        const dot = hasErrors ? 'bg-destructive' : 'bg-amber-500';
         return (
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={handleSync} className="text-amber-500 relative">
-                            <RefreshCw className="h-5 w-5" />
-                            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                        <Button variant="ghost" size="icon" onClick={handleSync} className={`${tone} relative`}>
+                            {hasErrors ? <AlertTriangle className="h-5 w-5" /> : <RefreshCw className="h-5 w-5" />}
+                            <span className={`absolute top-1 right-1 h-2 w-2 rounded-full ${dot} animate-pulse`} />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>{pendingCount} cambios pendientes de subir. Click para sincronizar.</p>
+                        {hasErrors ? (
+                            <div>
+                                <p className="font-medium">{pendingCount} pendientes — última sync con {lastErrors.length} {lastErrors.length === 1 ? 'error' : 'errores'}</p>
+                                <p className="text-xs opacity-70 mt-1">Click para reintentar</p>
+                            </div>
+                        ) : (
+                            <p>{pendingCount} cambios pendientes de subir. Click para sincronizar.</p>
+                        )}
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>

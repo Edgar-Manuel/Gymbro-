@@ -10,11 +10,34 @@ import { databases } from '@/services/appwrite';
 import { APPWRITE_DATABASE_ID, COLLECTIONS } from '@/config/appwriteSchema';
 import { db } from '../schema';
 
+export interface SyncResult {
+    /** Documentos enviados a Appwrite con éxito (incluye los que ya existían en remoto). */
+    synced: number;
+    /** Documentos cuyo upload o delete falló. */
+    errors: number;
+    /** Mensajes de error legibles para mostrar al usuario. */
+    errorMessages: string[];
+    /** True si la sync se canceló por estar offline. */
+    skippedOffline?: boolean;
+}
+
 export const SyncManager = {
-    async syncAll() {
-        if (!navigator.onLine) return;
+    async syncAll(): Promise<SyncResult> {
+        if (!navigator.onLine) {
+            return { synced: 0, errors: 0, errorMessages: [], skippedOffline: true };
+        }
 
         console.log('[Sync] Starting background sync...');
+
+        let synced = 0;
+        let errors = 0;
+        const errorMessages: string[] = [];
+        const logErr = (label: string, e: unknown) => {
+            console.error(`[Sync] ${label}`, e);
+            errors++;
+            const msg = e instanceof Error ? e.message : String(e);
+            errorMessages.push(`${label}: ${msg}`);
+        };
 
         // ── Users ─────────────────────────────────────────────────────────────
         const pendingUsers = await UserRepository.getPendingSync();
@@ -22,7 +45,8 @@ export const SyncManager = {
             try {
                 await appwriteDbHelpers.createOrUpdateUser(user);
                 await db.users.update(user.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] user error', e); }
+                synced++;
+            } catch (e) { logErr('user', e); }
         }
 
         // ── Routines ──────────────────────────────────────────────────────────
@@ -45,7 +69,8 @@ export const SyncManager = {
                     }
                 }
                 await db.rutinas.update(routine.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] routine error', e); }
+                synced++;
+            } catch (e) { logErr('routine', e); }
         }
 
         // ── Workouts ──────────────────────────────────────────────────────────
@@ -68,7 +93,8 @@ export const SyncManager = {
                     }
                 }
                 await db.workouts.update(workout.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] workout error', e); }
+                synced++;
+            } catch (e) { logErr('workout', e); }
         }
 
         // ── Statistics ────────────────────────────────────────────────────────
@@ -77,7 +103,8 @@ export const SyncManager = {
             try {
                 await appwriteDbHelpers.updateStatistics(stat);
                 await db.statistics.update(stat.userId, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] stats error', e); }
+                synced++;
+            } catch (e) { logErr('stats', e); }
         }
 
         // ── Body Measurements ─────────────────────────────────────────────────
@@ -91,6 +118,7 @@ export const SyncManager = {
                         if ((err as { code?: number }).code !== 409) throw err;
                     }
                     await db.bodyMeasurements.update(m.id, { syncStatus: 'synced' });
+                    synced++;
                 } else if (m.syncStatus === 'pending_update') {
                     try {
                         await appwriteDbHelpers.updateBodyMeasurement(m);
@@ -100,6 +128,7 @@ export const SyncManager = {
                         } else throw err;
                     }
                     await db.bodyMeasurements.update(m.id, { syncStatus: 'synced' });
+                    synced++;
                 } else if (m.syncStatus === 'pending_delete') {
                     try {
                         await appwriteDbHelpers.deleteBodyMeasurement(m.id);
@@ -107,8 +136,9 @@ export const SyncManager = {
                         if ((err as { code?: number }).code !== 404) throw err;
                     }
                     await db.bodyMeasurements.delete(m.id);
+                    synced++;
                 }
-            } catch (e) { console.error('[Sync] measurement error', e); }
+            } catch (e) { logErr('measurement', e); }
         }
 
         // ── Progress Photos ───────────────────────────────────────────────────
@@ -123,7 +153,8 @@ export const SyncManager = {
                     }
                 }
                 await db.progressPhotos.update(photo.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] photo error', e); }
+                synced++;
+            } catch (e) { logErr('photo', e); }
         }
 
         // ── Achievements ──────────────────────────────────────────────────────
@@ -138,7 +169,8 @@ export const SyncManager = {
                     if ((err as { code?: number }).code !== 409) throw err;
                 }
                 await db.achievements.update(ach.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] achievement error', e); }
+                synced++;
+            } catch (e) { logErr('achievement', e); }
         }
 
         // ── Lesiones ──────────────────────────────────────────────────────────
@@ -161,7 +193,8 @@ export const SyncManager = {
                     }
                 }
                 await db.lesiones.update(lesion.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] lesion error', e); }
+                synced++;
+            } catch (e) { logErr('lesion', e); }
         }
 
         // ── Cardio Sessions ───────────────────────────────────────────────────
@@ -184,41 +217,52 @@ export const SyncManager = {
                     }
                 }
                 await db.cardioSessions.update(session.id, { syncStatus: 'synced' });
-            } catch (e) { console.error('[Sync] cardio error', e); }
+                synced++;
+            } catch (e) { logErr('cardio', e); }
         }
 
         // ── Pending Deletes ───────────────────────────────────────────────────
         const deleteLesiones = await db.lesiones.filter(l => l.syncStatus === 'pending_delete').toArray();
         for (const l of deleteLesiones) {
             try {
-                await databases.deleteDocument(APPWRITE_DATABASE_ID, COLLECTIONS.LESIONES, l.id);
-            } catch (err) {
-                if ((err as { code?: number }).code !== 404) { console.error('[Sync] delete lesion error', err); continue; }
-            }
-            await db.lesiones.delete(l.id);
+                try {
+                    await databases.deleteDocument(APPWRITE_DATABASE_ID, COLLECTIONS.LESIONES, l.id);
+                } catch (err) {
+                    if ((err as { code?: number }).code !== 404) throw err;
+                }
+                await db.lesiones.delete(l.id);
+                synced++;
+            } catch (e) { logErr('delete lesion', e); }
         }
 
         const deleteCardio = await db.cardioSessions.filter(s => s.syncStatus === 'pending_delete').toArray();
         for (const s of deleteCardio) {
             try {
-                await databases.deleteDocument(APPWRITE_DATABASE_ID, COLLECTIONS.CARDIO, s.id);
-            } catch (err) {
-                if ((err as { code?: number }).code !== 404) { console.error('[Sync] delete cardio error', err); continue; }
-            }
-            await db.cardioSessions.delete(s.id);
+                try {
+                    await databases.deleteDocument(APPWRITE_DATABASE_ID, COLLECTIONS.CARDIO, s.id);
+                } catch (err) {
+                    if ((err as { code?: number }).code !== 404) throw err;
+                }
+                await db.cardioSessions.delete(s.id);
+                synced++;
+            } catch (e) { logErr('delete cardio', e); }
         }
 
         const deletePhotos = await db.progressPhotos.filter(p => p.syncStatus === 'pending_delete').toArray();
         for (const p of deletePhotos) {
             try {
-                await appwriteDbHelpers.deleteProgressPhoto(p.id);
-            } catch (err) {
-                if ((err as { code?: number }).code !== 404) { console.error('[Sync] delete photo error', err); continue; }
-            }
-            await db.progressPhotos.delete(p.id);
+                try {
+                    await appwriteDbHelpers.deleteProgressPhoto(p.id);
+                } catch (err) {
+                    if ((err as { code?: number }).code !== 404) throw err;
+                }
+                await db.progressPhotos.delete(p.id);
+                synced++;
+            } catch (e) { logErr('delete photo', e); }
         }
 
-        console.log('[Sync] Complete');
+        console.log(`[Sync] Complete: ${synced} synced, ${errors} errors`);
+        return { synced, errors, errorMessages };
     },
 
     getPendingCount: async () => {
