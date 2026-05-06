@@ -83,7 +83,7 @@ const DayCell = memo(function DayCell({
 }: DayCellProps) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `drop-${i}`,
-    disabled: isPast || trained,
+    disabled: trained,
   });
   const {
     attributes, listeners,
@@ -142,7 +142,7 @@ const DayCell = memo(function DayCell({
                 alt="Muscle"
                 className={`w-full h-full object-cover ${
                   trained ? 'opacity-100 scale-105 drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]' :
-                  isPast ? 'opacity-30 grayscale' : 'opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all'
+                  isPast ? 'opacity-50 grayscale hover:opacity-80 hover:grayscale-0 transition-all' : 'opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all'
                 } ${muscleImages.length === 3 && idx === 2 ? 'row-span-2 col-start-2 row-start-1' : ''
                 } ${muscleImages.length === 2 && (idx === 0 || idx === 1) ? 'row-span-2' : ''}`}
               />
@@ -409,7 +409,7 @@ function WeeklyTimeline({
             }
           }
 
-          const canDrag = !day.trained && !day.isPast && (!!displayRoutineDay) && !isOverrideFrom;
+          const canDrag = !day.trained && (!!displayRoutineDay) && !isOverrideFrom;
 
           return (
             <DayCell
