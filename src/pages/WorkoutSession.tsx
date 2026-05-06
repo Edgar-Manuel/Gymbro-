@@ -360,6 +360,18 @@ export default function WorkoutSession() {
             </div>
           </div>
         )}
+
+        {/* Gym selector — must be in pre-start return too */}
+        <GymSelector
+          open={gymSelectorOpen}
+          required={!gymSesion}
+          onSelect={(gymId, gymNombre) => {
+            setGymSesion({ gymId, gymNombre });
+            setGymSelectorOpen(false);
+            if (selectedDay) setShowWellnessCheck(true);
+          }}
+          onClose={() => setGymSelectorOpen(false)}
+        />
       </>
     );
   }
