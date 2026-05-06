@@ -15,7 +15,7 @@ import { checkAndAwardAchievements, type EarnedAchievement } from '@/utils/achie
 import { notificationManager } from '@/utils/notificationManager';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
-import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular, MachinePhoto } from '@/types';
+import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular, MachinePhoto, EjercicioEnRutina, ExerciseKnowledge } from '@/types';
 import { inferirSiguienteDia } from '@/utils/workoutInference';
 import { INJURY_AFFECTS, LESION_ZONA_LABELS, REHAB_EXERCISES } from '@/utils/injuryData';
 import { CARDIO_RECOMENDACIONES } from '@/utils/cardioData';
@@ -24,6 +24,7 @@ import MachinePhotoCard from '@/components/MachinePhotoCard';
 import MachinePhotoCapture from '@/components/MachinePhotoCapture';
 import MachinePhotoViewer from '@/components/MachinePhotoViewer';
 import GymSelector from '@/components/GymSelector';
+import { exerciseAgent } from '@/services/agents';
 import {
   Check,
   ArrowRight,
@@ -42,6 +43,10 @@ import {
   XCircle,
   Building2,
   Camera,
+  Plus,
+  Search,
+  Bot,
+  Send,
 } from 'lucide-react';
 
 export default function WorkoutSession() {
@@ -90,6 +95,17 @@ export default function WorkoutSession() {
   const [gymSesion, setGymSesion] = useState<{ gymId: string; gymNombre: string } | null>(null);
   const [gymSelectorOpen, setGymSelectorOpen] = useState(false);
   const [dismissedMachineKey, setDismissedMachineKey] = useState<string | null>(null);
+
+  // Add-exercise picker
+  const [addExerciseOpen, setAddExerciseOpen] = useState(false);
+  const [allExercises, setAllExercises] = useState<ExerciseKnowledge[]>([]);
+  const [addExerciseSearch, setAddExerciseSearch] = useState('');
+  const [ejerciciosExtra, setEjerciciosExtra] = useState<EjercicioEnRutina[]>([]);
+
+  // AI question inside tech modal
+  const [aiQuestion, setAiQuestion] = useState('');
+  const [aiAnswer, setAiAnswer] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     if (!currentUser || !activeRoutine) {
@@ -376,7 +392,7 @@ export default function WorkoutSession() {
     );
   }
 
-  const ejerciciosDelDia = selectedDay.ejercicios;
+  const ejerciciosDelDia = [...selectedDay.ejercicios, ...ejerciciosExtra];
   const ejercicioActual = ejerciciosDelDia[currentExerciseIndex];
 
   if (!ejercicioActual) {
@@ -530,6 +546,35 @@ export default function WorkoutSession() {
     }
   };
 
+  const handleAskAI = async () => {
+    if (!aiQuestion.trim() || aiLoading) return;
+    setAiLoading(true);
+    setAiAnswer('');
+    try {
+      const resp = await exerciseAgent.process(aiQuestion, {
+        currentExercise: ejercicioActual?.ejercicio,
+        user: currentUser ?? undefined,
+      });
+      setAiAnswer(resp.content);
+    } catch {
+      setAiAnswer('No se pudo obtener respuesta. Verifica tu conexión.');
+    } finally {
+      setAiLoading(false);
+      setAiQuestion('');
+    }
+  };
+
+  const handleAddExercicio = (ejercicio: ExerciseKnowledge) => {
+    const nuevo: EjercicioEnRutina = {
+      ejercicioId: ejercicio.id,
+      ejercicio,
+      seriesObjetivo: 3,
+      repsObjetivo: [8, 12],
+    };
+    setEjerciciosExtra(prev => [...prev, nuevo]);
+    setAddExerciseOpen(false);
+  };
+
   const handleSwap = (nuevo: typeof ejercicioActual) => {
     if (!selectedDay) return;
     const ejerciciosActualizados = selectedDay.ejercicios.map((ej, idx) =>
@@ -566,9 +611,27 @@ export default function WorkoutSession() {
             </div>
           </div>
           <Progress value={progreso} className="h-2 bg-primary-foreground/20" />
-          <p className="text-sm mt-2 opacity-90">
-            Ejercicio {currentExerciseIndex + 1} de {ejerciciosDelDia.length}
-          </p>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-sm opacity-90">
+              Ejercicio {currentExerciseIndex + 1} de {ejerciciosDelDia.length}
+              {ejerciciosExtra.length > 0 && (
+                <span className="ml-1 opacity-70 text-xs">(+{ejerciciosExtra.length} extra)</span>
+              )}
+            </p>
+            <button
+              onClick={async () => {
+                if (allExercises.length === 0) {
+                  const all = await dbHelpers.getAllExercises();
+                  setAllExercises(all);
+                }
+                setAddExerciseSearch('');
+                setAddExerciseOpen(true);
+              }}
+              className="flex items-center gap-1 text-xs text-primary-foreground/80 hover:text-primary-foreground bg-primary-foreground/10 hover:bg-primary-foreground/20 px-2 py-1 rounded-full transition-colors"
+            >
+              <Plus className="w-3 h-3" /> Añadir ejercicio
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1012,16 +1075,52 @@ export default function WorkoutSession() {
               )}
             </div>
 
-            <div className="px-5 pb-5 pt-3 border-t shrink-0">
-              <button
-                onClick={() => setShowTechModal(false)}
-                className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
-              >
-                Entendido, a entrenar
-              </button>
-            </div>
+            {/* Ask AI section */}
+            <div className="border-t pt-4 space-y-3">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Bot className="w-3.5 h-3.5" /> Preguntar a la IA
+              </p>
+              {aiAnswer && (
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-sm leading-relaxed whitespace-pre-wrap">
+                  {aiAnswer}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  value={aiQuestion}
+                  onChange={e => setAiQuestion(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey && aiQuestion.trim() && !aiLoading) {
+                      e.preventDefault();
+                      handleAskAI();
+                    }
+                  }}
+                  placeholder={`Pregunta sobre ${ejercicioActual.ejercicio?.nombre ?? 'este ejercicio'}…`}
+                  className="flex-1 h-9 px-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  onClick={handleAskAI}
+                  disabled={!aiQuestion.trim() || aiLoading}
+                  className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 transition-opacity shrink-0"
+                >
+                  {aiLoading
+                    ? <span className="w-3.5 h-3.5 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
+                    : <Send className="w-3.5 h-3.5" />
+                  }
+                </button>
+              </div>
+          </div>
+
+          <div className="px-5 pb-5 pt-3 border-t shrink-0">
+            <button
+              onClick={() => { setShowTechModal(false); setAiQuestion(''); setAiAnswer(''); }}
+              className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
+            >
+              Entendido, a entrenar
+            </button>
           </div>
         </div>
+      </div>
       )}
 
       {/* Timer de descanso */}
@@ -1120,6 +1219,56 @@ export default function WorkoutSession() {
         }}
         onClose={() => setGymSelectorOpen(false)}
       />
+
+      {/* Add exercise picker */}
+      {addExerciseOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card w-full max-w-lg rounded-t-2xl max-h-[80vh] flex flex-col shadow-xl">
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b shrink-0">
+              <h2 className="font-bold text-base">Añadir ejercicio</h2>
+              <button onClick={() => setAddExerciseOpen(false)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-4 pt-3 pb-2 shrink-0">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  autoFocus
+                  value={addExerciseSearch}
+                  onChange={e => setAddExerciseSearch(e.target.value)}
+                  placeholder="Buscar ejercicio…"
+                  className="w-full h-10 pl-9 pr-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-1">
+              {allExercises
+                .filter(e => {
+                  const q = addExerciseSearch.toLowerCase();
+                  return !q || e.nombre.toLowerCase().includes(q) || e.grupoMuscular?.toLowerCase().includes(q);
+                })
+                .slice(0, 40)
+                .map(e => (
+                  <button
+                    key={e.id}
+                    onClick={() => handleAddExercicio(e)}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border hover:border-primary/50 hover:bg-primary/5 text-left transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{e.nombre}</p>
+                      <p className="text-xs text-muted-foreground">{e.grupoMuscular} · {e.categoria}</p>
+                    </div>
+                    <Plus className="w-4 h-4 text-primary shrink-0" />
+                  </button>
+                ))}
+              {allExercises.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">Cargando ejercicios…</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
