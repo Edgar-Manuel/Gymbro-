@@ -104,9 +104,12 @@ function exportToCsv(measurements: BodyMeasurement[], units: Units) {
   URL.revokeObjectURL(url);
 }
 
+const PAGE_SIZE = 5;
+
 export default function BodyMeasurementsTable({ measurements, units = DEFAULT_UNITS, onEdit, onDelete }: Props) {
   const [sortKey, setSortKey] = useState<ColumnKey>('fecha');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [visibles, setVisibles] = useState<number>(PAGE_SIZE);
 
   if (measurements.length === 0) return null;
 
@@ -181,7 +184,7 @@ export default function BodyMeasurementsTable({ measurements, units = DEFAULT_UN
             </tr>
           </thead>
           <tbody>
-            {sorted.map((m, idx) => (
+            {sorted.slice(0, visibles).map((m, idx) => (
               <tr
                 key={m.id}
                 className={`border-t ${idx % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-accent/50`}
@@ -223,6 +226,15 @@ export default function BodyMeasurementsTable({ measurements, units = DEFAULT_UN
           </tbody>
         </table>
       </div>
+
+      {sorted.length > visibles && (
+        <button
+          onClick={() => setVisibles(v => v + PAGE_SIZE)}
+          className="w-full mt-3 py-2 text-sm text-primary hover:underline"
+        >
+          Cargar más ({sorted.length - visibles} restantes)
+        </button>
+      )}
 
       <p className="text-[10px] text-muted-foreground mt-2 md:hidden">
         Desliza horizontalmente para ver todas las columnas →

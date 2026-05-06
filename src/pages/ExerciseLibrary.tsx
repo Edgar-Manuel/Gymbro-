@@ -112,6 +112,19 @@ export default function ExerciseLibrary() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exercises, searchQuery, selectedMuscleGroup, selectedTier, onlyFavorites, favorites]);
 
+  // Highlight del término buscado en el nombre del ejercicio
+  const highlightMatch = (text: string): React.ReactNode => {
+    const q = searchQuery.trim();
+    if (!q) return text;
+    const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(re);
+    return parts.map((part, i) =>
+      re.test(part)
+        ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-700/50 text-foreground rounded px-0.5">{part}</mark>
+        : <span key={i}>{part}</span>
+    );
+  };
+
   const getTierColor = (tier: Tier): "success" | "default" | "secondary" | "warning" | "destructive" => {
     switch (tier) {
       case 'S': return 'success';
@@ -224,7 +237,7 @@ export default function ExerciseLibrary() {
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2 gap-2">
                     <CardTitle className="text-lg line-clamp-2 flex-1">
-                      {exercise.nombre}
+                      {highlightMatch(exercise.nombre)}
                     </CardTitle>
                     <div className="flex items-center gap-1 shrink-0">
                       <button

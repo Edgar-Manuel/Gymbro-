@@ -26,6 +26,7 @@ type FormData = {
   fecha: string;        // YYYY-MM-DD
   peso: string;
   grasaCorporal: string;
+  masaMuscular: string;
   pecho: string;
   cintura: string;
   cadera: string;
@@ -48,7 +49,7 @@ const todayISO = () => {
 
 const emptyForm: FormData = {
   fecha: todayISO(),
-  peso: '', grasaCorporal: '',
+  peso: '', grasaCorporal: '', masaMuscular: '',
   pecho: '', cintura: '', cadera: '',
   brazoDerecho: '', brazoIzquierdo: '',
   musloDerecho: '', musloIzquierdo: '',
@@ -65,6 +66,7 @@ const measurementToFormData = (m: BodyMeasurement, fechaOverride?: string): Form
     fecha: fechaOverride ?? new Date(m.fecha).toISOString().slice(0, 10),
     peso: num(m.peso),
     grasaCorporal: num(m.grasaCorporal),
+    masaMuscular: num(m.masaMuscular),
     pecho: num(readMeasurementField(m, 'pecho')),
     cintura: num(readMeasurementField(m, 'cintura')),
     cadera: num(readMeasurementField(m, 'cadera')),
@@ -89,6 +91,12 @@ const validateForm = (f: FormData): FormErrors => {
     const g = parseFloat(f.grasaCorporal);
     if (isNaN(g) || g < RANGES.grasaCorporal.min || g > RANGES.grasaCorporal.max) {
       errs.grasaCorporal = `Grasa entre ${RANGES.grasaCorporal.min} y ${RANGES.grasaCorporal.max}%`;
+    }
+  }
+  if (f.masaMuscular) {
+    const mm = parseFloat(f.masaMuscular);
+    if (isNaN(mm) || mm <= 0 || mm > RANGES.peso.max) {
+      errs.masaMuscular = `Valor inválido (kg)`;
     }
   }
   const medidaKeys: (keyof FormData)[] = [
@@ -304,6 +312,7 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
       fecha,
       peso: parseFloat(form.peso),
       grasaCorporal: num(form.grasaCorporal),
+      masaMuscular: num(form.masaMuscular),
       ...medidasObj,
       medidas: medidasObj,
       notas: form.notas || undefined,
@@ -475,6 +484,18 @@ export default function BodyMeasurements({ onUpdate }: BodyMeasurementsProps) {
                   value={form.grasaCorporal}
                   onChange={setField}
                   error={errors.grasaCorporal}
+                />
+              </div>
+
+              {/* Masa muscular (opcional, fuera del grid principal) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <NumberField
+                  field="masaMuscular"
+                  label="Masa muscular (kg)"
+                  placeholder="35.0"
+                  value={form.masaMuscular}
+                  onChange={setField}
+                  error={errors.masaMuscular}
                 />
               </div>
 
