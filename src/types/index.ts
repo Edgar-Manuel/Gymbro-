@@ -96,6 +96,9 @@ export interface UserProfile {
   fechaInicio?: Date;
   pesoInicial?: number;
   rachaActual?: number; // días consecutivos
+
+  gymActual?: string;
+  gymActualNombre?: string;
 }
 
 // Workout Planning
@@ -373,4 +376,35 @@ export interface ProgressPhoto {
   url: string; // base64 o blob URL
   peso?: number; // peso en el momento de la foto
   notas?: string;
+}
+
+// ─── Machine Photo Guide ────────────────────────────────────────────────────
+
+export interface MachineAjustes {
+  asiento?: string;
+  respaldo?: string;
+  rodilleras?: string;
+  palanca?: string;
+  cable?: string;
+  cargaReferencia?: string;
+  notasAjuste?: string;
+}
+
+export interface MachinePhoto {
+  id: string;
+  userId: string;
+  ejercicioId: string;
+  ejercicioNombre: string;
+  gymNombre: string;
+  gymId: string;
+  gymLat?: number;
+  gymLng?: number;
+  url: string;
+  tipo: 'general' | 'ajustes' | 'posicion' | 'referencia' | 'pantalla';
+  ajustes?: MachineAjustes;
+  notas?: string;
+  fecha: Date;
+  esActiva: boolean;
+  syncStatus?: 'pending_create' | 'synced' | 'pending_delete' | 'pending_update';
+  lastUpdated?: number;
 }

@@ -23,6 +23,7 @@ export const COLLECTIONS = {
   SHARED_ROUTINES: 'shared_routines',
   LESIONES: 'lesiones',
   CARDIO: 'cardioSessions',
+  MACHINE_PHOTOS: 'machinePhotos',
 } as const;
 
 /**
@@ -301,3 +302,24 @@ INSTRUCCIONES PARA CONFIGURAR APPWRITE DATABASE:
 
 NOTA: Los atributos tipo JSON se almacenan como string y se parsean en la aplicación.
 `;
+
+export const machinePhotoSchema = {
+  collectionId: 'machinePhotos',
+  name: 'MachinePhotos',
+  permissions: ['read("user:{userId}")', 'write("user:{userId}")'],
+  attributes: [
+    { key: 'userId', type: 'string', size: 255, required: true },
+    { key: 'ejercicioId', type: 'string', size: 255, required: true },
+    { key: 'gymId', type: 'string', size: 255, required: true },
+    { key: 'gymNombre', type: 'string', size: 255, required: true },
+    { key: 'fecha', type: 'string', size: 64, required: true },
+    { key: 'tipo', type: 'string', size: 32, required: true },
+    { key: 'esActiva', type: 'boolean', required: true },
+    { key: 'datos', type: 'string', size: 65535, required: true },
+  ],
+  indexes: [
+    { key: 'userId_idx', type: 'key', attributes: ['userId'] },
+    { key: 'ejercicioId_idx', type: 'key', attributes: ['ejercicioId'] },
+    { key: 'gymId_idx', type: 'key', attributes: ['gymId'] },
+  ],
+};

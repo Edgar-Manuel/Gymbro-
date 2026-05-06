@@ -5,6 +5,7 @@ import { StatisticsRepository } from '../repositories/StatisticsRepository';
 import { BodyTrackingRepository } from '../repositories/BodyTrackingRepository';
 import { InjuryRepository } from '../repositories/InjuryRepository';
 import { CardioRepository } from '../repositories/CardioRepository';
+import { MachinePhotoRepository } from '../repositories/MachinePhotoRepository';
 import { appwriteDbHelpers } from '../appwriteDb';
 import { databases } from '@/services/appwrite';
 import { APPWRITE_DATABASE_ID, COLLECTIONS } from '@/config/appwriteSchema';
@@ -171,6 +172,37 @@ export const SyncManager = {
             } catch (e) { console.error('[Sync] cardio error', e); }
         }
 
+        // ── Machine Photos ────────────────────────────────────────────────────
+        const pendingMachinePhotos = await MachinePhotoRepository.getPendingSync();
+        for (const photo of pendingMachinePhotos) {
+            try {
+                if (photo.syncStatus === 'pending_create') {
+                    try {
+                        await appwriteDbHelpers.addMachinePhoto(photo);
+                    } catch (err) {
+                        if ((err as { code?: number }).code !== 409) throw err;
+                    }
+                } else if (photo.syncStatus === 'pending_update') {
+                    try {
+                        await appwriteDbHelpers.updateMachinePhoto(photo.id, photo);
+                    } catch (err) {
+                        if ((err as { code?: number }).code === 404) {
+                            await appwriteDbHelpers.addMachinePhoto(photo);
+                        } else throw err;
+                    }
+                } else if (photo.syncStatus === 'pending_delete') {
+                    try {
+                        await appwriteDbHelpers.deleteMachinePhoto(photo.id);
+                    } catch (err) {
+                        if ((err as { code?: number }).code !== 404) throw err;
+                    }
+                    await db.machinePhotos.delete(photo.id);
+                    continue;
+                }
+                await db.machinePhotos.update(photo.id, { syncStatus: 'synced' });
+            } catch (e) { console.error('[Sync] machine photo error', e); }
+        }
+
         // ── Pending Deletes ───────────────────────────────────────────────────
         const deleteLesiones = await db.lesiones.filter(l => l.syncStatus === 'pending_delete').toArray();
         for (const l of deleteLesiones) {
@@ -217,6 +249,7 @@ export const SyncManager = {
         const a = await db.achievements.filter(isPending).count();
         const l = await db.lesiones.filter(isPending).count();
         const c = await db.cardioSessions.filter(isPending).count();
-        return u + r + w + s + m + p + a + l + c;
+        const mp = await db.machinePhotos.filter(p => p.syncStatus !== 'synced' && p.syncStatus !== undefined).count();
+        return u + r + w + s + m + p + a + l + c + mp;
     }
 };

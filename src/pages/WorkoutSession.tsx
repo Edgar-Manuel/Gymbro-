@@ -15,11 +15,15 @@ import { checkAndAwardAchievements, type EarnedAchievement } from '@/utils/achie
 import { notificationManager } from '@/utils/notificationManager';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
-import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular } from '@/types';
+import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular, MachinePhoto } from '@/types';
 import { inferirSiguienteDia } from '@/utils/workoutInference';
 import { INJURY_AFFECTS, LESION_ZONA_LABELS, REHAB_EXERCISES } from '@/utils/injuryData';
 import { CARDIO_RECOMENDACIONES } from '@/utils/cardioData';
 import CardioPanel from '@/components/CardioPanel';
+import MachinePhotoCard from '@/components/MachinePhotoCard';
+import MachinePhotoCapture from '@/components/MachinePhotoCapture';
+import MachinePhotoViewer from '@/components/MachinePhotoViewer';
+import GymSelector from '@/components/GymSelector';
 import {
   Check,
   ArrowRight,
@@ -74,6 +78,14 @@ export default function WorkoutSession() {
   const [affectedInjuries, setAffectedInjuries] = useState<Lesion[]>([]);
   const [showRehabSection, setShowRehabSection] = useState(false);
 
+  // Machine photo guide
+  const [machinePhoto, setMachinePhoto] = useState<MachinePhoto | null>(null);
+  const [machineTodasFotos, setMachineTodasFotos] = useState<MachinePhoto[]>([]);
+  const [machinePhotoViewerOpen, setMachinePhotoViewerOpen] = useState(false);
+  const [machinePhotoCaptureOpen, setMachinePhotoCaptureOpen] = useState(false);
+  const [gymSelectorOpen, setGymSelectorOpen] = useState(false);
+  const [dismissedMachineKey, setDismissedMachineKey] = useState<string | null>(null);
+
   useEffect(() => {
     if (!currentUser || !activeRoutine) {
       navigate('/');
@@ -114,6 +126,39 @@ export default function WorkoutSession() {
       loadPesoSugerido();
     }
   }, [currentExerciseIndex, selectedDay, hasStarted]);
+
+  // Load machine photo for current exercise
+  useEffect(() => {
+    const loadMachinePhoto = async () => {
+      if (!currentUser || !selectedDay || !hasStarted) {
+        setMachinePhoto(null);
+        setMachineTodasFotos([]);
+        return;
+      }
+      const ejercicioActual = selectedDay.ejercicios[currentExerciseIndex];
+      if (!ejercicioActual) return;
+      const esMaquina = ['maquina', 'polea'].includes(ejercicioActual.ejercicio?.equipamiento ?? '');
+      if (!esMaquina) {
+        setMachinePhoto(null);
+        setMachineTodasFotos([]);
+        return;
+      }
+      const gymId = currentUser.gymActual;
+      if (!gymId) {
+        setMachinePhoto(null);
+        return;
+      }
+      try {
+        const active = await dbHelpers.getActiveMachinePhoto(currentUser.id, ejercicioActual.ejercicioId, gymId);
+        const todas = await dbHelpers.getMachinePhotos(currentUser.id, ejercicioActual.ejercicioId, gymId);
+        setMachinePhoto(active ?? null);
+        setMachineTodasFotos(todas);
+      } catch {
+        setMachinePhoto(null);
+      }
+    };
+    loadMachinePhoto();
+  }, [currentExerciseIndex, selectedDay, hasStarted, currentUser]);
 
   // Load active injuries
   useEffect(() => {
@@ -565,6 +610,46 @@ export default function WorkoutSession() {
             </div>
           </CardHeader>
           <CardContent>
+            {/* Machine photo card */}
+            {(() => {
+              const ej = selectedDay?.ejercicios[currentExerciseIndex];
+              const key = `${ej?.ejercicioId ?? ''}-dismissed`;
+              const dismissed = dismissedMachineKey === key;
+              if (!machinePhoto || dismissed) {
+                const esMaquina = ['maquina', 'polea'].includes(ej?.ejercicio?.equipamiento ?? '');
+                if (!esMaquina) return null;
+                if (!currentUser?.gymActual) {
+                  return (
+                    <div className="mb-4 p-3 rounded-lg border border-dashed border-muted-foreground/30 flex items-center justify-between gap-3">
+                      <p className="text-xs text-muted-foreground">Sin gym seleccionado — no puedes guardar fotos de máquinas</p>
+                      <Button size="sm" variant="outline" className="shrink-0 h-7 text-xs" onClick={() => setGymSelectorOpen(true)}>
+                        Seleccionar gym
+                      </Button>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="mb-4 p-3 rounded-lg border border-dashed border-muted-foreground/30 flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">¿Primera vez con esta máquina?</p>
+                    <Button size="sm" variant="outline" className="shrink-0 h-7 text-xs gap-1" onClick={() => setMachinePhotoCaptureOpen(true)}>
+                      📷 Fotografiar
+                    </Button>
+                  </div>
+                );
+              }
+              return (
+                <MachinePhotoCard
+                  photo={machinePhoto}
+                  todasFotos={machineTodasFotos}
+                  ejercicioNombre={ej?.ejercicio?.nombre ?? ''}
+                  gymNombre={currentUser?.gymActualNombre ?? ''}
+                  onVerDetalle={() => setMachinePhotoViewerOpen(true)}
+                  onAñadirFoto={() => setMachinePhotoCaptureOpen(true)}
+                  onDismiss={() => setDismissedMachineKey(key)}
+                />
+              );
+            })()}
+
             {/* Objetivo */}
             <div className="bg-accent/50 p-4 rounded-lg mb-4">
               <p className="text-sm font-medium mb-1">Objetivo:</p>
@@ -945,6 +1030,73 @@ export default function WorkoutSession() {
         onClose={() => setShowSwapModal(false)}
         ejercicioActual={ejercicioActual}
         onSwap={handleSwap}
+      />
+
+      {/* Machine photo modals */}
+      {currentUser?.gymActual && selectedDay && (() => {
+        const ej = selectedDay.ejercicios[currentExerciseIndex];
+        return (
+          <>
+            <MachinePhotoCapture
+              open={machinePhotoCaptureOpen}
+              ejercicioId={ej?.ejercicioId ?? ''}
+              ejercicioNombre={ej?.ejercicio?.nombre ?? ''}
+              gymId={currentUser.gymActual!}
+              gymNombre={currentUser.gymActualNombre ?? ''}
+              onGuardar={async (data) => {
+                const photo: MachinePhoto = {
+                  id: `mp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                  userId: currentUser.id,
+                  ejercicioId: ej?.ejercicioId ?? '',
+                  ejercicioNombre: ej?.ejercicio?.nombre ?? '',
+                  gymId: currentUser.gymActual!,
+                  gymNombre: currentUser.gymActualNombre ?? '',
+                  url: data.url,
+                  tipo: data.tipo,
+                  ajustes: data.ajustes,
+                  notas: data.notas || undefined,
+                  fecha: new Date(),
+                  esActiva: true,
+                  syncStatus: 'pending_create',
+                  lastUpdated: Date.now(),
+                };
+                await dbHelpers.addMachinePhoto(photo);
+                const active = await dbHelpers.getActiveMachinePhoto(currentUser.id, ej?.ejercicioId ?? '', currentUser.gymActual!);
+                const todas = await dbHelpers.getMachinePhotos(currentUser.id, ej?.ejercicioId ?? '', currentUser.gymActual!);
+                setMachinePhoto(active ?? null);
+                setMachineTodasFotos(todas);
+              }}
+              onClose={() => setMachinePhotoCaptureOpen(false)}
+            />
+            <MachinePhotoViewer
+              open={machinePhotoViewerOpen}
+              fotos={machineTodasFotos}
+              ejercicioNombre={ej?.ejercicio?.nombre ?? ''}
+              gymNombre={currentUser.gymActualNombre ?? ''}
+              onEditar={() => {}}
+              onEliminar={async (id) => {
+                await dbHelpers.deleteMachinePhoto(id);
+                const active = await dbHelpers.getActiveMachinePhoto(currentUser.id, ej?.ejercicioId ?? '', currentUser.gymActual!);
+                const todas = await dbHelpers.getMachinePhotos(currentUser.id, ej?.ejercicioId ?? '', currentUser.gymActual!);
+                setMachinePhoto(active ?? null);
+                setMachineTodasFotos(todas);
+              }}
+              onAñadirFoto={() => { setMachinePhotoViewerOpen(false); setMachinePhotoCaptureOpen(true); }}
+              onClose={() => setMachinePhotoViewerOpen(false)}
+            />
+          </>
+        );
+      })()}
+
+      <GymSelector
+        open={gymSelectorOpen}
+        onSelect={async (gymId, gymNombre) => {
+          if (currentUser) {
+            await dbHelpers.updateUser({ ...currentUser, gymActual: gymId, gymActualNombre: gymNombre });
+          }
+          setGymSelectorOpen(false);
+        }}
+        onClose={() => setGymSelectorOpen(false)}
       />
     </div>
   );
