@@ -719,7 +719,6 @@ export default function WorkoutSession() {
     try {
       const resp = await exerciseAgent.process(aiQuestion, {
         currentExercise: ejercicioActual?.ejercicio,
-        user: currentUser ?? undefined,
       });
       setAiAnswer(resp.content);
     } catch {
