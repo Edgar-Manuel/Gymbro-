@@ -33,6 +33,59 @@ export const BodyTrackingRepository = {
         return measurement.id;
     },
 
+    async updateBodyMeasurement(measurement: BodyMeasurement): Promise<void> {
+        await db.bodyMeasurements.put({
+            ...measurement,
+            syncStatus: 'pending_update',
+            lastUpdated: Date.now()
+        });
+    },
+
+    async deleteBodyMeasurement(id: string): Promise<void> {
+        if (navigator.onLine) {
+            try {
+                await appwriteDbHelpers.deleteBodyMeasurement(id);
+                await db.bodyMeasurements.delete(id);
+                return;
+            } catch (err) {
+                if ((err as { code?: number }).code === 404) {
+                    await db.bodyMeasurements.delete(id);
+                    return;
+                }
+                await db.bodyMeasurements.update(id, { syncStatus: 'pending_delete' });
+                return;
+            }
+        }
+        await db.bodyMeasurements.update(id, { syncStatus: 'pending_delete' });
+    },
+
+    /**
+     * Descarga las mediciones del usuario desde Appwrite y las upserta
+     * en Dexie. Respeta registros locales con cambios sin sincronizar.
+     */
+    async pullBodyMeasurements(userId: string): Promise<number> {
+        if (!navigator.onLine) return 0;
+        try {
+            const remote = await appwriteDbHelpers.getBodyMeasurements(userId);
+            let upserted = 0;
+            for (const m of remote) {
+                const local = await db.bodyMeasurements.get(m.id);
+                // No pisar registros con cambios pendientes locales
+                if (local && local.syncStatus && local.syncStatus !== 'synced') continue;
+                await db.bodyMeasurements.put({
+                    ...m,
+                    syncStatus: 'synced',
+                    lastUpdated: Date.now(),
+                });
+                upserted++;
+            }
+            return upserted;
+        } catch (err) {
+            console.warn('[Repo] pullBodyMeasurements failed:', err);
+            return 0;
+        }
+    },
+
     // Progress Photos
     async getProgressPhotos(userId: string): Promise<ProgressPhoto[]> {
         return await db.progressPhotos

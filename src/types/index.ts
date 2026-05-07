@@ -45,6 +45,8 @@ export interface ExerciseKnowledge {
   id: string;
   nombre: string;
   grupoMuscular: GrupoMuscular;
+  /** Músculos secundarios trabajados (cuentan al 0.5× en volumen por grupo) */
+  musculosSecundarios?: GrupoMuscular[];
   categoria: Categoria;
   tier: Tier;
 
@@ -59,6 +61,8 @@ export interface ExerciseKnowledge {
   variantes: ExerciseVariante[];
   descansoSugerido: number; // segundos
   tags?: string[]; // ej: ["tiron_vertical", "tiron_horizontal"]
+  /** Id del video del catálogo exerciseVideos (alternativa a relatedExercises) */
+  videoId?: string;
 }
 
 // User Profile
@@ -148,13 +152,19 @@ export interface SharedRoutine {
 }
 
 // Workout Logging
+export type WorkoutSetType = 'WEIGHT' | 'REPS' | 'TIME' | 'BODYWEIGHT';
+
 export interface SerieLog {
   numero: number;
   repeticiones: number;
-  peso: number; // kg
+  peso: number; // kg (0 para BODYWEIGHT y TIME)
   RIR: number; // Reps In Reserve (0-3)
   tiempoDescanso: number; // segundos
   completada: boolean;
+  /** Tipo de set. Default WEIGHT para retrocompatibilidad. */
+  tipo?: WorkoutSetType;
+  /** Para sets tipo TIME (plancha, isometricos): duración en segundos */
+  tiempoSegundos?: number;
 }
 
 export interface ExerciseLog {
@@ -208,6 +218,12 @@ export interface ProgressAnalysis {
 
   recomendacion: RecomendacionProgresion;
   proximoObjetivo: string;
+
+  // Extended analytics
+  estimacion1RM: { actual: number; hace4Semanas: number; cambio: number };
+  sesionesTotales: number;
+  frecuenciaSemanal: number; // average sessions per week for this exercise
+  intensidadPromedio?: number; // % of estimated 1RM
 }
 
 // Nutrition Tracking
@@ -254,6 +270,8 @@ export interface ProgressDataPoint {
   pesoMaximo: number;
   volumenTotal: number;
   repeticionesPromedio: number;
+  estimated1RM: number;
+  numSeries: number;
 }
 
 // Achievements
@@ -290,6 +308,20 @@ export interface UserStatistics {
   grupoMuscularMasEntrenado?: GrupoMuscular;
   progresoGeneral?: number; // % de mejora desde inicio
   lastWorkoutDate?: Date; // Para Appwrite
+}
+
+// Body Goals (almacenados en UserProfile.preferencias.bodyGoals)
+export interface BodyGoal {
+  /** Clave de la métrica: peso, grasaCorporal, cintura, etc. */
+  metric: string;
+  /** Valor objetivo (en la unidad nativa de la métrica) */
+  target: number;
+  /** Fecha límite YYYY-MM-DD (opcional) */
+  deadline?: string;
+  /** Valor de la métrica cuando se creó el objetivo, para la barra de progreso */
+  startValue?: number;
+  /** ISO timestamp de creación */
+  createdAt: string;
 }
 
 // Body Measurements & Tracking

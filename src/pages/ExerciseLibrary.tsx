@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dbHelpers } from '@/db';
 import type { ExerciseKnowledge } from '@/types';
 import { GrupoMuscular, type Tier } from '@/types';
-import { Search, X, Youtube, TrendingUp } from 'lucide-react';
+import { Search, X, Youtube, TrendingUp, Star } from 'lucide-react';
 import { getVideosByExercise, exerciseVideos } from '@/data/exerciseVideos';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAppStore } from '@/store';
@@ -23,6 +23,24 @@ export default function ExerciseLibrary() {
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseKnowledge | null>(null);
   const [exerciseHistory, setExerciseHistory] = useState<HistoryPoint[]>([]);
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('exercise-favorites');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
+
+  const toggleFavorite = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      try { localStorage.setItem('exercise-favorites', JSON.stringify([...next])); } catch { /* noop */ }
+      return next;
+    });
+  };
 
   const loadExercises = async () => {
     const allExercises = await dbHelpers.getAllExercises();
@@ -58,6 +76,11 @@ export default function ExerciseLibrary() {
       filtered = filtered.filter(ex => ex.tier === selectedTier);
     }
 
+    // Filtrar solo favoritos
+    if (onlyFavorites) {
+      filtered = filtered.filter(ex => favorites.has(ex.id));
+    }
+
     setFilteredExercises(filtered);
   };
 
@@ -86,7 +109,21 @@ export default function ExerciseLibrary() {
 
   useEffect(() => {
     filterExercises();
-  }, [exercises, searchQuery, selectedMuscleGroup, selectedTier]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exercises, searchQuery, selectedMuscleGroup, selectedTier, onlyFavorites, favorites]);
+
+  // Highlight del término buscado en el nombre del ejercicio
+  const highlightMatch = (text: string): React.ReactNode => {
+    const q = searchQuery.trim();
+    if (!q) return text;
+    const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(re);
+    return parts.map((part, i) =>
+      re.test(part)
+        ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-700/50 text-foreground rounded px-0.5">{part}</mark>
+        : <span key={i}>{part}</span>
+    );
+  };
 
   const getTierColor = (tier: Tier): "success" | "default" | "secondary" | "warning" | "destructive" => {
     switch (tier) {
@@ -168,9 +205,21 @@ export default function ExerciseLibrary() {
               </div>
             </div>
 
+            {/* Toggle de favoritos */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge
+                variant={onlyFavorites ? 'default' : 'outline'}
+                className="cursor-pointer flex items-center gap-1"
+                onClick={() => setOnlyFavorites(v => !v)}
+              >
+                <Star className={`w-3 h-3 ${onlyFavorites ? 'fill-current' : ''}`} />
+                Solo favoritos {favorites.size > 0 && `(${favorites.size})`}
+              </Badge>
+            </div>
+
             {/* Botón limpiar filtros */}
-            {(searchQuery || selectedMuscleGroup || selectedTier) && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
+            {(searchQuery || selectedMuscleGroup || selectedTier || onlyFavorites) && (
+              <Button variant="ghost" size="sm" onClick={() => { clearFilters(); setOnlyFavorites(false); }}>
                 <X className="w-4 h-4 mr-2" />
                 Limpiar filtros
               </Button>
@@ -186,13 +235,29 @@ export default function ExerciseLibrary() {
                 onClick={() => setSelectedExercise(exercise)}
               >
                 <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <CardTitle className="text-lg line-clamp-2">
-                      {exercise.nombre}
+                  <div className="flex justify-between items-start mb-2 gap-2">
+                    <CardTitle className="text-lg line-clamp-2 flex-1">
+                      {highlightMatch(exercise.nombre)}
                     </CardTitle>
-                    <Badge variant={getTierColor(exercise.tier)}>
-                      {exercise.tier}
-                    </Badge>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => toggleFavorite(exercise.id, e)}
+                        className="p-1 rounded hover:bg-accent transition-colors"
+                        title={favorites.has(exercise.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                      >
+                        <Star
+                          className={`w-4 h-4 ${
+                            favorites.has(exercise.id)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-muted-foreground'
+                          }`}
+                        />
+                      </button>
+                      <Badge variant={getTierColor(exercise.tier)}>
+                        {exercise.tier}
+                      </Badge>
+                    </div>
                   </div>
                   <CardDescription>
                     {exercise.grupoMuscular} • {exercise.categoria}

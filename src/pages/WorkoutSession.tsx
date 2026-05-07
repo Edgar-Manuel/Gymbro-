@@ -15,8 +15,63 @@ import { checkAndAwardAchievements, type EarnedAchievement } from '@/utils/achie
 import { notificationManager } from '@/utils/notificationManager';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
-import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular, MachinePhoto, EjercicioEnRutina, ExerciseKnowledge } from '@/types';
+import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular, MachinePhoto, EjercicioEnRutina, ExerciseKnowledge, WorkoutSetType } from '@/types';
+
+// Item sortable de ejercicio en la pre-sesión
+function SortableSessionExercise({ id, nombre, index, series, reps }: {
+  id: string;
+  nombre: string;
+  index: number;
+  series: number;
+  reps: number | [number, number];
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 5 : 'auto' as const,
+  };
+  const repsStr = Array.isArray(reps) ? `${reps[0]}-${reps[1]}` : String(reps);
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 p-3 rounded-lg border bg-background"
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="touch-none p-1 -ml-1 rounded hover:bg-accent cursor-grab active:cursor-grabbing shrink-0"
+        aria-label="Arrastrar para reordenar"
+      >
+        <GripVertical className="w-4 h-4 text-muted-foreground" />
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm truncate">{index + 1}. {nombre}</p>
+        <p className="text-xs text-muted-foreground">{series} series × {repsStr} reps</p>
+      </div>
+    </div>
+  );
+}
+
+// Detecta el tipo de set basándose en tags y equipamiento del ejercicio
+function detectSetType(ej: { tags?: string[]; equipamiento?: string[] } | undefined): WorkoutSetType {
+  if (!ej) return 'WEIGHT';
+  const tags = ej.tags ?? [];
+  if (tags.some(t => /isometr|cardio|tiempo|plancha/i.test(t))) return 'TIME';
+  const eq = ej.equipamiento ?? [];
+  // Solo peso corporal sin pesa adicional → BODYWEIGHT
+  if (eq.length === 1 && eq[0] === 'peso_corporal') return 'BODYWEIGHT';
+  return 'WEIGHT';
+}
 import { inferirSiguienteDia } from '@/utils/workoutInference';
+import { getVideoForExercise, getVolumenSesion } from '@/utils/exerciseUtils';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical } from 'lucide-react';
 import { INJURY_AFFECTS, LESION_ZONA_LABELS, REHAB_EXERCISES } from '@/utils/injuryData';
 import { CARDIO_RECOMENDACIONES } from '@/utils/cardioData';
 import CardioPanel from '@/components/CardioPanel';
@@ -65,6 +120,7 @@ export default function WorkoutSession() {
   // Formulario de serie actual
   const [reps, setReps] = useState('');
   const [peso, setPeso] = useState('');
+  const [tiempoSegundos, setTiempoSegundos] = useState('');
   const [rir, setRir] = useState<number>(2);
 
   // Estado del entrenamiento
@@ -113,6 +169,15 @@ export default function WorkoutSession() {
     }
   }, [currentUser, activeRoutine, navigate]);
 
+  const [previousRef, setPreviousRef] = useState<{
+    peso: number;
+    reps: number;
+    rir: number;
+    fecha: Date;
+    best1RM: number;
+    pesoMaxHistorico: number;
+  } | null>(null);
+
   const loadPesoSugerido = async () => {
     if (!currentUser || !selectedDay) return;
 
@@ -120,22 +185,47 @@ export default function WorkoutSession() {
     if (!ejercicioActual) return;
 
     try {
-      // Obtener últimos workouts
-      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 10);
+      const workouts = await dbHelpers.getWorkoutsByUser(currentUser.id, 30);
+      const sorted = [...workouts].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
-      // Buscar última vez que se hizo este ejercicio
-      for (const workout of workouts) {
+      // Última sesión con este ejercicio
+      let lastLog: typeof workouts[0]['ejercicios'][0] | null = null;
+      let lastFecha: Date | null = null;
+      let pesoMaxHistorico = 0;
+      let best1RM = 0;
+
+      for (const workout of sorted) {
         const ejercicioLog = workout.ejercicios.find(e => e.ejercicioId === ejercicioActual.ejercicioId);
-        if (ejercicioLog && ejercicioLog.series.length > 0) {
-          // Tomar el peso promedio de la primera serie
-          const pesoPromedio = ejercicioLog.series[0].peso;
-          setPesoSugerido(pesoPromedio);
-          setPeso(pesoPromedio.toString());
-          return;
+        if (!ejercicioLog || ejercicioLog.series.length === 0) continue;
+        if (!lastLog) {
+          lastLog = ejercicioLog;
+          lastFecha = new Date(workout.fecha);
+        }
+        for (const s of ejercicioLog.series) {
+          if (s.peso > pesoMaxHistorico) pesoMaxHistorico = s.peso;
+          const e1rm = s.peso * (1 + s.repeticiones / 30);
+          if (e1rm > best1RM) best1RM = e1rm;
         }
       }
 
-      setPesoSugerido(null);
+      if (!lastLog || !lastFecha) {
+        setPesoSugerido(null);
+        setPreviousRef(null);
+        return;
+      }
+
+      // Pesos representativos de la primera serie
+      const firstSerie = lastLog.series[0];
+      setPesoSugerido(firstSerie.peso);
+      setPeso(firstSerie.peso.toString());
+      setPreviousRef({
+        peso: firstSerie.peso,
+        reps: firstSerie.repeticiones,
+        rir: firstSerie.RIR,
+        fecha: lastFecha,
+        best1RM: Math.round(best1RM),
+        pesoMaxHistorico,
+      });
     } catch (error) {
       console.error('Error cargando peso sugerido:', error);
     }
@@ -209,6 +299,24 @@ export default function WorkoutSession() {
     };
     autoSelectDay();
   }, [activeRoutine, currentUser]);
+
+  // Drag and drop pre-sesión: reordena ejercicios del día seleccionado
+  const reorderSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
+
+  const handleReorderExerciseInDay = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !selectedDay) return;
+    const oldIdx = selectedDay.ejercicios.findIndex(ej => ej.ejercicioId === active.id);
+    const newIdx = selectedDay.ejercicios.findIndex(ej => ej.ejercicioId === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    setSelectedDay({
+      ...selectedDay,
+      ejercicios: arrayMove(selectedDay.ejercicios, oldIdx, newIdx),
+    });
+  };
 
   const handleSelectDay = (dia: DiaRutina) => {
     setSelectedDay(dia);
@@ -293,6 +401,39 @@ export default function WorkoutSession() {
             </div>
           );
         })()}
+
+        {/* Lista de ejercicios reordenable (pre-sesión) */}
+        {selectedDay && !hasStarted && selectedDay.ejercicios.length > 0 && (
+          <div className="mx-4 mt-4 mb-32">
+            <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+              <GripVertical className="w-3.5 h-3.5" />
+              <span>Arrastra para reordenar antes de empezar</span>
+            </div>
+            <DndContext
+              sensors={reorderSensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleReorderExerciseInDay}
+            >
+              <SortableContext
+                items={selectedDay.ejercicios.map(ej => ej.ejercicioId)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {selectedDay.ejercicios.map((ej, idx) => (
+                    <SortableSessionExercise
+                      key={ej.ejercicioId}
+                      id={ej.ejercicioId}
+                      nombre={ej.ejercicio?.nombre ?? ej.ejercicioId}
+                      index={idx}
+                      series={ej.seriesObjetivo}
+                      reps={ej.repsObjetivo}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </div>
+        )}
 
         {selectedDay && !hasStarted && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg">
@@ -404,18 +545,35 @@ export default function WorkoutSession() {
   const totalSeries = ejercicioActual.seriesObjetivo;
 
   const handleRegistrarSerie = () => {
-    if (!reps || !peso) {
-      alert('Por favor completa repeticiones y peso');
-      return;
+    const setType = detectSetType(ejercicioActual.ejercicio);
+
+    // Validación según tipo
+    if (setType === 'TIME') {
+      if (!tiempoSegundos || parseInt(tiempoSegundos) <= 0) {
+        alert('Introduce la duración en segundos');
+        return;
+      }
+    } else if (setType === 'BODYWEIGHT') {
+      if (!reps) {
+        alert('Introduce las repeticiones');
+        return;
+      }
+    } else {
+      if (!reps || !peso) {
+        alert('Por favor completa repeticiones y peso');
+        return;
+      }
     }
 
     const nuevaSerie: SerieLog = {
       numero: currentSetNumber,
-      repeticiones: parseInt(reps),
-      peso: parseFloat(peso),
+      repeticiones: setType === 'TIME' ? 0 : parseInt(reps || '0'),
+      peso: setType === 'WEIGHT' ? parseFloat(peso || '0') : 0,
       RIR: rir,
       tiempoDescanso: ejercicioActual.ejercicio?.descansoSugerido || 90,
-      completada: true
+      completada: true,
+      tipo: setType,
+      tiempoSegundos: setType === 'TIME' ? parseInt(tiempoSegundos) : undefined,
     };
 
     // Actualizar o crear ejercicio log
@@ -441,6 +599,7 @@ export default function WorkoutSession() {
 
     // Limpiar formulario
     setReps('');
+    setTiempoSegundos('');
     setRir(2);
 
     // Incrementar número de serie
@@ -611,26 +770,41 @@ export default function WorkoutSession() {
             </div>
           </div>
           <Progress value={progreso} className="h-2 bg-primary-foreground/20" />
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-sm opacity-90">
+          <div className="flex items-center justify-between mt-2 text-sm opacity-90">
+            <p>
               Ejercicio {currentExerciseIndex + 1} de {ejerciciosDelDia.length}
               {ejerciciosExtra.length > 0 && (
                 <span className="ml-1 opacity-70 text-xs">(+{ejerciciosExtra.length} extra)</span>
               )}
             </p>
-            <button
-              onClick={async () => {
-                if (allExercises.length === 0) {
-                  const all = await dbHelpers.getAllExercises();
-                  setAllExercises(all);
-                }
-                setAddExerciseSearch('');
-                setAddExerciseOpen(true);
-              }}
-              className="flex items-center gap-1 text-xs text-primary-foreground/80 hover:text-primary-foreground bg-primary-foreground/10 hover:bg-primary-foreground/20 px-2 py-1 rounded-full transition-colors"
-            >
-              <Plus className="w-3 h-3" /> Añadir ejercicio
-            </button>
+            <div className="flex items-center gap-2">
+              {(() => {
+                const currentVolumen = getVolumenSesion({
+                  id: '', userId: '', fecha: new Date(),
+                  ejercicios: Array.from(ejercicioLogs.values()),
+                  completado: false,
+                });
+                if (currentVolumen <= 0) return null;
+                return (
+                  <span className="font-semibold tabular-nums">
+                    {currentVolumen >= 1000 ? `${(currentVolumen / 1000).toFixed(1)}t` : `${Math.round(currentVolumen)} kg`}
+                  </span>
+                );
+              })()}
+              <button
+                onClick={async () => {
+                  if (allExercises.length === 0) {
+                    const all = await dbHelpers.getAllExercises();
+                    setAllExercises(all);
+                  }
+                  setAddExerciseSearch('');
+                  setAddExerciseOpen(true);
+                }}
+                className="flex items-center gap-1 text-xs text-primary-foreground/80 hover:text-primary-foreground bg-primary-foreground/10 hover:bg-primary-foreground/20 px-2 py-1 rounded-full transition-colors"
+              >
+                <Plus className="w-3 h-3" /> Añadir
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -781,6 +955,34 @@ export default function WorkoutSession() {
               </div>
             )}
 
+            {/* Referencia última sesión */}
+            {previousRef && (
+              <div className="bg-muted/50 p-3 rounded-lg mb-4 border text-sm flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="font-medium text-xs text-muted-foreground">Última vez ({(() => {
+                    const days = Math.round((Date.now() - previousRef.fecha.getTime()) / (24 * 60 * 60 * 1000));
+                    return days === 0 ? 'hoy' : days === 1 ? 'ayer' : `hace ${days}d`;
+                  })()})</p>
+                  <p className="font-semibold">
+                    {previousRef.peso}kg × {previousRef.reps} reps
+                    <span className="text-xs text-muted-foreground ml-1">RIR {previousRef.rir}</span>
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {previousRef.best1RM > 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      ⚡ Mejor 1RM: {previousRef.best1RM}kg
+                    </Badge>
+                  )}
+                  {peso && parseFloat(peso) > previousRef.pesoMaxHistorico && previousRef.pesoMaxHistorico > 0 && (
+                    <Badge variant="success" className="text-xs animate-pulse">
+                      🏆 ¡Nuevo PR!
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Consejo clave */}
             {ejercicioActual.notas && (
               <div className="bg-primary/10 p-4 rounded-lg mb-4 flex gap-3">
@@ -803,57 +1005,137 @@ export default function WorkoutSession() {
                 </Badge>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label htmlFor="reps" className="text-xs">Repeticiones</Label>
-                  <Input
-                    id="reps"
-                    type="number"
-                    value={reps}
-                    onChange={(e) => setReps(e.target.value)}
-                    placeholder={repsObjetivo.toString()}
-                    className="text-lg font-semibold text-center h-14"
-                    min="1"
-                    max="50"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="peso" className="text-xs">Peso (kg)</Label>
-                  <Input
-                    id="peso"
-                    type="number"
-                    step="0.25"
-                    value={peso}
-                    onChange={(e) => setPeso(e.target.value)}
-                    placeholder={pesoSugerido?.toString() || "0"}
-                    className="text-lg font-semibold text-center h-14"
-                    min="0"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="rir" className="text-xs">RIR</Label>
-                  <Select value={rir.toString()} onValueChange={(v) => setRir(parseInt(v))}>
-                    <SelectTrigger id="rir" className="h-14">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">RIR 0 (fallo)</SelectItem>
-                      <SelectItem value="1">RIR 1</SelectItem>
-                      <SelectItem value="2">RIR 2</SelectItem>
-                      <SelectItem value="3">RIR 3</SelectItem>
-                      <SelectItem value="4">RIR 4+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              {(() => {
+                const setType = detectSetType(ejercicioActual.ejercicio);
+                if (setType === 'TIME') {
+                  return (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="tiempo" className="text-xs">Duración (segundos)</Label>
+                        <Input
+                          id="tiempo"
+                          type="number"
+                          inputMode="numeric"
+                          value={tiempoSegundos}
+                          onChange={(e) => setTiempoSegundos(e.target.value)}
+                          placeholder="60"
+                          className="text-lg font-semibold text-center h-14"
+                          min="1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="rir" className="text-xs">RIR</Label>
+                        <Select value={rir.toString()} onValueChange={(v) => setRir(parseInt(v))}>
+                          <SelectTrigger id="rir" className="h-14">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">RIR 0 (fallo)</SelectItem>
+                            <SelectItem value="1">RIR 1</SelectItem>
+                            <SelectItem value="2">RIR 2</SelectItem>
+                            <SelectItem value="3">RIR 3</SelectItem>
+                            <SelectItem value="4">RIR 4+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  );
+                }
+                if (setType === 'BODYWEIGHT') {
+                  return (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="reps" className="text-xs">Repeticiones</Label>
+                        <Input
+                          id="reps"
+                          type="number"
+                          inputMode="numeric"
+                          value={reps}
+                          onChange={(e) => setReps(e.target.value)}
+                          placeholder={repsObjetivo.toString()}
+                          className="text-lg font-semibold text-center h-14"
+                          min="1"
+                          max="50"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="rir" className="text-xs">RIR</Label>
+                        <Select value={rir.toString()} onValueChange={(v) => setRir(parseInt(v))}>
+                          <SelectTrigger id="rir" className="h-14">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">RIR 0 (fallo)</SelectItem>
+                            <SelectItem value="1">RIR 1</SelectItem>
+                            <SelectItem value="2">RIR 2</SelectItem>
+                            <SelectItem value="3">RIR 3</SelectItem>
+                            <SelectItem value="4">RIR 4+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  );
+                }
+                // WEIGHT: comportamiento por defecto (3 columnas)
+                return (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label htmlFor="reps" className="text-xs">Repeticiones</Label>
+                      <Input
+                        id="reps"
+                        type="number"
+                        inputMode="numeric"
+                        value={reps}
+                        onChange={(e) => setReps(e.target.value)}
+                        placeholder={repsObjetivo.toString()}
+                        className="text-lg font-semibold text-center h-14"
+                        min="1"
+                        max="50"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="peso" className="text-xs">Peso (kg)</Label>
+                      <Input
+                        id="peso"
+                        type="number"
+                        step="0.25"
+                        inputMode="decimal"
+                        value={peso}
+                        onChange={(e) => setPeso(e.target.value)}
+                        placeholder={pesoSugerido?.toString() || "0"}
+                        className="text-lg font-semibold text-center h-14"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="rir" className="text-xs">RIR</Label>
+                      <Select value={rir.toString()} onValueChange={(v) => setRir(parseInt(v))}>
+                        <SelectTrigger id="rir" className="h-14">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">RIR 0 (fallo)</SelectItem>
+                          <SelectItem value="1">RIR 1</SelectItem>
+                          <SelectItem value="2">RIR 2</SelectItem>
+                          <SelectItem value="3">RIR 3</SelectItem>
+                          <SelectItem value="4">RIR 4+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <Button
                 onClick={handleRegistrarSerie}
                 size="lg"
                 className="w-full h-14 text-lg"
-                disabled={!reps || !peso}
+                disabled={(() => {
+                  const t = detectSetType(ejercicioActual.ejercicio);
+                  if (t === 'TIME') return !tiempoSegundos || parseInt(tiempoSegundos) <= 0;
+                  if (t === 'BODYWEIGHT') return !reps;
+                  return !reps || !peso;
+                })()}
               >
                 <Check className="w-5 h-5 mr-2" />
                 Completar Serie {currentSetNumber}
@@ -872,9 +1154,17 @@ export default function WorkoutSession() {
                     >
                       <span className="font-medium">Serie {serie.numero}</span>
                       <div className="text-sm">
-                        <span className="font-semibold">{serie.repeticiones} reps</span>
-                        {' × '}
-                        <span className="font-semibold">{serie.peso}kg</span>
+                        {serie.tipo === 'TIME' ? (
+                          <span className="font-semibold">{serie.tiempoSegundos}s</span>
+                        ) : serie.tipo === 'BODYWEIGHT' ? (
+                          <span className="font-semibold">{serie.repeticiones} reps (peso corporal)</span>
+                        ) : (
+                          <>
+                            <span className="font-semibold">{serie.repeticiones} reps</span>
+                            {' × '}
+                            <span className="font-semibold">{serie.peso}kg</span>
+                          </>
+                        )}
                         {' • '}
                         <span className="text-muted-foreground">RIR {serie.RIR}</span>
                       </div>
@@ -883,6 +1173,38 @@ export default function WorkoutSession() {
                 </div>
               </div>
             )}
+
+            {/* Notas del ejercicio */}
+            <div className="mt-6">
+              <details className="group">
+                <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none flex items-center gap-1">
+                  <span className="group-open:hidden">+ Añadir notas</span>
+                  <span className="hidden group-open:inline">− Notas del ejercicio</span>
+                  {ejercicioLog?.notas && <span className="text-primary">●</span>}
+                </summary>
+                <textarea
+                  className="mt-2 w-full text-sm p-2 rounded-md border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                  rows={2}
+                  placeholder="Sensaciones, ajustes técnicos, etc."
+                  value={ejercicioLog?.notas ?? ''}
+                  onChange={(e) => {
+                    const notasValue = e.target.value;
+                    setEjercicioLogs(prev => {
+                      const next = new Map(prev);
+                      const existing = next.get(ejercicioActual.ejercicioId) ?? {
+                        ejercicioId: ejercicioActual.ejercicioId,
+                        ejercicio: ejercicioActual.ejercicio,
+                        series: [],
+                        tecnicaCorrecta: true,
+                        sensacionMuscular: 3 as const,
+                      };
+                      next.set(ejercicioActual.ejercicioId, { ...existing, notas: notasValue });
+                      return next;
+                    });
+                  }}
+                />
+              </details>
+            </div>
           </CardContent>
         </Card>
 
@@ -995,6 +1317,28 @@ export default function WorkoutSession() {
             </div>
 
             <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
+              {/* Video de YouTube si está disponible */}
+              {(() => {
+                const video = getVideoForExercise(ejercicioActual.ejercicioId, ejercicioActual.ejercicio);
+                if (!video?.youtubeId) return null;
+                return (
+                  <div>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
+                      🎥 {video.title}
+                    </p>
+                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                      <iframe
+                        src={`https://www.youtube.com/embed/${video.youtubeId}?rel=0`}
+                        title={video.title}
+                        className="absolute top-0 left-0 w-full h-full rounded-lg"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Posición inicial */}
               {ejercicioActual.ejercicio.tecnica.posicionInicial && (
                 <div>

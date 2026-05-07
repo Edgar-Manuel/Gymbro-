@@ -24,6 +24,7 @@ import WorkoutDetail from '@/pages/WorkoutDetail';
 import GymMachineLibrary from '@/pages/GymMachineLibrary';
 import { Dumbbell } from 'lucide-react';
 import { notificationManager } from '@/utils/notificationManager';
+import { Toaster } from 'sonner';
 
 function App() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -109,6 +110,7 @@ function App() {
           </Route>
         </Routes>
       </BrowserRouter>
+      <Toaster position="top-center" richColors closeButton />
     </AuthProvider>
   );
 }

@@ -759,6 +759,22 @@ export const exerciseVideos: ExerciseVideo[] = [
     category: 'piernas',
     relatedExercises: [],
   },
+  {
+    id: 'como-no-perder-musculo-en-definicion',
+    title: 'Cómo no perder MÚSCULO en Definición',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=BgmblZybXNs'),
+    url: 'https://www.youtube.com/watch?v=BgmblZybXNs',
+    category: 'nutricion',
+    relatedExercises: [],
+  },
+  {
+    id: 'pierde-grasa-sin-perder-musculo',
+    title: 'Pierde Grasa sin perder Músculo',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=M87WFxL7U5c'),
+    url: 'https://www.youtube.com/watch?v=M87WFxL7U5c',
+    category: 'nutricion',
+    relatedExercises: [],
+  },
 ];
 
 // Helper functions

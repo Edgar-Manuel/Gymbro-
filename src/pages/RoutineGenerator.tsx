@@ -8,11 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
 import { generarRutinaPersonalizada, obtenerResumenRutina, SPLITS_CONFIG } from '@/utils/routineGenerator';
-import type { RutinaSemanal, ExerciseKnowledge, DiaRutina } from '@/types';
+import type { RutinaSemanal, ExerciseKnowledge, DiaRutina, EjercicioEnRutina } from '@/types';
 import type { FullWRoutine } from '@/data/fullwRoutines';
-import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check, Brain, AlertCircle, GripVertical } from 'lucide-react';
+import { Dumbbell, Target, Calendar, Clock, Sparkles, ArrowRight, Check, Brain, AlertCircle, GripVertical, Play, Repeat, Trophy } from 'lucide-react';
 import ShareRoutineButton from '@/components/ShareRoutineButton';
 import FullWRoutineView from '@/components/training/FullWRoutineView';
+import CbumRoutineView from '@/components/training/CbumRoutineView';
 import { fullWToRutinaSemanal } from '@/utils/fullwConverter';
 import { generarRutinaFullWconIA } from '@/services/groq';
 import {
@@ -33,10 +34,137 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { getVideoForExercise } from '@/utils/exerciseUtils';
+import SwapExerciseModal from '@/components/SwapExerciseModal';
+import RoutineStats from '@/components/RoutineStats';
 
-type ModoEntrenamiento = 'basico' | 'fullw' | 'ia_adaptativa';
+type ModoEntrenamiento = 'basico' | 'fullw' | 'cbum' | 'ia_adaptativa';
 
-function SortableDayCard({ dia, index }: { dia: DiaRutina; index: number }) {
+function SortableExerciseRow({
+  ej, index, dayId, doneCount, onSwap,
+}: {
+  ej: EjercicioEnRutina;
+  index: number;
+  dayId: string;
+  doneCount?: number;
+  onSwap: (nuevo: EjercicioEnRutina) => void;
+}) {
+  const id = `${dayId}::${ej.ejercicioId}::${index}`;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 5 : 'auto' as const,
+  };
+
+  const [showSwap, setShowSwap] = useState(false);
+  const video = getVideoForExercise(ej.ejercicioId, ej.ejercicio);
+
+  const equipamiento = ej.ejercicio?.equipamiento ?? [];
+  const equipoVisibles = equipamiento.slice(0, 2);
+  const equipoExtra = Math.max(0, equipamiento.length - 2);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-3 rounded-lg border bg-accent/30 flex items-start gap-2"
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="touch-none p-1 mt-0.5 rounded hover:bg-accent cursor-grab active:cursor-grabbing shrink-0"
+        aria-label="Arrastrar para reordenar este ejercicio"
+      >
+        <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
+      </button>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium truncate">{index + 1}. {ej.ejercicio?.nombre}</span>
+          <Badge variant={
+            ej.ejercicio?.tier === 'S' ? 'success' :
+              ej.ejercicio?.tier === 'A' ? 'default' :
+                'secondary'
+          } className="text-xs">
+            {ej.ejercicio?.tier}
+          </Badge>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">
+          {ej.seriesObjetivo} series × {Array.isArray(ej.repsObjetivo)
+            ? `${ej.repsObjetivo[0]}-${ej.repsObjetivo[1]}`
+            : ej.repsObjetivo} reps
+        </p>
+        {/* Badges enriquecidos */}
+        <div className="flex flex-wrap items-center gap-1 mt-2">
+          {ej.ejercicio?.grupoMuscular && (
+            <Badge variant="outline" className="text-[10px] capitalize">
+              {ej.ejercicio.grupoMuscular.replace('_', ' ')}
+            </Badge>
+          )}
+          {ej.ejercicio?.categoria && (
+            <Badge variant="outline" className="text-[10px] capitalize">
+              {ej.ejercicio.categoria === 'compuesto' ? 'Compuesto' : 'Aislamiento'}
+            </Badge>
+          )}
+          {equipoVisibles.map(e => (
+            <Badge key={e} variant="outline" className="text-[10px] capitalize">
+              {e.replace('_', ' ')}
+            </Badge>
+          ))}
+          {equipoExtra > 0 && (
+            <Badge variant="outline" className="text-[10px]">+{equipoExtra}</Badge>
+          )}
+          {doneCount != null && doneCount > 0 && (
+            <Badge variant="secondary" className="text-[10px]">
+              {doneCount}× hecho
+            </Badge>
+          )}
+        </div>
+      </div>
+      {/* Acciones rápidas */}
+      <div className="flex flex-col gap-1 shrink-0">
+        {video?.youtubeId && (
+          <a
+            href={video.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-7 h-7 rounded-md bg-background border flex items-center justify-center hover:bg-accent transition-colors"
+            title={`Ver video: ${video.title}`}
+          >
+            <Play className="w-3 h-3" />
+          </a>
+        )}
+        <button
+          type="button"
+          onClick={() => setShowSwap(true)}
+          className="w-7 h-7 rounded-md bg-background border flex items-center justify-center hover:bg-accent transition-colors"
+          title="Intercambiar ejercicio"
+        >
+          <Repeat className="w-3 h-3" />
+        </button>
+      </div>
+
+      <SwapExerciseModal
+        open={showSwap}
+        onClose={() => setShowSwap(false)}
+        ejercicioActual={ej}
+        onSwap={(nuevo) => { onSwap(nuevo); setShowSwap(false); }}
+      />
+    </div>
+  );
+}
+
+function SortableDayCard({
+  dia, index, onReorderEjercicios, onSwapEjercicio, doneCounts,
+}: {
+  dia: DiaRutina;
+  index: number;
+  onReorderEjercicios: (dayId: string, oldIdx: number, newIdx: number) => void;
+  onSwapEjercicio: (dayId: string, idx: number, nuevo: EjercicioEnRutina) => void;
+  doneCounts: Record<string, number>;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: dia.id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -44,6 +172,25 @@ function SortableDayCard({ dia, index }: { dia: DiaRutina; index: number }) {
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 10 : 'auto' as const,
   };
+
+  // Sensores aislados para el drag de ejercicios dentro del día
+  const innerSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
+
+  const handleInnerDrag = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const items = dia.ejercicios.map((ej, i) => `${dia.id}::${ej.ejercicioId}::${i}`);
+    const oldIdx = items.indexOf(String(active.id));
+    const newIdx = items.indexOf(String(over.id));
+    if (oldIdx < 0 || newIdx < 0) return;
+    onReorderEjercicios(dia.id, oldIdx, newIdx);
+  };
+
+  const exerciseIds = dia.ejercicios.map((ej, i) => `${dia.id}::${ej.ejercicioId}::${i}`);
+
   return (
     <div ref={setNodeRef} style={style}>
       <Card>
@@ -73,32 +220,22 @@ function SortableDayCard({ dia, index }: { dia: DiaRutina; index: number }) {
         </CardHeader>
         {dia.ejercicios.length > 0 && (
           <CardContent>
-            <div className="space-y-2">
-              {dia.ejercicios.map((ej, idx) => (
-                <div
-                  key={ej.ejercicioId}
-                  className="p-3 rounded-lg border bg-accent/30 flex items-center justify-between"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{idx + 1}. {ej.ejercicio?.nombre}</span>
-                      <Badge variant={
-                        ej.ejercicio?.tier === 'S' ? 'success' :
-                          ej.ejercicio?.tier === 'A' ? 'default' :
-                            'secondary'
-                      } className="text-xs">
-                        {ej.ejercicio?.tier}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {ej.seriesObjetivo} series × {Array.isArray(ej.repsObjetivo)
-                        ? `${ej.repsObjetivo[0]}-${ej.repsObjetivo[1]}`
-                        : ej.repsObjetivo} reps
-                    </p>
-                  </div>
+            <DndContext sensors={innerSensors} collisionDetection={closestCenter} onDragEnd={handleInnerDrag}>
+              <SortableContext items={exerciseIds} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {dia.ejercicios.map((ej, idx) => (
+                    <SortableExerciseRow
+                      key={`${dia.id}::${ej.ejercicioId}::${idx}`}
+                      ej={ej}
+                      index={idx}
+                      dayId={dia.id}
+                      doneCount={doneCounts[ej.ejercicioId]}
+                      onSwap={(nuevo) => onSwapEjercicio(dia.id, idx, nuevo)}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           </CardContent>
         )}
       </Card>
@@ -134,6 +271,43 @@ export default function RoutineGenerator() {
     }));
     setGeneratedRoutine({ ...generatedRoutine, dias: reordered });
   };
+
+  const handleReorderEjercicios = (dayId: string, oldIdx: number, newIdx: number) => {
+    if (!generatedRoutine) return;
+    const reorderedDias = generatedRoutine.dias.map(d => {
+      if (d.id !== dayId) return d;
+      return { ...d, ejercicios: arrayMove(d.ejercicios, oldIdx, newIdx) };
+    });
+    setGeneratedRoutine({ ...generatedRoutine, dias: reorderedDias });
+  };
+
+  const handleSwapEjercicio = (dayId: string, idx: number, nuevo: EjercicioEnRutina) => {
+    if (!generatedRoutine) return;
+    const updatedDias = generatedRoutine.dias.map(d => {
+      if (d.id !== dayId) return d;
+      const nuevosEj = [...d.ejercicios];
+      nuevosEj[idx] = nuevo;
+      return { ...d, ejercicios: nuevosEj };
+    });
+    setGeneratedRoutine({ ...generatedRoutine, dias: updatedDias });
+  };
+
+  // Conteo de cuántas veces el usuario ha hecho cada ejercicio (para el badge)
+  const [doneCounts, setDoneCounts] = useState<Record<string, number>>({});
+  useEffect(() => {
+    if (!currentUser) return;
+    dbHelpers.getWorkoutsByUser(currentUser.id, 100)
+      .then(workouts => {
+        const counts: Record<string, number> = {};
+        for (const w of workouts) {
+          for (const ej of w.ejercicios ?? []) {
+            counts[ej.ejercicioId] = (counts[ej.ejercicioId] ?? 0) + 1;
+          }
+        }
+        setDoneCounts(counts);
+      })
+      .catch(() => {});
+  }, [currentUser]);
 
   // Configuración personalizable
   const [diasDisponibles, setDiasDisponibles] = useState(currentUser?.diasDisponibles || 4);
@@ -249,10 +423,10 @@ export default function RoutineGenerator() {
     <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-4xl">
 
       {/* ── Selector de modo ── */}
-      <div className="flex gap-2 mb-6 p-1 bg-muted rounded-xl">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 p-1 bg-muted rounded-xl">
         <button
           onClick={() => setModo('basico')}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+          className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
             modo === 'basico'
               ? 'bg-background shadow text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -263,7 +437,7 @@ export default function RoutineGenerator() {
         </button>
         <button
           onClick={() => setModo('fullw')}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+          className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
             modo === 'fullw'
               ? 'bg-background shadow text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -273,8 +447,19 @@ export default function RoutineGenerator() {
           Full W
         </button>
         <button
+          onClick={() => setModo('cbum')}
+          className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+            modo === 'cbum'
+              ? 'bg-background shadow text-amber-600 dark:text-amber-400'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Trophy className="w-4 h-4 inline mr-1.5" />
+          CBum
+        </button>
+        <button
           onClick={() => setModo('ia_adaptativa')}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+          className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
             modo === 'ia_adaptativa'
               ? 'bg-background shadow text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -287,6 +472,9 @@ export default function RoutineGenerator() {
 
       {/* ── Modo Full W: selector de plantilla ── */}
       {modo === 'fullw' && !generatedRoutine && <FullWRoutineView onUseRoutine={handleUseFullW} />}
+
+      {/* ── Modo CBum: rutina de Chris Bumstead ── */}
+      {modo === 'cbum' && !generatedRoutine && <CbumRoutineView onUseRoutine={handleUseFullW} />}
 
       {/* ── Modo IA Adaptativa ── */}
       {modo === 'ia_adaptativa' && !generatedRoutine && (
@@ -621,6 +809,9 @@ export default function RoutineGenerator() {
             </CardContent>
           </Card>
 
+          {/* Estadísticas de la rutina */}
+          <RoutineStats rutina={generatedRoutine} />
+
           {/* Hint para reordenar */}
           <div className="flex items-start gap-2 p-3 mb-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-muted-foreground">
             <GripVertical className="w-4 h-4 mt-0.5 text-primary shrink-0" />
@@ -638,7 +829,14 @@ export default function RoutineGenerator() {
             >
               <div className="space-y-4 mb-6">
                 {generatedRoutine.dias.map((dia, idx) => (
-                  <SortableDayCard key={dia.id} dia={dia} index={idx} />
+                  <SortableDayCard
+                    key={dia.id}
+                    dia={dia}
+                    index={idx}
+                    onReorderEjercicios={handleReorderEjercicios}
+                    onSwapEjercicio={handleSwapEjercicio}
+                    doneCounts={doneCounts}
+                  />
                 ))}
               </div>
             </SortableContext>
@@ -651,7 +849,10 @@ export default function RoutineGenerator() {
               onClick={() => setGeneratedRoutine(null)}
               className="flex-1"
             >
-              {modo === 'fullw' ? 'Elegir otra plantilla' : modo === 'ia_adaptativa' ? 'Regenerar con IA' : 'Generar Otra'}
+              {modo === 'fullw' ? 'Elegir otra plantilla'
+                : modo === 'cbum' ? 'Volver a CBum'
+                : modo === 'ia_adaptativa' ? 'Regenerar con IA'
+                : 'Generar Otra'}
             </Button>
             <Button
               onClick={handleSaveRoutine}

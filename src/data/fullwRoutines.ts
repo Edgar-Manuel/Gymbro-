@@ -9,12 +9,16 @@ export interface FullWExercise {
   notas?: string;
   calentamiento?: boolean;
   pesoInicial?: number;  // kg sugerido para S1
+  /** Marca el ejercicio como FST-7 (Fascia Stretch Training) — 7 series cortas. */
+  isFST7?: boolean;
 }
 
 export interface FullWDay {
   nombre: string;
   grupos: string[];
   ejercicios: FullWExercise[];
+  /** Texto opcional describiendo variantes (Día A vs B, prep vs off, etc.). */
+  variante?: string;
 }
 
 export interface FullWRoutine {

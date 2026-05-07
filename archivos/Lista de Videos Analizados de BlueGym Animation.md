@@ -198,3 +198,6 @@ A continuación, se presenta la lista completa de **28 videos** del canal de You
 | La forma correcta de entrenar el Bíceps | general | [Ver Video](https://www.youtube.com/watch?v=3Qwpa0Jrvss) |
 | Rutina de Pierna MINIMALISTA 💪 | piernas | [Ver Video](https://www.youtube.com/watch?v=fzgKccVPipw) |
 | Rutina de Pierna MINIMALISTA 💪 | piernas | [Ver Video](https://www.youtube.com/watch?v=zxX9V7hgRec) |
+
+| Cómo no perder MÚSCULO en Definición | nutricion | [Ver Video](https://www.youtube.com/watch?v=BgmblZybXNs) |
+| Pierde Grasa sin perder Músculo | nutricion | [Ver Video](https://www.youtube.com/watch?v=M87WFxL7U5c) |
