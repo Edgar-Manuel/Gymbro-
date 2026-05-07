@@ -213,7 +213,6 @@ export default function CbumRoutineView({ onUseRoutine }: Props) {
             {isOpen && !isRest && (
               <CardContent className="pt-0 space-y-2">
                 {dia.ejercicios.map((ej, ei) => {
-                  const nextEj = dia.ejercicios[ei + 1];
                   const isPairedTop = ej.isSuperset;
                   const isPairedBottom = ei > 0 && dia.ejercicios[ei - 1]?.isSuperset;
 
