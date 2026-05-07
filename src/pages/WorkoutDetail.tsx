@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
-import type { WorkoutLog } from '@/types';
+import type { WorkoutLog, SerieLog } from '@/types';
 import {
   ArrowLeft,
   Clock,
@@ -16,7 +16,12 @@ import {
   ChevronDown,
   ChevronUp,
   Zap,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
+import EditSerieDialog from '@/components/EditSerieDialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { toast } from 'sonner';
 
 // Epley 1RM estimate — most reliable for 1-15 reps
 const epley = (peso: number, reps: number): number => {
@@ -39,6 +44,48 @@ export default function WorkoutDetail() {
   const [workout, setWorkout] = useState<WorkoutLog | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedEx, setExpandedEx] = useState<number | null>(null);
+  const [editing, setEditing] = useState<{ exIdx: number; serie: SerieLog } | null>(null);
+  const [deleting, setDeleting] = useState<{ exIdx: number; serie: SerieLog } | null>(null);
+
+  /** Persiste el workout modificado a Dexie + Appwrite y actualiza el state local. */
+  const persistWorkoutChange = async (updated: WorkoutLog) => {
+    try {
+      await dbHelpers.updateWorkout(updated.id, { ejercicios: updated.ejercicios });
+      setWorkout(updated);
+    } catch (e) {
+      console.error('Error actualizando workout:', e);
+      toast.error('No se pudo guardar el cambio');
+    }
+  };
+
+  const handleEditSerie = async (updated: SerieLog) => {
+    if (!workout || !editing) return;
+    const nuevosEjercicios = workout.ejercicios.map((ej, i) => {
+      if (i !== editing.exIdx) return ej;
+      return {
+        ...ej,
+        series: ej.series.map(s => (s.numero === updated.numero ? updated : s)),
+      };
+    });
+    await persistWorkoutChange({ ...workout, ejercicios: nuevosEjercicios });
+    toast.success('Serie actualizada');
+  };
+
+  const performDeleteSerie = async () => {
+    if (!workout || !deleting) return;
+    const { exIdx, serie } = deleting;
+    const nuevosEjercicios = workout.ejercicios.map((ej, i) => {
+      if (i !== exIdx) return ej;
+      // Filtra la serie y renumera las restantes para evitar gaps
+      const nuevasSeries = ej.series
+        .filter(s => s.numero !== serie.numero)
+        .map((s, idx) => ({ ...s, numero: idx + 1 }));
+      return { ...ej, series: nuevasSeries };
+    });
+    await persistWorkoutChange({ ...workout, ejercicios: nuevosEjercicios });
+    setDeleting(null);
+    toast.success('Serie eliminada');
+  };
 
   useEffect(() => {
     if (!id) { navigate('/'); return; }
@@ -214,8 +261,28 @@ export default function WorkoutDetail() {
                             <span className="text-muted-foreground">×</span>
                             <span className="font-medium w-14">{sr.repeticiones} reps</span>
                             <span className="text-xs text-muted-foreground flex-1">RIR {sr.RIR}</span>
-                            <span className="text-xs text-muted-foreground">~{rm} kg</span>
+                            <span className="text-xs text-muted-foreground hidden sm:inline">~{rm} kg</span>
                             {isBest && <Trophy className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => setEditing({ exIdx: idx, serie: sr })}
+                                title="Editar serie"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive hover:text-destructive"
+                                onClick={() => setDeleting({ exIdx: idx, serie: sr })}
+                                title="Borrar serie"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </div>
                         );
                       })}
@@ -241,6 +308,28 @@ export default function WorkoutDetail() {
           </Card>
         )}
       </div>
+
+      {/* Editar serie */}
+      <EditSerieDialog
+        open={editing !== null}
+        onOpenChange={(open) => { if (!open) setEditing(null); }}
+        serie={editing?.serie ?? null}
+        onSave={handleEditSerie}
+      />
+
+      {/* Confirmar borrado de serie */}
+      <ConfirmDialog
+        open={deleting !== null}
+        onOpenChange={(open) => { if (!open) setDeleting(null); }}
+        title={`¿Borrar Serie ${deleting?.serie.numero ?? ''}?`}
+        description={deleting ? (
+          deleting.serie.tipo === 'TIME'
+            ? <>Borrar la serie de <strong>{deleting.serie.tiempoSegundos}s</strong>. Las restantes se renumeran y se sincronizará con la nube.</>
+            : <>Borrar la serie de <strong>{deleting.serie.repeticiones} reps × {deleting.serie.peso}kg</strong>. Las restantes se renumeran y se sincronizará con la nube.</>
+        ) : null}
+        confirmLabel="Borrar"
+        onConfirm={performDeleteSerie}
+      />
     </div>
   );
 }

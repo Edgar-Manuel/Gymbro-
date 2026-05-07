@@ -71,7 +71,10 @@ import { getVideoForExercise, getVolumenSesion } from '@/utils/exerciseUtils';
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Pencil, Trash2 } from 'lucide-react';
+import EditSerieDialog from '@/components/EditSerieDialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { toast } from 'sonner';
 import { INJURY_AFFECTS, LESION_ZONA_LABELS, REHAB_EXERCISES } from '@/utils/injuryData';
 import { CARDIO_RECOMENDACIONES } from '@/utils/cardioData';
 import CardioPanel from '@/components/CardioPanel';
@@ -102,6 +105,8 @@ export default function WorkoutSession() {
 
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
+  const [editingSerie, setEditingSerie] = useState<SerieLog | null>(null);
+  const [confirmDeleteSerie, setConfirmDeleteSerie] = useState<SerieLog | null>(null);
   const [showTimer, setShowTimer] = useState(false);
   const [startTime, setStartTime] = useState(new Date());
 
@@ -536,10 +541,61 @@ export default function WorkoutSession() {
     }
   };
 
+  // Aplica una transformación al log del ejercicio actual.
+  const updateExerciseLog = (transform: (log: ExerciseLog) => ExerciseLog) => {
+    const ejId = ejerciciosDelDia[currentExerciseIndex]?.ejercicioId;
+    if (!ejId) return;
+    setEjercicioLogs(prev => {
+      const next = new Map(prev);
+      const existing = next.get(ejId);
+      if (!existing) return prev;
+      next.set(ejId, transform(existing));
+      return next;
+    });
+  };
+
+  const handleEditSerie = (updated: SerieLog) => {
+    updateExerciseLog(log => ({
+      ...log,
+      series: log.series.map(s => (s.numero === updated.numero ? updated : s)),
+    }));
+    toast.success('Serie actualizada');
+  };
+
+  const performDeleteSerie = () => {
+    if (!confirmDeleteSerie) return;
+    const num = confirmDeleteSerie.numero;
+    updateExerciseLog(log => ({
+      ...log,
+      // Filtra la serie y renumera las restantes para evitar gaps
+      series: log.series
+        .filter(s => s.numero !== num)
+        .map((s, i) => ({ ...s, numero: i + 1 })),
+    }));
+    // Reajusta el contador de la próxima serie
+    const ejId = ejerciciosDelDia[currentExerciseIndex]?.ejercicioId;
+    if (ejId) {
+      const log = ejercicioLogs.get(ejId);
+      const remaining = (log?.series.length ?? 1) - 1;
+      setCurrentSetNumber(remaining + 1);
+    }
+    setConfirmDeleteSerie(null);
+    toast.success('Serie eliminada');
+  };
+
+  // Calcula el próximo número de serie de un ejercicio basándose en las
+  // series ya registradas. Evita duplicar "Serie 1" al volver atrás.
+  const nextSetNumberForExercise = (ejId: string) => {
+    const log = ejercicioLogs.get(ejId);
+    if (!log || log.series.length === 0) return 1;
+    return Math.max(...log.series.map(s => s.numero)) + 1;
+  };
+
   const handleSiguienteEjercicio = () => {
     if (currentExerciseIndex < ejerciciosDelDia.length - 1) {
+      const nextEj = ejerciciosDelDia[currentExerciseIndex + 1];
       setCurrentExerciseIndex(prev => prev + 1);
-      setCurrentSetNumber(1);
+      setCurrentSetNumber(nextSetNumberForExercise(nextEj.ejercicioId));
       setShowTimer(false);
       setPeso('');
       setEstimated1RM(null);
@@ -552,8 +608,9 @@ export default function WorkoutSession() {
 
   const handleAnteriorEjercicio = () => {
     if (currentExerciseIndex > 0) {
+      const prevEj = ejerciciosDelDia[currentExerciseIndex - 1];
       setCurrentExerciseIndex(prev => prev - 1);
-      setCurrentSetNumber(1);
+      setCurrentSetNumber(nextSetNumberForExercise(prevEj.ejercicioId));
       setShowTimer(false);
       setPeso('');
     }
@@ -980,14 +1037,14 @@ export default function WorkoutSession() {
                   {ejercicioLog.series.map((serie) => (
                     <div
                       key={serie.numero}
-                      className="flex items-center justify-between p-3 rounded-lg bg-accent/30 border"
+                      className="flex items-center justify-between gap-2 p-3 rounded-lg bg-accent/30 border"
                     >
-                      <span className="font-medium">Serie {serie.numero}</span>
-                      <div className="text-sm">
+                      <span className="font-medium shrink-0">Serie {serie.numero}</span>
+                      <div className="text-sm flex-1 text-right">
                         {serie.tipo === 'TIME' ? (
                           <span className="font-semibold">{serie.tiempoSegundos}s</span>
                         ) : serie.tipo === 'BODYWEIGHT' ? (
-                          <span className="font-semibold">{serie.repeticiones} reps (peso corporal)</span>
+                          <span className="font-semibold">{serie.repeticiones} reps (PC)</span>
                         ) : (
                           <>
                             <span className="font-semibold">{serie.repeticiones} reps</span>
@@ -997,6 +1054,26 @@ export default function WorkoutSession() {
                         )}
                         {' • '}
                         <span className="text-muted-foreground">RIR {serie.RIR}</span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => setEditingSerie(serie)}
+                          title="Editar serie"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => setConfirmDeleteSerie(serie)}
+                          title="Borrar serie"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -1287,6 +1364,28 @@ export default function WorkoutSession() {
         onClose={() => setShowSwapModal(false)}
         ejercicioActual={ejercicioActual}
         onSwap={handleSwap}
+      />
+
+      {/* Editar serie */}
+      <EditSerieDialog
+        open={editingSerie !== null}
+        onOpenChange={(open) => { if (!open) setEditingSerie(null); }}
+        serie={editingSerie}
+        onSave={handleEditSerie}
+      />
+
+      {/* Confirmar borrado de serie */}
+      <ConfirmDialog
+        open={confirmDeleteSerie !== null}
+        onOpenChange={(open) => { if (!open) setConfirmDeleteSerie(null); }}
+        title={`¿Borrar Serie ${confirmDeleteSerie?.numero ?? ''}?`}
+        description={confirmDeleteSerie ? (
+          confirmDeleteSerie.tipo === 'TIME'
+            ? <>Vas a borrar la serie de <strong>{confirmDeleteSerie.tiempoSegundos}s</strong>. Las restantes se renumeran automáticamente.</>
+            : <>Vas a borrar la serie de <strong>{confirmDeleteSerie.repeticiones} reps × {confirmDeleteSerie.peso}kg</strong>. Las restantes se renumeran automáticamente.</>
+        ) : null}
+        confirmLabel="Borrar"
+        onConfirm={performDeleteSerie}
       />
     </div>
   );
