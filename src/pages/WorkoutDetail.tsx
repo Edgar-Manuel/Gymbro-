@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import type { WorkoutLog } from '@/types';
@@ -16,7 +17,10 @@ import {
   ChevronDown,
   ChevronUp,
   Zap,
+  Check,
+  X,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Epley 1RM estimate — most reliable for 1-15 reps
 const epley = (peso: number, reps: number): number => {
@@ -33,12 +37,23 @@ const fmtVol = (kg: number): { value: string; unit: string } => {
   return { value: kg.toLocaleString(), unit: 'kg' };
 };
 
+interface EditState {
+  ejIdx: number;
+  serieIdx: number;
+  reps: string;
+  peso: string;
+  rir: string;
+  tiempo: string;
+}
+
 export default function WorkoutDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [workout, setWorkout] = useState<WorkoutLog | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [expandedEx, setExpandedEx] = useState<number | null>(null);
+  const [editing, setEditing] = useState<EditState | null>(null);
 
   useEffect(() => {
     if (!id) { navigate('/'); return; }
@@ -48,6 +63,56 @@ export default function WorkoutDetail() {
       setLoading(false);
     });
   }, [id, navigate]);
+
+  const startEdit = useCallback((ejIdx: number, serieIdx: number) => {
+    if (!workout) return;
+    const sr = workout.ejercicios[ejIdx].series[serieIdx];
+    setEditing({
+      ejIdx,
+      serieIdx,
+      reps: String(sr.repeticiones ?? ''),
+      peso: String(sr.peso ?? ''),
+      rir: String(sr.RIR ?? 2),
+      tiempo: String(sr.tiempoSegundos ?? ''),
+    });
+  }, [workout]);
+
+  const saveEdit = useCallback(async () => {
+    if (!editing || !workout) return;
+    setSaving(true);
+    try {
+      const updated: WorkoutLog = {
+        ...workout,
+        ejercicios: workout.ejercicios.map((ej, ei) => {
+          if (ei !== editing.ejIdx) return ej;
+          return {
+            ...ej,
+            series: ej.series.map((sr, si) => {
+              if (si !== editing.serieIdx) return sr;
+              const newSr = { ...sr, RIR: parseInt(editing.rir) ?? sr.RIR };
+              if (sr.tipo === 'TIME') {
+                newSr.tiempoSegundos = parseInt(editing.tiempo) || sr.tiempoSegundos;
+              } else if (sr.tipo === 'BODYWEIGHT') {
+                newSr.repeticiones = parseInt(editing.reps) || sr.repeticiones;
+              } else {
+                newSr.repeticiones = parseInt(editing.reps) || sr.repeticiones;
+                newSr.peso = parseFloat(editing.peso) || sr.peso;
+              }
+              return newSr;
+            }),
+          };
+        }),
+      };
+      await dbHelpers.updateWorkout(workout.id, { ejercicios: updated.ejercicios });
+      setWorkout(updated);
+      setEditing(null);
+      toast.success('Serie actualizada');
+    } catch {
+      toast.error('No se pudo guardar');
+    } finally {
+      setSaving(false);
+    }
+  }, [editing, workout]);
 
   if (loading) {
     return (
@@ -65,7 +130,6 @@ export default function WorkoutDetail() {
   const totalReps = workout.ejercicios.reduce((t, ej) =>
     t + ej.series.reduce((s, sr) => s + sr.repeticiones, 0), 0);
 
-  // Best set by 1RM estimate across the whole session
   let mejorSerie = { ejercicio: '', peso: 0, reps: 0, rm1: 0 };
   workout.ejercicios.forEach(ej => {
     ej.series.forEach(sr => {
@@ -122,7 +186,7 @@ export default function WorkoutDetail() {
           ))}
         </div>
 
-        {/* Mejor esfuerzo (por 1RM Epley) */}
+        {/* Mejor esfuerzo */}
         {mejorSerie.rm1 > 0 && (
           <Card className="border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20">
             <CardContent className="py-3 flex items-center gap-3">
@@ -155,24 +219,25 @@ export default function WorkoutDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-0">
-            {workout.ejercicios.map((ej, idx) => {
+            {workout.ejercicios.map((ej, ejIdx) => {
               const volEj = ej.series.reduce((s, sr) => s + sr.peso * sr.repeticiones, 0);
               const volEjFmt = fmtVol(volEj);
-
-              // Best set of this exercise by 1RM
               const best1RM = Math.max(...ej.series.map(s => epley(s.peso, s.repeticiones)));
-              const isOpen = expandedEx === idx;
+              const isOpen = expandedEx === ejIdx;
 
               return (
-                <div key={idx} className="border rounded-xl overflow-hidden">
+                <div key={ejIdx} className="border rounded-xl overflow-hidden">
                   <button
                     className="w-full flex items-center justify-between p-3 hover:bg-accent/50 transition-colors text-left"
-                    onClick={() => setExpandedEx(isOpen ? null : idx)}
+                    onClick={() => {
+                      setEditing(null);
+                      setExpandedEx(isOpen ? null : ejIdx);
+                    }}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-sm">
-                          {ej.ejercicio?.nombre || `Ejercicio ${idx + 1}`}
+                          {ej.ejercicio?.nombre || `Ejercicio ${ejIdx + 1}`}
                         </span>
                         {ej.ejercicio?.tier && (
                           <Badge
@@ -202,24 +267,108 @@ export default function WorkoutDetail() {
                       {ej.series.map((sr, si) => {
                         const rm = epley(sr.peso, sr.repeticiones);
                         const isBest = rm === best1RM;
+                        const isEditingThis = editing?.ejIdx === ejIdx && editing.serieIdx === si;
+
+                        if (isEditingThis) {
+                          return (
+                            <div key={si} className="px-3 py-2 bg-primary/5 border-l-2 border-primary space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold">Editando Serie {sr.numero}</span>
+                                <button onClick={() => setEditing(null)} className="text-muted-foreground hover:text-foreground">
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <div className={`grid gap-2 ${sr.tipo === 'TIME' ? 'grid-cols-2' : sr.tipo === 'BODYWEIGHT' ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                                {sr.tipo === 'TIME' ? (
+                                  <div>
+                                    <p className="text-[10px] text-muted-foreground mb-1">Segundos</p>
+                                    <Input
+                                      type="number" inputMode="numeric"
+                                      value={editing.tiempo}
+                                      onChange={e => setEditing(prev => prev ? { ...prev, tiempo: e.target.value } : null)}
+                                      className="h-8 text-sm"
+                                    />
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground mb-1">Reps</p>
+                                      <Input
+                                        type="number" inputMode="numeric"
+                                        value={editing.reps}
+                                        onChange={e => setEditing(prev => prev ? { ...prev, reps: e.target.value } : null)}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    {sr.tipo !== 'BODYWEIGHT' && (
+                                      <div>
+                                        <p className="text-[10px] text-muted-foreground mb-1">Kg</p>
+                                        <Input
+                                          type="number" inputMode="decimal"
+                                          value={editing.peso}
+                                          onChange={e => setEditing(prev => prev ? { ...prev, peso: e.target.value } : null)}
+                                          className="h-8 text-sm"
+                                        />
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                                <div>
+                                  <p className="text-[10px] text-muted-foreground mb-1">RIR</p>
+                                  <Input
+                                    type="number" inputMode="numeric" min="0" max="5"
+                                    value={editing.rir}
+                                    onChange={e => setEditing(prev => prev ? { ...prev, rir: e.target.value } : null)}
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
+                              </div>
+                              <Button
+                                size="sm" className="w-full h-7 text-xs" disabled={saving}
+                                onClick={saveEdit}
+                              >
+                                <Check className="w-3 h-3 mr-1" />
+                                {saving ? 'Guardando...' : 'Guardar cambios'}
+                              </Button>
+                            </div>
+                          );
+                        }
+
                         return (
                           <div
                             key={si}
-                            className={`flex items-center gap-2 px-4 py-2 text-sm ${isBest ? 'bg-yellow-50/60 dark:bg-yellow-950/20' : ''}`}
+                            className={`flex items-center gap-2 px-4 py-2.5 text-sm group ${isBest ? 'bg-yellow-50/60 dark:bg-yellow-950/20' : ''}`}
                           >
-                            <span className="text-muted-foreground w-12 shrink-0">Serie {sr.numero}</span>
+                            <span className="text-muted-foreground w-12 shrink-0 text-xs">Serie {sr.numero}</span>
                             <span className={`font-bold w-16 ${isBest ? 'text-primary' : ''}`}>
-                              {sr.peso} kg
+                              {sr.tipo === 'TIME' ? `${sr.tiempoSegundos}s` : `${sr.peso} kg`}
                             </span>
-                            <span className="text-muted-foreground">×</span>
-                            <span className="font-medium w-14">{sr.repeticiones} reps</span>
+                            {sr.tipo !== 'TIME' && (
+                              <>
+                                <span className="text-muted-foreground">×</span>
+                                <span className="font-medium w-14">
+                                  {sr.repeticiones} {sr.tipo === 'BODYWEIGHT' ? 'reps' : 'reps'}
+                                </span>
+                              </>
+                            )}
                             <span className="text-xs text-muted-foreground flex-1">RIR {sr.RIR}</span>
-                            <span className="text-xs text-muted-foreground">~{rm} kg</span>
+                            {sr.tipo !== 'TIME' && sr.tipo !== 'BODYWEIGHT' && (
+                              <span className="text-xs text-muted-foreground">~{rm} kg</span>
+                            )}
                             {isBest && <Trophy className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
+                            {/* Edit button — visible on hover / focus */}
+                            <button
+                              onClick={() => startEdit(ejIdx, si)}
+                              className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded hover:bg-accent transition-opacity ml-1 shrink-0"
+                              title="Editar serie"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                              </svg>
+                            </button>
                           </div>
                         );
                       })}
-                      {/* Resumen del ejercicio */}
                       <div className="px-4 py-2 bg-muted/50 flex justify-between text-xs text-muted-foreground">
                         <span>Volumen total</span>
                         <span className="font-semibold">{volEjFmt.value} {volEjFmt.unit}</span>
