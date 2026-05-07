@@ -163,6 +163,13 @@ export default function WorkoutSession() {
   const [aiAnswer, setAiAnswer] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
+  // Edit completed sets
+  const [editingSet, setEditingSet] = useState<{ ejercicioId: string; numero: number } | null>(null);
+  const [editReps, setEditReps] = useState('');
+  const [editPeso, setEditPeso] = useState('');
+  const [editRir, setEditRir] = useState('');
+  const [editTiempo, setEditTiempo] = useState('');
+
   useEffect(() => {
     if (!currentUser || !activeRoutine) {
       navigate('/');
@@ -1147,29 +1154,153 @@ export default function WorkoutSession() {
               <div className="mt-6">
                 <h4 className="font-medium mb-2 text-sm text-muted-foreground">Series Completadas:</h4>
                 <div className="space-y-2">
-                  {ejercicioLog.series.map((serie) => (
-                    <div
-                      key={serie.numero}
-                      className="flex items-center justify-between p-3 rounded-lg bg-accent/30 border"
-                    >
-                      <span className="font-medium">Serie {serie.numero}</span>
-                      <div className="text-sm">
-                        {serie.tipo === 'TIME' ? (
-                          <span className="font-semibold">{serie.tiempoSegundos}s</span>
-                        ) : serie.tipo === 'BODYWEIGHT' ? (
-                          <span className="font-semibold">{serie.repeticiones} reps (peso corporal)</span>
-                        ) : (
-                          <>
-                            <span className="font-semibold">{serie.repeticiones} reps</span>
-                            {' × '}
-                            <span className="font-semibold">{serie.peso}kg</span>
-                          </>
-                        )}
-                        {' • '}
-                        <span className="text-muted-foreground">RIR {serie.RIR}</span>
+                  {ejercicioLog.series.map((serie) => {
+                    const isEditing = editingSet?.ejercicioId === ejercicioActual.ejercicioId && editingSet.numero === serie.numero;
+                    if (isEditing) {
+                      return (
+                        <div key={serie.numero} className="p-3 rounded-lg border-2 border-primary bg-primary/5 space-y-2">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium text-sm">Editando Serie {serie.numero}</span>
+                            <button
+                              onClick={() => setEditingSet(null)}
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {serie.tipo === 'TIME' ? (
+                              <div className="col-span-2">
+                                <Label className="text-xs mb-1 block">Segundos</Label>
+                                <Input
+                                  type="number"
+                                  value={editTiempo}
+                                  onChange={e => setEditTiempo(e.target.value)}
+                                  className="h-8 text-sm"
+                                  inputMode="numeric"
+                                />
+                              </div>
+                            ) : serie.tipo === 'BODYWEIGHT' ? (
+                              <div className="col-span-2">
+                                <Label className="text-xs mb-1 block">Reps</Label>
+                                <Input
+                                  type="number"
+                                  value={editReps}
+                                  onChange={e => setEditReps(e.target.value)}
+                                  className="h-8 text-sm"
+                                  inputMode="numeric"
+                                />
+                              </div>
+                            ) : (
+                              <>
+                                <div>
+                                  <Label className="text-xs mb-1 block">Reps</Label>
+                                  <Input
+                                    type="number"
+                                    value={editReps}
+                                    onChange={e => setEditReps(e.target.value)}
+                                    className="h-8 text-sm"
+                                    inputMode="numeric"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs mb-1 block">Kg</Label>
+                                  <Input
+                                    type="number"
+                                    value={editPeso}
+                                    onChange={e => setEditPeso(e.target.value)}
+                                    className="h-8 text-sm"
+                                    inputMode="decimal"
+                                  />
+                                </div>
+                              </>
+                            )}
+                            <div>
+                              <Label className="text-xs mb-1 block">RIR</Label>
+                              <Input
+                                type="number"
+                                value={editRir}
+                                onChange={e => setEditRir(e.target.value)}
+                                className="h-8 text-sm"
+                                inputMode="numeric"
+                                min="0"
+                                max="5"
+                              />
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="w-full h-7 text-xs"
+                            onClick={() => {
+                              setEjercicioLogs(prev => {
+                                const next = new Map(prev);
+                                const log = next.get(ejercicioActual.ejercicioId);
+                                if (!log) return prev;
+                                const updatedSeries = log.series.map(s => {
+                                  if (s.numero !== serie.numero) return s;
+                                  const newS = { ...s, RIR: parseInt(editRir) || s.RIR };
+                                  if (s.tipo === 'TIME') {
+                                    newS.tiempoSegundos = parseInt(editTiempo) || s.tiempoSegundos;
+                                  } else if (s.tipo === 'BODYWEIGHT') {
+                                    newS.repeticiones = parseInt(editReps) || s.repeticiones;
+                                  } else {
+                                    newS.repeticiones = parseInt(editReps) || s.repeticiones;
+                                    newS.peso = parseFloat(editPeso) || s.peso;
+                                  }
+                                  return newS;
+                                });
+                                next.set(ejercicioActual.ejercicioId, { ...log, series: updatedSeries });
+                                return next;
+                              });
+                              setEditingSet(null);
+                            }}
+                          >
+                            <Check className="w-3 h-3 mr-1" /> Guardar cambios
+                          </Button>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div
+                        key={serie.numero}
+                        className="flex items-center justify-between p-3 rounded-lg bg-accent/30 border group"
+                      >
+                        <span className="font-medium">Serie {serie.numero}</span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <div>
+                            {serie.tipo === 'TIME' ? (
+                              <span className="font-semibold">{serie.tiempoSegundos}s</span>
+                            ) : serie.tipo === 'BODYWEIGHT' ? (
+                              <span className="font-semibold">{serie.repeticiones} reps (corporal)</span>
+                            ) : (
+                              <>
+                                <span className="font-semibold">{serie.repeticiones} reps</span>
+                                {' × '}
+                                <span className="font-semibold">{serie.peso}kg</span>
+                              </>
+                            )}
+                            {' • '}
+                            <span className="text-muted-foreground">RIR {serie.RIR}</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setEditingSet({ ejercicioId: ejercicioActual.ejercicioId, numero: serie.numero });
+                              setEditReps(String(serie.repeticiones ?? ''));
+                              setEditPeso(String(serie.peso ?? ''));
+                              setEditRir(String(serie.RIR ?? 2));
+                              setEditTiempo(String(serie.tiempoSegundos ?? ''));
+                            }}
+                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded hover:bg-accent transition-opacity"
+                            title="Editar serie"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
