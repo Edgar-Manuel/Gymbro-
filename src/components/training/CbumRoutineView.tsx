@@ -110,8 +110,8 @@ export default function CbumRoutineView({ onUseRoutine }: Props) {
           <div className="grid grid-cols-4 gap-2 text-center">
             <div className="bg-background/70 rounded-lg p-2">
               <Calendar className="w-4 h-4 mx-auto mb-1 text-amber-500" />
-              <p className="font-bold text-sm">{rutina.dias}</p>
-              <p className="text-[10px] text-muted-foreground">días/ciclo</p>
+              <p className="font-bold text-sm">9 días</p>
+              <p className="text-[10px] text-muted-foreground">ciclo rotativo</p>
             </div>
             <div className="bg-background/70 rounded-lg p-2">
               <Dumbbell className="w-4 h-4 mx-auto mb-1 text-orange-500" />
@@ -120,15 +120,13 @@ export default function CbumRoutineView({ onUseRoutine }: Props) {
             </div>
             <div className="bg-background/70 rounded-lg p-2">
               <Sparkles className="w-4 h-4 mx-auto mb-1 text-yellow-500" />
-              <p className="font-bold text-sm">
-                {intensity === 'principiante' ? 1 : intensity === 'intermedio' ? '~2' : 2}
-              </p>
-              <p className="text-[10px] text-muted-foreground">series efect.</p>
+              <p className="font-bold text-sm">2× espalda</p>
+              <p className="text-[10px] text-muted-foreground">por ciclo</p>
             </div>
             <div className="bg-background/70 rounded-lg p-2">
               <Clock className="w-4 h-4 mx-auto mb-1 text-amber-600" />
               <p className="font-bold text-sm">
-                {phase === 'prep' ? '90+' : '75-90'}
+                {phase === 'prep' ? '100+' : '80-100'}
               </p>
               <p className="text-[10px] text-muted-foreground">min/sesión</p>
             </div>
