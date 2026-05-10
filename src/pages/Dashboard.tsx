@@ -240,6 +240,18 @@ function computeWeek(
             .filter(Boolean) as string[]
         )];
       }
+      // Fallback: use scheduled routineDay when workout log has no muscle data
+      if (dailyMuscles.length === 0 && routineDay) {
+        if (routineDay.grupos?.length > 0) {
+          dailyMuscles = routineDay.grupos;
+        } else {
+          dailyMuscles = [...new Set(
+            (routineDay.ejercicios ?? [])
+              .map(e => e.ejercicio?.grupoMuscular)
+              .filter(Boolean) as string[]
+          )];
+        }
+      }
     } else if (routineDay) {
       if (routineDay.grupos?.length > 0) {
         dailyMuscles = routineDay.grupos;
