@@ -74,6 +74,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 import { INJURY_AFFECTS, LESION_ZONA_LABELS, REHAB_EXERCISES } from '@/utils/injuryData';
 import { CARDIO_RECOMENDACIONES } from '@/utils/cardioData';
+import { getRoutineTheme } from '@/utils/routineTheme';
 import CardioPanel from '@/components/CardioPanel';
 import MachinePhotoCard from '@/components/MachinePhotoCard';
 import MachinePhotoCapture from '@/components/MachinePhotoCapture';
@@ -107,6 +108,7 @@ import {
 export default function WorkoutSession() {
   const navigate = useNavigate();
   const { currentUser, activeRoutine, startWorkout, finishWorkout, activeWorkout } = useAppStore();
+  const theme = getRoutineTheme(activeRoutine?.id);
 
   // Estado para selector de día
   const [selectedDay, setSelectedDay] = useState<DiaRutina | null>(null);
@@ -364,6 +366,12 @@ export default function WorkoutSession() {
 
     return (
       <>
+        {/* Routine identity banner */}
+        <div className={`${theme.headerGradient} text-white px-4 py-2.5 flex items-center gap-2`}>
+          <span className="text-sm font-semibold">{theme.badge}</span>
+          <span className="text-white/60 text-xs">·</span>
+          <span className="text-xs text-white/80 truncate">{activeRoutine.nombre}</span>
+        </div>
         <DaySelector
           dias={activeRoutine.dias.filter(d => d.ejercicios.length > 0)}
           onSelectDay={handleSelectDay}
@@ -456,17 +464,16 @@ export default function WorkoutSession() {
                 </span>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
-              <Button
-                size="lg"
-                className="w-full h-14 text-lg"
+              <button
+                className={`w-full h-14 text-lg font-semibold rounded-xl ${theme.headerGradient} text-white flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform`}
                 onClick={() => {
                   if (!gymSesion) { setGymSelectorOpen(true); return; }
                   setShowWellnessCheck(true);
                 }}
               >
-                <Check className="w-5 h-5 mr-2" />
+                <Check className="w-5 h-5" />
                 Comenzar: {selectedDay.nombre}
-              </Button>
+              </button>
             </div>
           </div>
         )}
@@ -760,22 +767,27 @@ export default function WorkoutSession() {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header con progreso */}
-      <div className="sticky top-0 z-40 bg-primary text-primary-foreground p-4 shadow-lg">
+      <div className={`sticky top-0 z-40 ${theme.headerGradient} text-white p-4 shadow-lg`}>
         <div className="container mx-auto max-w-4xl">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-xl font-bold">{selectedDay.nombre}</h1>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">{theme.badge}</span>
+              </div>
+              <h1 className="text-xl font-bold leading-tight mt-0.5">{selectedDay.nombre}</h1>
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleCancelarEntrenamiento}
-                className="text-primary-foreground hover:bg-primary-foreground/20"
+                className="text-white hover:bg-white/20"
               >
                 <X className="w-4 h-4" />
               </Button>
             </div>
           </div>
-          <Progress value={progreso} className="h-2 bg-primary-foreground/20" />
+          <Progress value={progreso} className="h-2 bg-white/20" />
           <div className="flex items-center justify-between mt-2 text-sm opacity-90">
             <p>
               Ejercicio {currentExerciseIndex + 1} de {ejerciciosDelDia.length}
@@ -806,7 +818,7 @@ export default function WorkoutSession() {
                   setAddExerciseSearch('');
                   setAddExerciseOpen(true);
                 }}
-                className="flex items-center gap-1 text-xs text-primary-foreground/80 hover:text-primary-foreground bg-primary-foreground/10 hover:bg-primary-foreground/20 px-2 py-1 rounded-full transition-colors"
+                className="flex items-center gap-1 text-xs text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded-full transition-colors"
               >
                 <Plus className="w-3 h-3" /> Añadir
               </button>
