@@ -109,7 +109,7 @@ export const SyncManager = {
         }
 
         // ── Body Measurements ─────────────────────────────────────────────────
-        const { measurements: pendingMeasurements } = await BodyTrackingRepository.getPendingSync();
+        const { measurements: pendingMeasurements, photos: pendingPhotos } = await BodyTrackingRepository.getPendingSync();
         for (const m of pendingMeasurements) {
             try {
                 if (m.syncStatus === 'pending_create') {
@@ -143,7 +143,6 @@ export const SyncManager = {
         }
 
         // ── Progress Photos ───────────────────────────────────────────────────
-        const { photos: pendingPhotos } = await BodyTrackingRepository.getPendingSync();
         for (const photo of pendingPhotos) {
             try {
                 if (photo.syncStatus === 'pending_create') {
@@ -152,9 +151,27 @@ export const SyncManager = {
                     } catch (err) {
                         if ((err as { code?: number }).code !== 409) throw err;
                     }
+                    await db.progressPhotos.update(photo.id, { syncStatus: 'synced' });
+                    synced++;
+                } else if (photo.syncStatus === 'pending_update') {
+                    try {
+                        await appwriteDbHelpers.updateProgressPhoto(photo);
+                    } catch (err) {
+                        if ((err as { code?: number }).code === 404) {
+                            await appwriteDbHelpers.addProgressPhoto(photo);
+                        } else throw err;
+                    }
+                    await db.progressPhotos.update(photo.id, { syncStatus: 'synced' });
+                    synced++;
+                } else if (photo.syncStatus === 'pending_delete') {
+                    try {
+                        await appwriteDbHelpers.deleteProgressPhoto(photo.id);
+                    } catch (err) {
+                        if ((err as { code?: number }).code !== 404) throw err;
+                    }
+                    await db.progressPhotos.delete(photo.id);
+                    synced++;
                 }
-                await db.progressPhotos.update(photo.id, { syncStatus: 'synced' });
-                synced++;
             } catch (e) { logErr('photo', e); }
         }
 
@@ -278,19 +295,6 @@ export const SyncManager = {
                 await db.cardioSessions.delete(s.id);
                 synced++;
             } catch (e) { logErr('delete cardio', e); }
-        }
-
-        const deletePhotos = await db.progressPhotos.filter(p => p.syncStatus === 'pending_delete').toArray();
-        for (const p of deletePhotos) {
-            try {
-                try {
-                    await appwriteDbHelpers.deleteProgressPhoto(p.id);
-                } catch (err) {
-                    if ((err as { code?: number }).code !== 404) throw err;
-                }
-                await db.progressPhotos.delete(p.id);
-                synced++;
-            } catch (e) { logErr('delete photo', e); }
         }
 
         console.log(`[Sync] Complete: ${synced} synced, ${errors} errors`);

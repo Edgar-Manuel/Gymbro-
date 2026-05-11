@@ -15,7 +15,9 @@ function getSettings(): NotificationSettings {
 }
 
 function saveSettings(s: NotificationSettings) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  } catch { /* Safari incógnito — no-op */ }
 }
 
 export const notificationManager = {
@@ -66,7 +68,7 @@ export const notificationManager = {
     const delay = target.getTime() - now.getTime();
 
     // Store next fire time so we can recover it on reload
-    localStorage.setItem('gymbro_next_notif', String(target.getTime()));
+    try { localStorage.setItem('gymbro_next_notif', String(target.getTime())); } catch { /* ignore */ }
 
     setTimeout(() => {
       notificationManager.fireIfNeeded();
@@ -105,7 +107,7 @@ export const notificationManager = {
   },
 
   markTrained() {
-    localStorage.setItem('gymbro_last_trained', new Date().toDateString());
+    try { localStorage.setItem('gymbro_last_trained', new Date().toDateString()); } catch { /* ignore */ }
   },
 
   // Call on app start to resume any pending schedule

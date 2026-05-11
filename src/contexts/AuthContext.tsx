@@ -35,45 +35,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Cambiar modo de almacenamiento según autenticación
   useEffect(() => {
+    let cancelled = false;
+
     const handleUserChange = async () => {
       if (user) {
         // Usuario autenticado: usar Appwrite (cloud)
         setStorageMode('cloud');
-        
+
         try {
           const store = useAppStore.getState();
           const localUser = store.currentUser;
-          
+
           // Si hay un usuario local y no es el usuario por defecto ('user-1')
           // Y además el email es distinto al de la sesión actual de Appwrite
           if (localUser && localUser.id !== 'user-1' && localUser.email && localUser.email !== user.email) {
             console.log('🔄 Cambio de cuenta detectado. Limpiando base de datos local...');
-            
-            // Limpiar datos antiguos
+
             await dbHelpers.clearAllData();
-            
-            // Limpiar estado
+            if (cancelled) return;
+
             store.setCurrentUser(null);
             store.setActiveRoutine(null);
             store.setStatistics(null);
             store.finishWorkout();
-            
-            // Recargar datos iniciales (ejercicios)
+
             const { initializeDatabase } = await import('@/utils/seedData');
             await initializeDatabase();
+            if (cancelled) return;
           }
 
-          // Intentar obtener el perfil de la nube
           const { appwriteDbHelpers } = await import('@/db/appwriteDb');
           const cloudUser = await appwriteDbHelpers.getCurrentUser();
-          
+          if (cancelled) return;
+
           if (cloudUser) {
-            // Guardar localmente
             await dbHelpers.createOrUpdateUser(cloudUser);
+            if (cancelled) return;
             store.setCurrentUser(cloudUser);
           }
         } catch (error) {
-          console.error('Error sincronizando usuario tras login:', error);
+          if (!cancelled) console.error('Error sincronizando usuario tras login:', error);
         }
       } else {
         // Sin autenticación: usar IndexedDB (local)
@@ -81,14 +82,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    handleUserChange().catch(err => console.error('Error in handleUserChange:', err));
+    handleUserChange().catch(err => { if (!cancelled) console.error('Error in handleUserChange:', err); });
+    return () => { cancelled = true; };
   }, [user]);
 
   const checkSession = async () => {
     try {
       const session = await account.get();
       setUser(session);
-    } catch {
+    } catch (err) {
+      const code = (err as { code?: number }).code;
+      if (code !== 401 && code !== 403) {
+        // Network/server error — don't wipe session state, just log
+        console.warn('[Auth] checkSession falló (posible error de red):', err);
+      }
       setUser(null);
     } finally {
       setLoading(false);

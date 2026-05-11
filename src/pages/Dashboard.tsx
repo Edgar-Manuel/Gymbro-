@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { dbHelpers } from '@/db';
 import { useAppStore } from '@/store';
 import type { WeeklyOverride } from '@/store';
-import type { RutinaSemanal, WorkoutLog, ProgressPhoto, DiaRutina } from '@/types';
+import type { RutinaSemanal, WorkoutLog, ProgressPhoto, DiaRutina, UserStatistics } from '@/types';
 import { inferirSiguienteDia } from '@/utils/workoutInference';
 import { Dumbbell, TrendingUp, Award, Flame, ChevronRight, Trophy, Calendar, Plus, Share2, Camera, RefreshCw, CheckCircle, RotateCcw } from 'lucide-react';
 import StatsShareCard from '@/components/StatsShareCard';
@@ -527,7 +527,7 @@ export default function Dashboard() {
         const totalEnStats = stats?.totalEntrenamientos ?? stats?.totalWorkouts ?? 0;
         if (totalEnStats === 0) {
           const recalculadas = await dbHelpers.recalcularEstadisticas(currentUser.id);
-          setStatistics(recalculadas as any);
+          setStatistics(recalculadas as UserStatistics);
         }
       }
 
@@ -547,7 +547,7 @@ export default function Dashboard() {
     if (weeklyOverride && weeklyOverride.weekKey !== currentWeekKey) {
       setWeeklyOverride(null);
     }
-  }, [currentWeekKey]);
+  }, [currentWeekKey, weeklyOverride, setWeeklyOverride]);
 
   const handleQuickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -566,6 +566,7 @@ export default function Dashboard() {
       setPhotoSaved(true);
       setTimeout(() => setPhotoSaved(false), 2500);
     };
+    reader.onerror = () => console.error('Error leyendo imagen de progreso');
     reader.readAsDataURL(file);
     e.target.value = '';
   };

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -187,7 +188,7 @@ export default function WorkoutSession() {
     pesoMaxHistorico: number;
   } | null>(null);
 
-  const loadPesoSugerido = async () => {
+  const loadPesoSugerido = useCallback(async () => {
     if (!currentUser || !selectedDay) return;
 
     const ejercicioActual = selectedDay.ejercicios[currentExerciseIndex];
@@ -238,14 +239,15 @@ export default function WorkoutSession() {
     } catch (error) {
       console.error('Error cargando peso sugerido:', error);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, selectedDay, currentExerciseIndex]);
 
   // Cargar peso sugerido cuando cambia el ejercicio
   useEffect(() => {
     if (selectedDay && hasStarted) {
       loadPesoSugerido();
     }
-  }, [currentExerciseIndex, selectedDay, hasStarted]);
+  }, [currentExerciseIndex, selectedDay, hasStarted, loadPesoSugerido]);
 
   // Load machine photo for current exercise
   useEffect(() => {
@@ -262,7 +264,8 @@ export default function WorkoutSession() {
         const todas = await dbHelpers.getMachinePhotos(currentUser.id, ejercicioActual.ejercicioId, gymSesion.gymId);
         setMachinePhoto(active ?? null);
         setMachineTodasFotos(todas);
-      } catch {
+      } catch (err) {
+        console.error('Error cargando foto de máquina:', err);
         setMachinePhoto(null);
       }
     };
@@ -274,7 +277,7 @@ export default function WorkoutSession() {
     if (!currentUser) return;
     dbHelpers.getActiveInjuries(currentUser.id)
       .then(setActiveInjuries)
-      .catch(() => {});
+      .catch(err => console.error('Error cargando lesiones:', err));
   }, [currentUser]);
 
   // Compute which injuries affect the selected day
@@ -708,7 +711,7 @@ export default function WorkoutSession() {
       navigate('/workout/summary', { state: { workout: workoutFinal } });
     } catch (error) {
       console.error('Error guardando entrenamiento:', error);
-      alert('Error al guardar el entrenamiento. Por favor, intenta de nuevo.');
+      toast.error('Error al guardar el entrenamiento. Por favor, intenta de nuevo.');
     }
   };
 

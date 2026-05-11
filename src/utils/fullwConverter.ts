@@ -155,7 +155,7 @@ const NAME_TO_ID: Record<string, string> = {
   'pec deck flyes (inclinado)':            'aperturas-mancuernas',
   'skullcrushers con barra ez':            'extensiones-overhead',
   'remo con barra agarre supino':          'remo-barra',
-  'remo en barra t (apoyo en pecho)':      'remo-barra',
+  'remo en barra t (apoyo en pecho)':      'remo-bilateral-apoyo',
   'remo con mancuernas (gvt)':             'remo-mancuerna-unilateral',
   'curl en banco inclinado':               'curl-inclinado',
   'cable rear delt fly (unilateral)':      'pajaros-deltoides-posterior',
@@ -163,13 +163,13 @@ const NAME_TO_ID: Record<string, string> = {
   'cable rear delt fly cruzado':           'pajaros-deltoides-posterior',
   'press de hombros hammer strength':      'press-militar',
   'press de hombros en máquina / smith':   'press-militar',
-  'remo al mentón en smith':               'elevaciones-laterales',
+  'remo al mentón en smith':               'press-militar',
   'superserie: pec deck inverso':          'pajaros-deltoides-posterior',
   'elevaciones laterales sentado':         'elevaciones-laterales',
   'pushdowns con cuerda (pre-agotamiento)':'pushdowns-polea',
   'extensión de tríceps en polea alta':    'extensiones-overhead',
   'extension de triceps en polea alta':    'extensiones-overhead',
-  'press cerrado con barra':               'fondos-triceps',
+  'press cerrado con barra':               'extensiones-overhead',
   'curl martillo (cable o mancuerna)':     'curl-martillo',
   'pushdowns fst-7':                       'pushdowns-polea',
   'peso muerto rumano (rdl)':              'peso-muerto-rumano',
@@ -206,11 +206,23 @@ function lookupExercise(nombre: string): ExerciseKnowledge | undefined {
   return exercisesData.find(e => e.nombre.toLowerCase().includes(key.split(' ').slice(0, 2).join(' ')));
 }
 
+function inferGrupo(nombre: string): GrupoMuscular {
+  const n = nombre.toLowerCase();
+  if (/espalda|dorsal|remo|jalón|jalon|pulldown|dominada|pullover/.test(n)) return 'espalda';
+  if (/hombro|deltoid|press militar|elevacion|elevación|face.?pull|rear delt/.test(n)) return 'hombros';
+  if (/pierna|sentadilla|prensa|cuádricep|cuadricep|femoral|glúteo|gluteo|hip thrust|zancada|búlgara|bulgara|rdl|peso muerto rumano/.test(n)) return 'piernas';
+  if (/bícep|bicep|curl/.test(n)) return 'bíceps';
+  if (/trícep|tricep|pushdown|skullcrusher|press franc/.test(n)) return 'tríceps';
+  if (/pantorrilla|gemelo|talón|talon/.test(n)) return 'piernas';
+  if (/abdomen|abdominal|plancha|crunch|core/.test(n)) return 'abdominales';
+  return 'pecho';
+}
+
 function makeStubExercise(nombre: string, idx: number): ExerciseKnowledge {
   return {
     id: `fullw-stub-${idx}`,
     nombre,
-    grupoMuscular: 'pecho' as GrupoMuscular,
+    grupoMuscular: inferGrupo(nombre),
     categoria: 'compuesto',
     tier: 'A',
     dificultad: 'intermedio',

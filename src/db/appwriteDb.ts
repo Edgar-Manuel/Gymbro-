@@ -912,6 +912,25 @@ export const appwriteDbHelpers = {
     }
   },
 
+  async updateProgressPhoto(photo: ProgressPhoto): Promise<void> {
+    try {
+      const photoData = {
+        fecha: toISO(photo.fecha),
+        tipo: photo.tipo,
+        datos: JSON.stringify({
+          fileId: photo.fileId,
+          url: photo.url,
+          peso: photo.peso,
+          notas: photo.notas || '',
+        }),
+      };
+      await databases.updateDocument(APPWRITE_DATABASE_ID, COLLECTIONS.PROGRESS_PHOTOS, photo.id, photoData);
+    } catch (error) {
+      console.error('Error actualizando foto de progreso:', error);
+      throw error;
+    }
+  },
+
   /**
    * Eliminar foto de progreso
    */

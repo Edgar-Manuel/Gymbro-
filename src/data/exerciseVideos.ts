@@ -44,7 +44,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/ZI2YJqLHAfI'),
     url: 'https://youtu.be/ZI2YJqLHAfI',
     category: 'hombros',
-    relatedExercises: ['press-militar', 'elevaciones-laterales', 'pajaros-deltoides-posterior', 'face-pull'],
+    relatedExercises: ['press-militar', 'elevaciones-laterales', 'pajaros-deltoides-posterior'],
   },
   {
     id: 'abdomen-mejores-ejercicios',
@@ -477,7 +477,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=y73pzFKQ6MU'),
     url: 'https://www.youtube.com/watch?v=y73pzFKQ6MU',
     category: 'hombros',
-    relatedExercises: ['face-pull', 'pajaros-deltoides-posterior', 'remo-barra'],
+    relatedExercises: ['pajaros-deltoides-posterior', 'remo-barra'],
   },
   {
     id: 'como-entrenar-tu-espalda-alta',
@@ -485,7 +485,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=YeUArEtacmc'),
     url: 'https://www.youtube.com/watch?v=YeUArEtacmc',
     category: 'espalda',
-    relatedExercises: ['remo-barra', 'face-pull', 'remo-bilateral-apoyo'],
+    relatedExercises: ['remo-barra', 'pajaros-deltoides-posterior', 'remo-bilateral-apoyo'],
   },
   {
     id: 'como-hacer-encogimientos-de-hombro',
