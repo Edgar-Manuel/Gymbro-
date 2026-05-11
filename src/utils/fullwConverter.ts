@@ -211,8 +211,8 @@ function inferGrupo(nombre: string): GrupoMuscular {
   if (/espalda|dorsal|remo|jalón|jalon|pulldown|dominada|pullover/.test(n)) return 'espalda';
   if (/hombro|deltoid|press militar|elevacion|elevación|face.?pull|rear delt/.test(n)) return 'hombros';
   if (/pierna|sentadilla|prensa|cuádricep|cuadricep|femoral|glúteo|gluteo|hip thrust|zancada|búlgara|bulgara|rdl|peso muerto rumano/.test(n)) return 'piernas';
-  if (/bícep|bicep|curl/.test(n)) return 'bíceps';
-  if (/trícep|tricep|pushdown|skullcrusher|press franc/.test(n)) return 'tríceps';
+  if (/bícep|bicep|curl/.test(n)) return 'biceps';
+  if (/trícep|tricep|pushdown|skullcrusher|press franc/.test(n)) return 'triceps';
   if (/pantorrilla|gemelo|talón|talon/.test(n)) return 'piernas';
   if (/abdomen|abdominal|plancha|crunch|core/.test(n)) return 'abdominales';
   return 'pecho';
