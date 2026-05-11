@@ -775,6 +775,38 @@ export const exerciseVideos: ExerciseVideo[] = [
     category: 'nutricion',
     relatedExercises: [],
   },
+  {
+    id: 'los-3-mejores-ejercicios-de-hombros',
+    title: 'Los 3 MEJORES ejercicios de HOMBROS',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=6SQeqQHGiXQ'),
+    url: 'https://www.youtube.com/watch?v=6SQeqQHGiXQ',
+    category: 'hombros',
+    relatedExercises: [],
+  },
+  {
+    id: 'mejora-la-estetica-de-tus-hombros',
+    title: 'Mejora la Estética de tus HOMBROS',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=fa1isy1BoRM'),
+    url: 'https://www.youtube.com/watch?v=fa1isy1BoRM',
+    category: 'hombros',
+    relatedExercises: [],
+  },
+  {
+    id: 'como-hacer-definicion',
+    title: 'Cómo hacer DEFINICIÓN',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=2jN5i_oAyBQ'),
+    url: 'https://www.youtube.com/watch?v=2jN5i_oAyBQ',
+    category: 'nutricion',
+    relatedExercises: [],
+  },
+  {
+    id: 'no-cortes-los-carbohidratos',
+    title: 'No cortes los CARBOHIDRATOS',
+    youtubeId: getYouTubeId('https://www.youtube.com/watch?v=YQlNzIFjYKw'),
+    url: 'https://www.youtube.com/watch?v=YQlNzIFjYKw',
+    category: 'nutricion',
+    relatedExercises: [],
+  },
 ];
 
 // Helper functions

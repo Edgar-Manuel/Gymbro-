@@ -201,3 +201,8 @@ A continuación, se presenta la lista completa de **28 videos** del canal de You
 
 | Cómo no perder MÚSCULO en Definición | nutricion | [Ver Video](https://www.youtube.com/watch?v=BgmblZybXNs) |
 | Pierde Grasa sin perder Músculo | nutricion | [Ver Video](https://www.youtube.com/watch?v=M87WFxL7U5c) |
+
+| Los 3 MEJORES ejercicios de HOMBROS | hombros | [Ver Video](https://www.youtube.com/watch?v=6SQeqQHGiXQ) |
+| Mejora la Estética de tus HOMBROS | hombros | [Ver Video](https://www.youtube.com/watch?v=fa1isy1BoRM) |
+| Cómo hacer DEFINICIÓN | nutricion | [Ver Video](https://www.youtube.com/watch?v=2jN5i_oAyBQ) |
+| No cortes los CARBOHIDRATOS | nutricion | [Ver Video](https://www.youtube.com/watch?v=YQlNzIFjYKw) |
