@@ -201,6 +201,9 @@ export const appwriteDbHelpers = {
     try {
       const userId = await this.getCurrentUserId();
 
+      // Sanitize ID: Appwrite requires ≤36 chars, a-z A-Z 0-9 . - _
+      const docId = rutina.id.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 36);
+
       // Si la rutina es activa, desactivar otras rutinas
       if (rutina.activa) {
         const activeRoutines = await databases.listDocuments(
@@ -236,7 +239,7 @@ export const appwriteDbHelpers = {
       const response = await databases.createDocument(
         APPWRITE_DATABASE_ID,
         COLLECTIONS.ROUTINES,
-        rutina.id,
+        docId,
         rutinaData
       );
 
@@ -252,6 +255,7 @@ export const appwriteDbHelpers = {
    */
   async updateRoutine(rutina: RutinaSemanal): Promise<string> {
     try {
+      const docId = rutina.id.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 36);
       const rutinaData = {
         nombre: rutina.nombre,
         activa: rutina.activa,
@@ -267,11 +271,11 @@ export const appwriteDbHelpers = {
       await databases.updateDocument(
         APPWRITE_DATABASE_ID,
         COLLECTIONS.ROUTINES,
-        rutina.id,
+        docId,
         rutinaData
       );
 
-      return rutina.id;
+      return docId;
     } catch (error) {
       console.error('Error actualizando rutina:', error);
       throw error;

@@ -281,7 +281,7 @@ export function fullWToRutinaSemanal(
   });
 
   return {
-    id: `${rutina.id}-${Date.now()}`,
+    id: makeRoutineId(rutina.id, userId),
     userId,
     nombre: rutina.nombre,
     descripcion: rutina.descripcion,
@@ -289,4 +289,12 @@ export function fullWToRutinaSemanal(
     fechaCreacion: new Date(),
     activa: true,
   };
+}
+
+/** Genera un ID de rutina estable, único por usuario y válido para Appwrite (≤36 chars, a-z0-9-_). */
+function makeRoutineId(routineBaseId: string, userId: string): string {
+  const safeBase = routineBaseId.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const safeUser = userId.replace(/[^a-zA-Z0-9]/g, '').slice(-8);
+  const combined = `${safeBase}-${safeUser}`;
+  return combined.slice(0, 36);
 }

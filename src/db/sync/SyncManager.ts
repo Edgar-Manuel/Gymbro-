@@ -69,7 +69,14 @@ export const SyncManager = {
                         } else throw err;
                     }
                 }
-                await db.rutinas.update(routine.id, { syncStatus: 'synced' });
+                // If the local ID was invalid (too long / bad chars), repair it in Dexie
+                const safeId = routine.id.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 36);
+                if (safeId !== routine.id) {
+                    await db.rutinas.delete(routine.id);
+                    await db.rutinas.put({ ...routine, id: safeId, syncStatus: 'synced' });
+                } else {
+                    await db.rutinas.update(routine.id, { syncStatus: 'synced' });
+                }
                 synced++;
             } catch (e) { logErr('routine', e); }
         }
