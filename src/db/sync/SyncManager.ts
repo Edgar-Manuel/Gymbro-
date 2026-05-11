@@ -157,8 +157,15 @@ export const SyncManager = {
                     try {
                         await appwriteDbHelpers.updateProgressPhoto(photo);
                     } catch (err) {
-                        if ((err as { code?: number }).code === 404) {
-                            await appwriteDbHelpers.addProgressPhoto(photo);
+                        const code = (err as { code?: number }).code;
+                        if (code === 404) {
+                            // Document never made it to Appwrite — create it
+                            try {
+                                await appwriteDbHelpers.addProgressPhoto(photo);
+                            } catch (createErr) {
+                                // 409 = already exists from a previous attempt — safe to mark synced
+                                if ((createErr as { code?: number }).code !== 409) throw createErr;
+                            }
                         } else throw err;
                     }
                     await db.progressPhotos.update(photo.id, { syncStatus: 'synced' });
@@ -313,7 +320,29 @@ export const SyncManager = {
         const a = await db.achievements.filter(isPending).count();
         const l = await db.lesiones.filter(isPending).count();
         const c = await db.cardioSessions.filter(isPending).count();
-        const mp = await db.machinePhotos.filter(p => p.syncStatus !== 'synced' && p.syncStatus !== undefined).count();
+        const mp = await db.machinePhotos.filter(g => g.syncStatus !== 'synced' && g.syncStatus !== undefined).count();
         return u + r + w + s + m + p + a + l + c + mp;
-    }
+    },
+
+    /** Force-mark all stuck pending items as synced so they stop blocking the indicator. */
+    clearStuckPending: async () => {
+        const mark = async (table: { filter: (fn: (x: { syncStatus?: string }) => boolean) => { toArray: () => Promise<{ id?: string; userId?: string }[]> }; update: (key: string, changes: object) => Promise<unknown> }) => {
+            const stuck = await table.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').toArray();
+            await Promise.all(stuck.map(r => {
+                const key = r.id ?? r.userId;
+                return key ? table.update(key, { syncStatus: 'synced' }) : Promise.resolve();
+            }));
+        };
+        await Promise.all([
+            mark(db.users as Parameters<typeof mark>[0]),
+            mark(db.rutinas as Parameters<typeof mark>[0]),
+            mark(db.workouts as Parameters<typeof mark>[0]),
+            mark(db.statistics as Parameters<typeof mark>[0]),
+            mark(db.bodyMeasurements as Parameters<typeof mark>[0]),
+            mark(db.progressPhotos as Parameters<typeof mark>[0]),
+            mark(db.achievements as Parameters<typeof mark>[0]),
+            mark(db.lesiones as Parameters<typeof mark>[0]),
+            mark(db.cardioSessions as Parameters<typeof mark>[0]),
+        ]);
+    },
 };

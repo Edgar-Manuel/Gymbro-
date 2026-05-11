@@ -53,6 +53,7 @@ export const dbHelpers = {
   // Sync
   sync: SyncManager.syncAll,
   getPendingSyncCount: SyncManager.getPendingCount,
+  clearStuckPending: SyncManager.clearStuckPending,
   pullBodyMeasurements: BodyTrackingRepository.pullBodyMeasurements,
 };
 
