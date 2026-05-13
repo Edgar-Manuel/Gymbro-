@@ -87,7 +87,6 @@ const NAME_TO_ID: Record<string, string> = {
   'abducción de cadera en máquina':        'hip-thrust',
 
   // ─── CBum routine mappings ──────────────────────────────────────────────
-  'extensiones de pierna':                 'prensa-pierna',
   'prensa de piernas (unilateral)':        'prensa-pierna',
   'sentadilla con barra o smith':          'sentadilla-barra',
   'sentadilla sissy o búlgara':            'zancadas',
@@ -105,7 +104,6 @@ const NAME_TO_ID: Record<string, string> = {
   'pec deck inverso':                      'pajaros-deltoides-posterior',
   'skullcrushers':                         'extensiones-overhead',
   'skullcrushers (press francés)':         'extensiones-overhead',
-  'skullcrushers inclinados con mancuernas': 'extensiones-overhead',
   'press francés':                         'extensiones-overhead',
   'press frances':                         'extensiones-overhead',
   'pushdowns':                             'pushdowns-polea',
@@ -135,8 +133,6 @@ const NAME_TO_ID: Record<string, string> = {
   'curl en polea baja (fst-7)':            'curl-polea',
   'press de hombros en máquina':           'press-militar',
   'press de hombros en maquina':           'press-militar',
-  'elevaciones laterales con mancuernas':  'elevaciones-laterales',
-  'elevaciones laterales en máquina':      'elevaciones-laterales',
   'elevaciones laterales en maquina':      'elevaciones-laterales',
   'curl de pierna acostado':               'curl-femoral',
   'peso muerto':                           'peso-muerto-convencional',
