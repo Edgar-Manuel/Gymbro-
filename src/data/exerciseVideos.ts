@@ -1,8 +1,8 @@
 /**
  * Mapeo de videos de BlueGym Animation con ejercicios
  * Videos educativos del canal oficial
- * 
- * Total: 28 videos (actualizado enero 2026)
+ *
+ * Total: 93 videos (actualizado mayo 2026)
  * Canal: https://www.youtube.com/@bluegymanimation
  */
 
@@ -36,7 +36,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/1k6wAMKcQek'),
     url: 'https://youtu.be/1k6wAMKcQek',
     category: 'brazos',
-    relatedExercises: ['peso-muerto-convencional', 'dominadas-pronas', 'curl-muneca-barra', 'remo-barra'],
+    relatedExercises: ['peso-muerto-convencional', 'dominadas', 'remo-barra'],
   },
   {
     id: 'hombros-crecimiento',
@@ -44,7 +44,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/ZI2YJqLHAfI'),
     url: 'https://youtu.be/ZI2YJqLHAfI',
     category: 'hombros',
-    relatedExercises: ['press-militar-mancuernas', 'elevaciones-laterales-mancuernas', 'press-militar-barra', 'face-pull'],
+    relatedExercises: ['press-militar', 'elevaciones-laterales', 'pajaros-deltoides-posterior'],
   },
   {
     id: 'abdomen-mejores-ejercicios',
@@ -52,7 +52,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/irNCQSudRwM'),
     url: 'https://youtu.be/irNCQSudRwM',
     category: 'core',
-    relatedExercises: ['plancha-frontal', 'plancha-lateral', 'elevacion-piernas-colgado', 'crunch-cable'],
+    relatedExercises: ['plancha', 'elevaciones-piernas-flexion', 'crunch-polea'],
   },
   {
     id: 'empezar-entrenar-bien',
@@ -60,7 +60,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/GgRayaEGHL0'),
     url: 'https://youtu.be/GgRayaEGHL0',
     category: 'general',
-    relatedExercises: ['press-banca-barra', 'sentadilla-barra', 'dominadas-pronas', 'remo-barra'],
+    relatedExercises: ['press-banca-barra', 'sentadilla-barra', 'dominadas', 'remo-barra'],
   },
   {
     id: 'pecho-crecimiento',
@@ -68,7 +68,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/qF1iK-mpuPY'),
     url: 'https://youtu.be/qF1iK-mpuPY',
     category: 'pecho',
-    relatedExercises: ['press-banca-barra', 'press-banca-mancuernas', 'aperturas-mancuernas', 'press-inclinado-mancuernas'],
+    relatedExercises: ['press-banca-barra', 'press-banca-mancuernas', 'aperturas-mancuernas', 'press-inclinado-barra'],
   },
   // === VIDEOS 2025 ===
   {
@@ -85,7 +85,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/QucbwJWZtiE'),
     url: 'https://youtu.be/QucbwJWZtiE',
     category: 'espalda',
-    relatedExercises: ['lat-pulldown', 'dominadas', 'chin-ups', 'remo-barra', 'remo-mancuerna-unilateral', 'pullover-mancuerna'],
+    relatedExercises: ['lat-pulldown', 'dominadas', 'chin-ups', 'remo-barra', 'remo-mancuerna-unilateral', 'pullover-mancuerna', 'remo-bilateral-apoyo'],
   },
   {
     id: 'ejercicios-gluteo',
@@ -93,7 +93,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/ziimTMMKZxk'),
     url: 'https://youtu.be/ziimTMMKZxk',
     category: 'piernas',
-    relatedExercises: ['hip-thrust', 'sentadilla-barra', 'peso-muerto-rumano', 'zancadas', 'prensa-pierna'],
+    relatedExercises: ['hip-thrust', 'sentadilla-barra', 'peso-muerto-rumano', 'zancadas', 'prensa-pierna', 'curl-femoral'],
   },
   {
     id: 'evitar-lesiones-rendimiento',
@@ -109,7 +109,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://youtu.be/kIaSk_4znvk'),
     url: 'https://youtu.be/kIaSk_4znvk',
     category: 'general',
-    relatedExercises: ['press-banca-mancuernas', 'press-inclinado-mancuernas', 'press-militar-mancuernas', 'remo-mancuerna', 'curl-mancuernas', 'elevaciones-laterales-mancuernas', 'sentadilla-mancuernas'],
+    relatedExercises: ['press-banca-mancuernas', 'press-inclinado-barra', 'press-militar', 'remo-mancuerna-unilateral', 'curl-barra', 'elevaciones-laterales', 'sentadilla-barra'],
   },
   {
     id: 'perder-grasa',
@@ -125,7 +125,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=GScM1sXnbjI'),
     url: 'https://www.youtube.com/watch?v=GScM1sXnbjI',
     category: 'espalda',
-    relatedExercises: ['dominadas-pronas', 'dominadas-supinas'],
+    relatedExercises: ['dominadas', 'chin-ups'],
   },
   {
     id: 'biceps-mejores-ejercicios',
@@ -133,7 +133,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=-QnKDiHhSro'),
     url: 'https://www.youtube.com/watch?v=-QnKDiHhSro',
     category: 'brazos',
-    relatedExercises: ['curl-barra-z', 'curl-mancuernas', 'curl-martillo', 'curl-predicador'],
+    relatedExercises: ['curl-barra', 'curl-martillo', 'curl-concentrado', 'curl-inclinado', 'curl-polea'],
   },
   {
     id: 'errores-comunes-gym',
@@ -157,7 +157,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=npCJatMfYKg'),
     url: 'https://www.youtube.com/watch?v=npCJatMfYKg',
     category: 'brazos',
-    relatedExercises: ['curl-muneca-barra'],
+    relatedExercises: [],
   },
   {
     id: 'espalda-mejores-ejercicios',
@@ -165,7 +165,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=CO5qxkz-KkY'),
     url: 'https://www.youtube.com/watch?v=CO5qxkz-KkY',
     category: 'espalda',
-    relatedExercises: ['dominadas-pronas', 'remo-barra', 'remo-mancuerna', 'lat-pulldown'],
+    relatedExercises: ['dominadas', 'remo-barra', 'remo-mancuerna-unilateral', 'lat-pulldown', 'remo-bilateral-apoyo'],
   },
   {
     id: 'core-no-abdominales',
@@ -173,7 +173,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=EPbumTj3agk'),
     url: 'https://www.youtube.com/watch?v=EPbumTj3agk',
     category: 'core',
-    relatedExercises: ['plancha-frontal', 'plancha-lateral', 'elevacion-piernas-colgado'],
+    relatedExercises: ['plancha', 'elevaciones-piernas-flexion'],
   },
   {
     id: 'press-banca-100kg',
@@ -189,7 +189,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=4JY1-jVNRqc'),
     url: 'https://www.youtube.com/watch?v=4JY1-jVNRqc',
     category: 'hombros',
-    relatedExercises: ['press-militar-mancuernas', 'elevaciones-laterales-mancuernas', 'elevaciones-frontales-mancuernas'],
+    relatedExercises: ['press-militar', 'elevaciones-laterales', 'pajaros-deltoides-posterior'],
   },
   {
     id: 'pierna-tierlist',
@@ -197,7 +197,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=IIBeY0IyyCU'),
     url: 'https://www.youtube.com/watch?v=IIBeY0IyyCU',
     category: 'piernas',
-    relatedExercises: ['sentadilla-barra', 'press-piernas', 'curl-femoral', 'extension-cuadriceps'],
+    relatedExercises: ['sentadilla-barra', 'prensa-pierna', 'curl-femoral', 'hack-squat', 'zancadas'],
   },
   {
     id: 'desbloquear-dominadas',
@@ -205,7 +205,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=npyLB-7o19o'),
     url: 'https://www.youtube.com/watch?v=npyLB-7o19o',
     category: 'espalda',
-    relatedExercises: ['dominadas-pronas', 'dominadas-supinas'],
+    relatedExercises: ['dominadas', 'chin-ups'],
   },
   {
     id: 'prensa-pierna-todo',
@@ -213,7 +213,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=bNsrqXUIJqc'),
     url: 'https://www.youtube.com/watch?v=bNsrqXUIJqc',
     category: 'piernas',
-    relatedExercises: ['press-piernas'],
+    relatedExercises: ['prensa-pierna', 'hack-squat'],
   },
   {
     id: 'triceps-crecimiento',
@@ -221,7 +221,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=xfS2-dkcC1k'),
     url: 'https://www.youtube.com/watch?v=xfS2-dkcC1k',
     category: 'brazos',
-    relatedExercises: ['extension-triceps-polea', 'extension-triceps-cuerda', 'press-frances'],
+    relatedExercises: ['pushdowns-polea', 'extensiones-overhead', 'extensiones-unilaterales', 'fondos-triceps'],
   },
   {
     id: 'pecho-mejores-ejercicios',
@@ -229,7 +229,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=4VuCF75s6jE'),
     url: 'https://www.youtube.com/watch?v=4VuCF75s6jE',
     category: 'pecho',
-    relatedExercises: ['press-banca-mancuernas', 'aperturas-mancuernas', 'press-inclinado-mancuernas'],
+    relatedExercises: ['press-banca-barra', 'press-banca-mancuernas', 'aperturas-mancuernas', 'press-inclinado-barra', 'fondos-pecho'],
   },
   {
     id: 'curl-biceps-diferencias',
@@ -237,7 +237,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=M67E8xSxrsA'),
     url: 'https://www.youtube.com/watch?v=M67E8xSxrsA',
     category: 'brazos',
-    relatedExercises: ['curl-barra-z', 'curl-mancuernas'],
+    relatedExercises: ['curl-barra', 'curl-inclinado', 'curl-polea'],
   },
   {
     id: 'press-banca-perfecto',
@@ -245,7 +245,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=TAH8RxOS0VI'),
     url: 'https://www.youtube.com/watch?v=TAH8RxOS0VI',
     category: 'pecho',
-    relatedExercises: ['press-banca-barra', 'press-banca-inclinado-barra'],
+    relatedExercises: ['press-banca-barra', 'press-inclinado-barra'],
   },
   {
     id: 'evitar-dolor-hombros',
@@ -253,7 +253,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=AhuhoGgZ9I4'),
     url: 'https://www.youtube.com/watch?v=AhuhoGgZ9I4',
     category: 'hombros',
-    relatedExercises: ['press-banca-barra', 'press-militar-barra', 'fondos-paralelas'],
+    relatedExercises: ['press-banca-barra', 'press-militar', 'fondos-pecho'],
   },
   {
     id: 'como-entrenar-la-espalda',
@@ -261,7 +261,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=AVluPAPM73E'),
     url: 'https://www.youtube.com/watch?v=AVluPAPM73E',
     category: 'espalda',
-    relatedExercises: ['remo-barra'],
+    relatedExercises: ['remo-barra', 'remo-mancuerna-unilateral', 'remo-bilateral-apoyo', 'pullover-mancuerna'],
   },
   {
     id: 'asi-crece-tu-espalda',
@@ -269,7 +269,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=3e_SnqA_cDE'),
     url: 'https://www.youtube.com/watch?v=3e_SnqA_cDE',
     category: 'espalda',
-    relatedExercises: ['remo-barra'],
+    relatedExercises: ['remo-barra', 'lat-pulldown', 'dominadas', 'remo-bilateral-apoyo', 'pullover-mancuerna'],
   },
   {
     id: 'rutina-de-pecho-triceps',
@@ -277,7 +277,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=71LnmPkbSag'),
     url: 'https://www.youtube.com/watch?v=71LnmPkbSag',
     category: 'pecho',
-    relatedExercises: ['press-banca-barra', 'press-banca-mancuernas', 'fondos-paralelas', 'extension-triceps-polea'],
+    relatedExercises: ['press-banca-barra', 'press-banca-mancuernas', 'fondos-pecho', 'pushdowns-polea', 'extensiones-overhead'],
   },
   {
     id: 'como-hacer-extension-de-triceps',
@@ -285,7 +285,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=Ha2NGJ8jgXw'),
     url: 'https://www.youtube.com/watch?v=Ha2NGJ8jgXw',
     category: 'brazos',
-    relatedExercises: ['extension-triceps-polea', 'extension-triceps-cuerda'],
+    relatedExercises: ['pushdowns-polea', 'extensiones-unilaterales'],
   },
   {
     id: 'extension-tras-nuca-para-triceps',
@@ -293,7 +293,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=SaPNMKt9iYU'),
     url: 'https://www.youtube.com/watch?v=SaPNMKt9iYU',
     category: 'brazos',
-    relatedExercises: ['press-frances', 'extension-triceps-polea'],
+    relatedExercises: ['extensiones-overhead', 'pushdowns-polea'],
   },
   {
     id: 'como-hacer-triceps-en-polea',
@@ -301,7 +301,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=YkyNAa4SGbo'),
     url: 'https://www.youtube.com/watch?v=YkyNAa4SGbo',
     category: 'brazos',
-    relatedExercises: ['extension-triceps-polea', 'extension-triceps-cuerda'],
+    relatedExercises: ['pushdowns-polea', 'extensiones-unilaterales'],
   },
   {
     id: 'como-hacer-press-frances',
@@ -309,7 +309,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=L3bEz-vcdGU'),
     url: 'https://www.youtube.com/watch?v=L3bEz-vcdGU',
     category: 'brazos',
-    relatedExercises: ['press-frances'],
+    relatedExercises: ['extensiones-overhead', 'fondos-triceps'],
   },
   {
     id: 'fondos-para-pecho-o-triceps',
@@ -317,7 +317,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=hYAgyR8dipc'),
     url: 'https://www.youtube.com/watch?v=hYAgyR8dipc',
     category: 'pecho',
-    relatedExercises: ['fondos-paralelas'],
+    relatedExercises: ['fondos-pecho', 'fondos-triceps'],
   },
   {
     id: 'solo-necesitas-2-ejercicios-de-triceps',
@@ -325,7 +325,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=Hm1psWFUnTY'),
     url: 'https://www.youtube.com/watch?v=Hm1psWFUnTY',
     category: 'brazos',
-    relatedExercises: ['extension-triceps-polea', 'press-frances'],
+    relatedExercises: ['pushdowns-polea', 'extensiones-overhead'],
   },
   {
     id: 'los-3-mejores-ejercicios-de-triceps',
@@ -333,7 +333,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=yZmxX1ypJbE'),
     url: 'https://www.youtube.com/watch?v=yZmxX1ypJbE',
     category: 'brazos',
-    relatedExercises: ['extension-triceps-polea', 'press-frances', 'extension-triceps-cuerda'],
+    relatedExercises: ['pushdowns-polea', 'extensiones-overhead', 'extensiones-unilaterales', 'fondos-triceps'],
   },
   {
     id: 'la-clave-para-hacer-un-volumen-limpio',
@@ -389,7 +389,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=7e_ZFL5pS20'),
     url: 'https://www.youtube.com/watch?v=7e_ZFL5pS20',
     category: 'espalda',
-    relatedExercises: ['lat-pulldown', 'dominadas-pronas', 'remo-barra'],
+    relatedExercises: ['lat-pulldown', 'dominadas', 'remo-barra', 'pullover-mancuerna'],
   },
   {
     id: 'para-la-salud-de-tu-cadera-incluye-uno-de-estos-2-',
@@ -397,7 +397,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=slkd8PN92Lo'),
     url: 'https://www.youtube.com/watch?v=slkd8PN92Lo',
     category: 'piernas',
-    relatedExercises: ['sentadilla-barra', 'peso-muerto-rumano'],
+    relatedExercises: ['sentadilla-barra', 'peso-muerto-rumano', 'hip-thrust'],
   },
   {
     id: 'evita-problemas-de-cadera-',
@@ -405,7 +405,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=SyD-FAPxn2E'),
     url: 'https://www.youtube.com/watch?v=SyD-FAPxn2E',
     category: 'piernas',
-    relatedExercises: ['sentadilla-barra', 'peso-muerto-rumano'],
+    relatedExercises: ['sentadilla-barra', 'peso-muerto-rumano', 'hip-thrust'],
   },
   {
     id: 'ejercicio-para-dolor-de-espalda',
@@ -429,7 +429,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=Q8F2auUBEfk'),
     url: 'https://www.youtube.com/watch?v=Q8F2auUBEfk',
     category: 'piernas',
-    relatedExercises: ['elevacion-talones-pie', 'elevacion-talones-sentado'],
+    relatedExercises: ['elevaciones-talones'],
   },
   {
     id: 'como-hacer-elevaciones-de-talones',
@@ -437,7 +437,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=HfKfOT9R9D0'),
     url: 'https://www.youtube.com/watch?v=HfKfOT9R9D0',
     category: 'piernas',
-    relatedExercises: ['elevacion-talones-pie', 'elevacion-talones-sentado'],
+    relatedExercises: ['elevaciones-talones'],
   },
   {
     id: 'haz-crecer-tus-gemelos',
@@ -445,7 +445,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=NhcqVnHSZcY'),
     url: 'https://www.youtube.com/watch?v=NhcqVnHSZcY',
     category: 'piernas',
-    relatedExercises: ['elevacion-talones-pie', 'elevacion-talones-sentado'],
+    relatedExercises: ['elevaciones-talones'],
   },
   {
     id: 'asi-crecen-tus-pantorrillas',
@@ -453,7 +453,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=oVDpGxF8-Qo'),
     url: 'https://www.youtube.com/watch?v=oVDpGxF8-Qo',
     category: 'piernas',
-    relatedExercises: ['elevacion-talones-pie', 'elevacion-talones-sentado'],
+    relatedExercises: ['elevaciones-talones'],
   },
   {
     id: 'el-problema-de-entrenar-con-flexiones',
@@ -461,7 +461,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=kuyv6FBpdp0'),
     url: 'https://www.youtube.com/watch?v=kuyv6FBpdp0',
     category: 'pecho',
-    relatedExercises: ['flexiones-suelo'],
+    relatedExercises: ['press-banca-barra', 'fondos-pecho'],
   },
   {
     id: 'el-problema-de-hacer-solo-flexiones',
@@ -469,7 +469,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=CU2Ab6BdlpQ'),
     url: 'https://www.youtube.com/watch?v=CU2Ab6BdlpQ',
     category: 'pecho',
-    relatedExercises: ['flexiones-suelo'],
+    relatedExercises: ['press-banca-barra', 'fondos-pecho'],
   },
   {
     id: 'como-hacer-facepull',
@@ -477,7 +477,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=y73pzFKQ6MU'),
     url: 'https://www.youtube.com/watch?v=y73pzFKQ6MU',
     category: 'hombros',
-    relatedExercises: ['face-pull', 'remo-barra'],
+    relatedExercises: ['pajaros-deltoides-posterior', 'remo-barra'],
   },
   {
     id: 'como-entrenar-tu-espalda-alta',
@@ -485,7 +485,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=YeUArEtacmc'),
     url: 'https://www.youtube.com/watch?v=YeUArEtacmc',
     category: 'espalda',
-    relatedExercises: ['remo-barra', 'face-pull'],
+    relatedExercises: ['remo-barra', 'pajaros-deltoides-posterior', 'remo-bilateral-apoyo'],
   },
   {
     id: 'como-hacer-encogimientos-de-hombro',
@@ -541,7 +541,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=JzCXv71gqKs'),
     url: 'https://www.youtube.com/watch?v=JzCXv71gqKs',
     category: 'brazos',
-    relatedExercises: ['peso-muerto-convencional', 'peso-muerto-rumano', 'dominadas-pronas'],
+    relatedExercises: ['peso-muerto-convencional', 'peso-muerto-rumano', 'dominadas'],
   },
   {
     id: 'como-entrenar-fuerza-de-agarre',
@@ -549,7 +549,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=IZ0lQFvoLeI'),
     url: 'https://www.youtube.com/watch?v=IZ0lQFvoLeI',
     category: 'brazos',
-    relatedExercises: ['curl-muneca-barra', 'peso-muerto-convencional'],
+    relatedExercises: ['peso-muerto-convencional'],
   },
   {
     id: 'el-tipo-de-agarre-da-mas-fuerza',
@@ -557,7 +557,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=qBQbOm8SB_s'),
     url: 'https://www.youtube.com/watch?v=qBQbOm8SB_s',
     category: 'brazos',
-    relatedExercises: ['dominadas-pronas', 'dominadas-supinas'],
+    relatedExercises: ['dominadas', 'chin-ups'],
   },
   {
     id: 'truco-para-llevar-el-hombro-al-fallo',
@@ -565,7 +565,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=hmKLt4szPxU'),
     url: 'https://www.youtube.com/watch?v=hmKLt4szPxU',
     category: 'hombros',
-    relatedExercises: ['elevaciones-laterales-mancuernas', 'press-militar-mancuernas'],
+    relatedExercises: ['elevaciones-laterales', 'press-militar'],
   },
   {
     id: 'entrenar-hombro-a-frecuencia-3',
@@ -573,7 +573,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=VbaOT5Qt-xU'),
     url: 'https://www.youtube.com/watch?v=VbaOT5Qt-xU',
     category: 'hombros',
-    relatedExercises: ['elevaciones-laterales-mancuernas', 'press-militar-mancuernas'],
+    relatedExercises: ['elevaciones-laterales', 'press-militar', 'pajaros-deltoides-posterior'],
   },
   {
     id: 'asi-crecen-tus-hombros-',
@@ -581,7 +581,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=VZSA75hZRwo'),
     url: 'https://www.youtube.com/watch?v=VZSA75hZRwo',
     category: 'hombros',
-    relatedExercises: ['elevaciones-laterales-mancuernas', 'press-militar-mancuernas'],
+    relatedExercises: ['elevaciones-laterales', 'press-militar', 'pajaros-deltoides-posterior'],
   },
   {
     id: 'diferencias-de-formas-de-hacer-abdominales-sit-ups',
@@ -589,7 +589,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=z8OKYLzNdYs'),
     url: 'https://www.youtube.com/watch?v=z8OKYLzNdYs',
     category: 'core',
-    relatedExercises: ['crunch-cable'],
+    relatedExercises: ['crunch-polea'],
   },
   {
     id: 'como-hacer-planchas-correctamente',
@@ -597,7 +597,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=qd0ZXzVXNLg'),
     url: 'https://www.youtube.com/watch?v=qd0ZXzVXNLg',
     category: 'core',
-    relatedExercises: ['plancha-frontal', 'plancha-lateral'],
+    relatedExercises: ['plancha'],
   },
   {
     id: 'como-hacer-crunch-en-polea',
@@ -605,7 +605,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=XuQWMR4QKF0'),
     url: 'https://www.youtube.com/watch?v=XuQWMR4QKF0',
     category: 'core',
-    relatedExercises: ['crunch-cable'],
+    relatedExercises: ['crunch-polea'],
   },
   {
     id: 'como-hacer-elevaciones-de-piernas',
@@ -613,7 +613,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=tocRn03UdKw'),
     url: 'https://www.youtube.com/watch?v=tocRn03UdKw',
     category: 'core',
-    relatedExercises: ['elevacion-piernas-colgado'],
+    relatedExercises: ['elevaciones-piernas-flexion'],
   },
   {
     id: 'como-entrenar-tus-abdominales',
@@ -621,7 +621,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=D6scEW4LMkI'),
     url: 'https://www.youtube.com/watch?v=D6scEW4LMkI',
     category: 'core',
-    relatedExercises: ['plancha-frontal', 'crunch-cable', 'elevacion-piernas-colgado'],
+    relatedExercises: ['plancha', 'crunch-polea', 'elevaciones-piernas-flexion'],
   },
   {
     id: 'como-hacer-recomposicion-corporal',
@@ -645,7 +645,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=tLLtcwumEbY'),
     url: 'https://www.youtube.com/watch?v=tLLtcwumEbY',
     category: 'pecho',
-    relatedExercises: ['flexiones-suelo'],
+    relatedExercises: ['fondos-pecho'],
   },
   {
     id: 'como-hacer-flexiones',
@@ -653,7 +653,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=zrDwwnY5GBc'),
     url: 'https://www.youtube.com/watch?v=zrDwwnY5GBc',
     category: 'pecho',
-    relatedExercises: ['flexiones-suelo'],
+    relatedExercises: ['fondos-pecho'],
   },
   {
     id: 'como-entrenar-solo-con-flexiones',
@@ -661,7 +661,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=UibWbEl6FUk'),
     url: 'https://www.youtube.com/watch?v=UibWbEl6FUk',
     category: 'pecho',
-    relatedExercises: ['flexiones-suelo'],
+    relatedExercises: ['fondos-pecho'],
   },
   {
     id: 'la-rutina-de-pierna-mas-simple-y-efectiva',
@@ -669,7 +669,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=p37Lt-v4XUU'),
     url: 'https://www.youtube.com/watch?v=p37Lt-v4XUU',
     category: 'piernas',
-    relatedExercises: ['sentadilla-barra', 'peso-muerto-rumano', 'press-piernas'],
+    relatedExercises: ['sentadilla-barra', 'peso-muerto-rumano', 'prensa-pierna', 'curl-femoral'],
   },
   {
     id: 'como-entrenar-pocos-dias-a-la-semana',
@@ -701,7 +701,7 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=xAixNtL0pXM'),
     url: 'https://www.youtube.com/watch?v=xAixNtL0pXM',
     category: 'brazos',
-    relatedExercises: ['curl-mancuernas', 'curl-barra-z'],
+    relatedExercises: ['curl-barra', 'curl-inclinado', 'curl-polea'],
   },
   {
     id: 'asi-crece-tu-biceps',
@@ -709,15 +709,15 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=PGlBK6u0Wlc'),
     url: 'https://www.youtube.com/watch?v=PGlBK6u0Wlc',
     category: 'brazos',
-    relatedExercises: ['curl-mancuernas', 'curl-barra-z', 'curl-martillo'],
+    relatedExercises: ['curl-barra', 'curl-martillo', 'curl-concentrado', 'curl-inclinado', 'curl-polea'],
   },
   {
-    id: 'rutina-de-pierna-minimalista-',
+    id: 'rutina-de-pierna-minimalista-v1',
     title: 'Rutina de Pierna MINIMALISTA 💪',
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=8Al4TSaG29k'),
     url: 'https://www.youtube.com/watch?v=8Al4TSaG29k',
     category: 'piernas',
-    relatedExercises: ['sentadilla-barra', 'zancadas'],
+    relatedExercises: ['sentadilla-barra', 'zancadas', 'peso-muerto-rumano'],
   },
   {
     id: 'no-olvides-esto-al-entrenar-biceps',
@@ -725,15 +725,15 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=lkJuCyrex38'),
     url: 'https://www.youtube.com/watch?v=lkJuCyrex38',
     category: 'general',
-    relatedExercises: [],
+    relatedExercises: ['curl-barra', 'curl-concentrado'],
   },
   {
-    id: 'asi-se-entrena-el-biceps',
-    title: 'Así se entrena el Bíceps',
+    id: 'asi-se-entrena-el-biceps-2',
+    title: 'Así se entrena el Bíceps (v2)',
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=jqc-m3ewPL8'),
     url: 'https://www.youtube.com/watch?v=jqc-m3ewPL8',
     category: 'general',
-    relatedExercises: [],
+    relatedExercises: ['curl-barra', 'curl-polea'],
   },
   {
     id: 'la-forma-correcta-de-entrenar-el-biceps',
@@ -741,23 +741,23 @@ export const exerciseVideos: ExerciseVideo[] = [
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=3Qwpa0Jrvss'),
     url: 'https://www.youtube.com/watch?v=3Qwpa0Jrvss',
     category: 'general',
-    relatedExercises: [],
+    relatedExercises: ['curl-barra', 'curl-inclinado', 'curl-martillo'],
   },
   {
-    id: 'rutina-de-pierna-minimalista-',
-    title: 'Rutina de Pierna MINIMALISTA 💪',
+    id: 'rutina-de-pierna-minimalista-v2',
+    title: 'Rutina de Pierna MINIMALISTA (v2)',
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=fzgKccVPipw'),
     url: 'https://www.youtube.com/watch?v=fzgKccVPipw',
     category: 'piernas',
-    relatedExercises: [],
+    relatedExercises: ['sentadilla-barra', 'prensa-pierna', 'curl-femoral'],
   },
   {
-    id: 'rutina-de-pierna-minimalista-',
-    title: 'Rutina de Pierna MINIMALISTA 💪',
+    id: 'rutina-de-pierna-minimalista-v3',
+    title: 'Rutina de Pierna MINIMALISTA (v3)',
     youtubeId: getYouTubeId('https://www.youtube.com/watch?v=zxX9V7hgRec'),
     url: 'https://www.youtube.com/watch?v=zxX9V7hgRec',
     category: 'piernas',
-    relatedExercises: [],
+    relatedExercises: ['sentadilla-barra', 'hack-squat', 'zancadas'],
   },
   {
     id: 'como-no-perder-musculo-en-definicion',

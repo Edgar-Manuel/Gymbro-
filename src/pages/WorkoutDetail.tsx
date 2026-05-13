@@ -112,7 +112,6 @@ export default function WorkoutDetail() {
   const totalReps = workout.ejercicios.reduce((t, ej) =>
     t + ej.series.reduce((s, sr) => s + sr.repeticiones, 0), 0);
 
-  // Best set by 1RM estimate across the whole session
   let mejorSerie = { ejercicio: '', peso: 0, reps: 0, rm1: 0 };
   workout.ejercicios.forEach(ej => {
     ej.series.forEach(sr => {
@@ -169,7 +168,7 @@ export default function WorkoutDetail() {
           ))}
         </div>
 
-        {/* Mejor esfuerzo (por 1RM Epley) */}
+        {/* Mejor esfuerzo */}
         {mejorSerie.rm1 > 0 && (
           <Card className="border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20">
             <CardContent className="py-3 flex items-center gap-3">
@@ -202,24 +201,25 @@ export default function WorkoutDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-0">
-            {workout.ejercicios.map((ej, idx) => {
+            {workout.ejercicios.map((ej, ejIdx) => {
               const volEj = ej.series.reduce((s, sr) => s + sr.peso * sr.repeticiones, 0);
               const volEjFmt = fmtVol(volEj);
-
-              // Best set of this exercise by 1RM
               const best1RM = Math.max(...ej.series.map(s => epley(s.peso, s.repeticiones)));
-              const isOpen = expandedEx === idx;
+              const isOpen = expandedEx === ejIdx;
 
               return (
-                <div key={idx} className="border rounded-xl overflow-hidden">
+                <div key={ejIdx} className="border rounded-xl overflow-hidden">
                   <button
                     className="w-full flex items-center justify-between p-3 hover:bg-accent/50 transition-colors text-left"
-                    onClick={() => setExpandedEx(isOpen ? null : idx)}
+                    onClick={() => {
+                      setEditing(null);
+                      setExpandedEx(isOpen ? null : ejIdx);
+                    }}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-sm">
-                          {ej.ejercicio?.nombre || `Ejercicio ${idx + 1}`}
+                          {ej.ejercicio?.nombre || `Ejercicio ${ejIdx + 1}`}
                         </span>
                         {ej.ejercicio?.tier && (
                           <Badge
@@ -249,17 +249,24 @@ export default function WorkoutDetail() {
                       {ej.series.map((sr, si) => {
                         const rm = epley(sr.peso, sr.repeticiones);
                         const isBest = rm === best1RM;
+
                         return (
                           <div
                             key={si}
-                            className={`flex items-center gap-2 px-4 py-2 text-sm ${isBest ? 'bg-yellow-50/60 dark:bg-yellow-950/20' : ''}`}
+                            className={`flex items-center gap-2 px-4 py-2.5 text-sm group ${isBest ? 'bg-yellow-50/60 dark:bg-yellow-950/20' : ''}`}
                           >
-                            <span className="text-muted-foreground w-12 shrink-0">Serie {sr.numero}</span>
+                            <span className="text-muted-foreground w-12 shrink-0 text-xs">Serie {sr.numero}</span>
                             <span className={`font-bold w-16 ${isBest ? 'text-primary' : ''}`}>
-                              {sr.peso} kg
+                              {sr.tipo === 'TIME' ? `${sr.tiempoSegundos}s` : `${sr.peso} kg`}
                             </span>
-                            <span className="text-muted-foreground">×</span>
-                            <span className="font-medium w-14">{sr.repeticiones} reps</span>
+                            {sr.tipo !== 'TIME' && (
+                              <>
+                                <span className="text-muted-foreground">×</span>
+                                <span className="font-medium w-14">
+                                  {sr.repeticiones} {sr.tipo === 'BODYWEIGHT' ? 'reps' : 'reps'}
+                                </span>
+                              </>
+                            )}
                             <span className="text-xs text-muted-foreground flex-1">RIR {sr.RIR}</span>
                             <span className="text-xs text-muted-foreground hidden sm:inline">~{rm} kg</span>
                             {isBest && <Trophy className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
@@ -268,7 +275,7 @@ export default function WorkoutDetail() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6"
-                                onClick={() => setEditing({ exIdx: idx, serie: sr })}
+                                onClick={() => setEditing({ exIdx: ejIdx, serie: sr })}
                                 title="Editar serie"
                               >
                                 <Pencil className="w-3 h-3" />
@@ -277,7 +284,7 @@ export default function WorkoutDetail() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6 text-destructive hover:text-destructive"
-                                onClick={() => setDeleting({ exIdx: idx, serie: sr })}
+                                onClick={() => setDeleting({ exIdx: ejIdx, serie: sr })}
                                 title="Borrar serie"
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -286,7 +293,6 @@ export default function WorkoutDetail() {
                           </div>
                         );
                       })}
-                      {/* Resumen del ejercicio */}
                       <div className="px-4 py-2 bg-muted/50 flex justify-between text-xs text-muted-foreground">
                         <span>Volumen total</span>
                         <span className="font-semibold">{volEjFmt.value} {volEjFmt.unit}</span>

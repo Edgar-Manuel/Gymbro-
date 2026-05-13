@@ -5,6 +5,7 @@ import { StatisticsRepository } from '../repositories/StatisticsRepository';
 import { BodyTrackingRepository } from '../repositories/BodyTrackingRepository';
 import { InjuryRepository } from '../repositories/InjuryRepository';
 import { CardioRepository } from '../repositories/CardioRepository';
+import { MachinePhotoRepository } from '../repositories/MachinePhotoRepository';
 import { appwriteDbHelpers } from '../appwriteDb';
 import { databases } from '@/services/appwrite';
 import { APPWRITE_DATABASE_ID, COLLECTIONS } from '@/config/appwriteSchema';
@@ -68,7 +69,14 @@ export const SyncManager = {
                         } else throw err;
                     }
                 }
-                await db.rutinas.update(routine.id, { syncStatus: 'synced' });
+                // If the local ID was invalid (too long / bad chars), repair it in Dexie
+                const safeId = routine.id.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 36);
+                if (safeId !== routine.id) {
+                    await db.rutinas.delete(routine.id);
+                    await db.rutinas.put({ ...routine, id: safeId, syncStatus: 'synced' });
+                } else {
+                    await db.rutinas.update(routine.id, { syncStatus: 'synced' });
+                }
                 synced++;
             } catch (e) { logErr('routine', e); }
         }
@@ -108,7 +116,7 @@ export const SyncManager = {
         }
 
         // ── Body Measurements ─────────────────────────────────────────────────
-        const { measurements: pendingMeasurements } = await BodyTrackingRepository.getPendingSync();
+        const { measurements: pendingMeasurements, photos: pendingPhotos } = await BodyTrackingRepository.getPendingSync();
         for (const m of pendingMeasurements) {
             try {
                 if (m.syncStatus === 'pending_create') {
@@ -142,7 +150,6 @@ export const SyncManager = {
         }
 
         // ── Progress Photos ───────────────────────────────────────────────────
-        const { photos: pendingPhotos } = await BodyTrackingRepository.getPendingSync();
         for (const photo of pendingPhotos) {
             try {
                 if (photo.syncStatus === 'pending_create') {
@@ -151,9 +158,34 @@ export const SyncManager = {
                     } catch (err) {
                         if ((err as { code?: number }).code !== 409) throw err;
                     }
+                    await db.progressPhotos.update(photo.id, { syncStatus: 'synced' });
+                    synced++;
+                } else if (photo.syncStatus === 'pending_update') {
+                    try {
+                        await appwriteDbHelpers.updateProgressPhoto(photo);
+                    } catch (err) {
+                        const code = (err as { code?: number }).code;
+                        if (code === 404) {
+                            // Document never made it to Appwrite — create it
+                            try {
+                                await appwriteDbHelpers.addProgressPhoto(photo);
+                            } catch (createErr) {
+                                // 409 = already exists from a previous attempt — safe to mark synced
+                                if ((createErr as { code?: number }).code !== 409) throw createErr;
+                            }
+                        } else throw err;
+                    }
+                    await db.progressPhotos.update(photo.id, { syncStatus: 'synced' });
+                    synced++;
+                } else if (photo.syncStatus === 'pending_delete') {
+                    try {
+                        await appwriteDbHelpers.deleteProgressPhoto(photo.id);
+                    } catch (err) {
+                        if ((err as { code?: number }).code !== 404) throw err;
+                    }
+                    await db.progressPhotos.delete(photo.id);
+                    synced++;
                 }
-                await db.progressPhotos.update(photo.id, { syncStatus: 'synced' });
-                synced++;
             } catch (e) { logErr('photo', e); }
         }
 
@@ -221,6 +253,37 @@ export const SyncManager = {
             } catch (e) { logErr('cardio', e); }
         }
 
+        // ── Machine Photos ────────────────────────────────────────────────────
+        const pendingMachinePhotos = await MachinePhotoRepository.getPendingSync();
+        for (const photo of pendingMachinePhotos) {
+            try {
+                if (photo.syncStatus === 'pending_create') {
+                    try {
+                        await appwriteDbHelpers.addMachinePhoto(photo);
+                    } catch (err) {
+                        if ((err as { code?: number }).code !== 409) throw err;
+                    }
+                } else if (photo.syncStatus === 'pending_update') {
+                    try {
+                        await appwriteDbHelpers.updateMachinePhoto(photo.id, photo);
+                    } catch (err) {
+                        if ((err as { code?: number }).code === 404) {
+                            await appwriteDbHelpers.addMachinePhoto(photo);
+                        } else throw err;
+                    }
+                } else if (photo.syncStatus === 'pending_delete') {
+                    try {
+                        await appwriteDbHelpers.deleteMachinePhoto(photo.id);
+                    } catch (err) {
+                        if ((err as { code?: number }).code !== 404) throw err;
+                    }
+                    await db.machinePhotos.delete(photo.id);
+                    continue;
+                }
+                await db.machinePhotos.update(photo.id, { syncStatus: 'synced' });
+            } catch (e) { console.error('[Sync] machine photo error', e); }
+        }
+
         // ── Pending Deletes ───────────────────────────────────────────────────
         const deleteLesiones = await db.lesiones.filter(l => l.syncStatus === 'pending_delete').toArray();
         for (const l of deleteLesiones) {
@@ -248,19 +311,6 @@ export const SyncManager = {
             } catch (e) { logErr('delete cardio', e); }
         }
 
-        const deletePhotos = await db.progressPhotos.filter(p => p.syncStatus === 'pending_delete').toArray();
-        for (const p of deletePhotos) {
-            try {
-                try {
-                    await appwriteDbHelpers.deleteProgressPhoto(p.id);
-                } catch (err) {
-                    if ((err as { code?: number }).code !== 404) throw err;
-                }
-                await db.progressPhotos.delete(p.id);
-                synced++;
-            } catch (e) { logErr('delete photo', e); }
-        }
-
         console.log(`[Sync] Complete: ${synced} synced, ${errors} errors`);
         return { synced, errors, errorMessages };
     },
@@ -277,6 +327,29 @@ export const SyncManager = {
         const a = await db.achievements.filter(isPending).count();
         const l = await db.lesiones.filter(isPending).count();
         const c = await db.cardioSessions.filter(isPending).count();
-        return u + r + w + s + m + p + a + l + c;
-    }
+        const mp = await db.machinePhotos.filter(g => g.syncStatus !== 'synced' && g.syncStatus !== undefined).count();
+        return u + r + w + s + m + p + a + l + c + mp;
+    },
+
+    /** Force-mark all stuck pending items as synced so they stop blocking the indicator. */
+    clearStuckPending: async () => {
+        const mark = async (table: { filter: (fn: (x: { syncStatus?: string }) => boolean) => { toArray: () => Promise<{ id?: string; userId?: string }[]> }; update: (key: string, changes: object) => Promise<unknown> }) => {
+            const stuck = await table.filter(x => x.syncStatus !== undefined && x.syncStatus !== 'synced').toArray();
+            await Promise.all(stuck.map(r => {
+                const key = r.id ?? r.userId;
+                return key ? table.update(key, { syncStatus: 'synced' }) : Promise.resolve();
+            }));
+        };
+        await Promise.all([
+            mark(db.users as Parameters<typeof mark>[0]),
+            mark(db.rutinas as Parameters<typeof mark>[0]),
+            mark(db.workouts as Parameters<typeof mark>[0]),
+            mark(db.statistics as Parameters<typeof mark>[0]),
+            mark(db.bodyMeasurements as Parameters<typeof mark>[0]),
+            mark(db.progressPhotos as Parameters<typeof mark>[0]),
+            mark(db.achievements as Parameters<typeof mark>[0]),
+            mark(db.lesiones as Parameters<typeof mark>[0]),
+            mark(db.cardioSessions as Parameters<typeof mark>[0]),
+        ]);
+    },
 };

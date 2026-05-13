@@ -11,6 +11,8 @@ import type {
     ProgressPhoto,
     Lesion,
     CardioSession,
+    MachinePhoto,
+    GymRecord,
 } from '@/types';
 import type { WithSync } from './types';
 
@@ -26,6 +28,8 @@ export class GymBroDatabase extends Dexie {
     progressPhotos!: Table<WithSync<ProgressPhoto>, string>;
     lesiones!: Table<WithSync<Lesion>, string>;
     cardioSessions!: Table<WithSync<CardioSession>, string>;
+    machinePhotos!: Table<WithSync<MachinePhoto>, string>;
+    gyms!: Table<GymRecord, string>;
 
     constructor() {
         super('GymBroDatabase');
@@ -93,6 +97,39 @@ export class GymBroDatabase extends Dexie {
             progressPhotos: 'id, userId, fecha, tipo, syncStatus',
             lesiones: 'id, userId, zona, activa, syncStatus',
             cardioSessions: 'id, userId, fecha, workoutId, completado, syncStatus',
+        });
+
+        // Versión 6: Machine Photo Guide
+        this.version(6).stores({
+            exercises: 'id, grupoMuscular, categoria, tier, dificultad, *equipamiento, *tags, syncStatus',
+            users: 'id, nombre, syncStatus',
+            rutinas: 'id, userId, activa, syncStatus',
+            workouts: 'id, userId, fecha, diaRutinaId, completado, syncStatus',
+            achievements: 'id, userId, tipo, fecha, syncStatus',
+            nutrition: '[userId+fecha], userId, fecha, syncStatus',
+            statistics: 'userId, syncStatus',
+            bodyMeasurements: 'id, userId, fecha, syncStatus',
+            progressPhotos: 'id, userId, fecha, tipo, syncStatus',
+            lesiones: 'id, userId, zona, activa, syncStatus',
+            cardioSessions: 'id, userId, fecha, workoutId, completado, syncStatus',
+            machinePhotos: 'id, userId, ejercicioId, gymId, fecha, syncStatus',
+        });
+
+        // Versión 7: Gyms
+        this.version(7).stores({
+            exercises: 'id, grupoMuscular, categoria, tier, dificultad, *equipamiento, *tags, syncStatus',
+            users: 'id, nombre, syncStatus',
+            rutinas: 'id, userId, activa, syncStatus',
+            workouts: 'id, userId, fecha, diaRutinaId, completado, syncStatus',
+            achievements: 'id, userId, tipo, fecha, syncStatus',
+            nutrition: '[userId+fecha], userId, fecha, syncStatus',
+            statistics: 'userId, syncStatus',
+            bodyMeasurements: 'id, userId, fecha, syncStatus',
+            progressPhotos: 'id, userId, fecha, tipo, syncStatus',
+            lesiones: 'id, userId, zona, activa, syncStatus',
+            cardioSessions: 'id, userId, fecha, workoutId, completado, syncStatus',
+            machinePhotos: 'id, userId, ejercicioId, gymId, fecha, syncStatus',
+            gyms: 'id, userId, syncStatus',
         });
     }
 }

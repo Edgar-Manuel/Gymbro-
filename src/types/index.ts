@@ -63,6 +63,8 @@ export interface ExerciseKnowledge {
   tags?: string[]; // ej: ["tiron_vertical", "tiron_horizontal"]
   /** Id del video del catálogo exerciseVideos (alternativa a relatedExercises) */
   videoId?: string;
+  /** Id del ejercicio canónico del que esta variante hereda técnica/imágenes/videos. Solo se usa cuando `id` es un slug generado de una rutina externa (CBum, FullW, etc.). */
+  baseExerciseId?: string;
 }
 
 // User Profile
@@ -100,6 +102,9 @@ export interface UserProfile {
   fechaInicio?: Date;
   pesoInicial?: number;
   rachaActual?: number; // días consecutivos
+
+  gymActual?: string;
+  gymActualNombre?: string;
 }
 
 // Workout Planning
@@ -405,4 +410,45 @@ export interface ProgressPhoto {
   url: string; // base64 o blob URL
   peso?: number; // peso en el momento de la foto
   notas?: string;
+}
+
+// ─── Machine Photo Guide ────────────────────────────────────────────────────
+
+export interface MachineAjustes {
+  asiento?: string;
+  respaldo?: string;
+  rodilleras?: string;
+  palanca?: string;
+  cable?: string;
+  cargaReferencia?: string;
+  notasAjuste?: string;
+}
+
+export interface MachinePhoto {
+  id: string;
+  userId: string;
+  ejercicioId: string;
+  ejercicioNombre: string;
+  gymNombre: string;
+  gymId: string;
+  gymLat?: number;
+  gymLng?: number;
+  url: string;
+  tipo: 'general' | 'ajustes' | 'posicion' | 'referencia' | 'pantalla';
+  ajustes?: MachineAjustes;
+  notas?: string;
+  fecha: Date;
+  esActiva: boolean;
+  syncStatus?: 'pending_create' | 'synced' | 'pending_delete' | 'pending_update';
+  lastUpdated?: number;
+}
+
+export interface GymRecord {
+  id: string;        // gymId = slugifyGym(userId, nombre)
+  userId: string;
+  nombre: string;
+  lat?: number;
+  lng?: number;
+  syncStatus?: 'pending_create' | 'synced' | 'pending_update' | 'pending_delete';
+  lastUpdated?: number;
 }

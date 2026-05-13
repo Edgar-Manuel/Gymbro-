@@ -15,6 +15,7 @@ import type {
   SharedRoutine,
   Lesion,
   CardioSession,
+  MachinePhoto,
 } from '@/types';
 
 /**
@@ -200,6 +201,9 @@ export const appwriteDbHelpers = {
     try {
       const userId = await this.getCurrentUserId();
 
+      // Sanitize ID: Appwrite requires ≤36 chars, a-z A-Z 0-9 . - _
+      const docId = rutina.id.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 36);
+
       // Si la rutina es activa, desactivar otras rutinas
       if (rutina.activa) {
         const activeRoutines = await databases.listDocuments(
@@ -235,7 +239,7 @@ export const appwriteDbHelpers = {
       const response = await databases.createDocument(
         APPWRITE_DATABASE_ID,
         COLLECTIONS.ROUTINES,
-        rutina.id,
+        docId,
         rutinaData
       );
 
@@ -251,6 +255,7 @@ export const appwriteDbHelpers = {
    */
   async updateRoutine(rutina: RutinaSemanal): Promise<string> {
     try {
+      const docId = rutina.id.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 36);
       const rutinaData = {
         nombre: rutina.nombre,
         activa: rutina.activa,
@@ -266,11 +271,11 @@ export const appwriteDbHelpers = {
       await databases.updateDocument(
         APPWRITE_DATABASE_ID,
         COLLECTIONS.ROUTINES,
-        rutina.id,
+        docId,
         rutinaData
       );
 
-      return rutina.id;
+      return docId;
     } catch (error) {
       console.error('Error actualizando rutina:', error);
       throw error;
@@ -911,6 +916,25 @@ export const appwriteDbHelpers = {
     }
   },
 
+  async updateProgressPhoto(photo: ProgressPhoto): Promise<void> {
+    try {
+      const photoData = {
+        fecha: toISO(photo.fecha),
+        tipo: photo.tipo,
+        datos: JSON.stringify({
+          fileId: photo.fileId,
+          url: photo.url,
+          peso: photo.peso,
+          notas: photo.notas || '',
+        }),
+      };
+      await databases.updateDocument(APPWRITE_DATABASE_ID, COLLECTIONS.PROGRESS_PHOTOS, photo.id, photoData);
+    } catch (error) {
+      console.error('Error actualizando foto de progreso:', error);
+      throw error;
+    }
+  },
+
   /**
    * Eliminar foto de progreso
    */
@@ -1322,6 +1346,61 @@ export const appwriteDbHelpers = {
       nombre: doc.nombre,
       datos: JSON.parse(doc.datos),
       createdAt: new Date(doc.createdAt),
+    };
+  },
+
+  // ==================== MACHINE PHOTOS ====================
+
+  async getMachinePhotos(userId: string, ejercicioId?: string, gymId?: string): Promise<MachinePhoto[]> {
+    try {
+      const queries = [Query.equal('userId', userId), Query.orderDesc('fecha'), Query.limit(200)];
+      if (ejercicioId) queries.push(Query.equal('ejercicioId', ejercicioId));
+      if (gymId) queries.push(Query.equal('gymId', gymId));
+      const response = await databases.listDocuments(APPWRITE_DATABASE_ID, COLLECTIONS.MACHINE_PHOTOS, queries);
+      return response.documents.map(this.mapMachinePhotoDocument.bind(this));
+    } catch { return []; }
+  },
+
+  async addMachinePhoto(photo: MachinePhoto): Promise<string> {
+    const userId = await this.getCurrentUserId();
+    const datos = JSON.stringify({ url: photo.url, ajustes: photo.ajustes, notas: photo.notas, gymLat: photo.gymLat, gymLng: photo.gymLng, ejercicioNombre: photo.ejercicioNombre });
+    const response = await databases.createDocument(APPWRITE_DATABASE_ID, COLLECTIONS.MACHINE_PHOTOS, photo.id, {
+      userId, ejercicioId: photo.ejercicioId, gymId: photo.gymId, gymNombre: photo.gymNombre,
+      fecha: photo.fecha instanceof Date ? photo.fecha.toISOString() : photo.fecha,
+      tipo: photo.tipo, esActiva: photo.esActiva, datos,
+    });
+    return response.$id;
+  },
+
+  async updateMachinePhoto(id: string, changes: Partial<MachinePhoto>): Promise<void> {
+    const update: Record<string, unknown> = {};
+    if (changes.esActiva !== undefined) update.esActiva = changes.esActiva;
+    if (changes.tipo) update.tipo = changes.tipo;
+    if (changes.ajustes !== undefined || changes.notas !== undefined || changes.url !== undefined) {
+      const doc = await databases.getDocument(APPWRITE_DATABASE_ID, COLLECTIONS.MACHINE_PHOTOS, id);
+      const datos = JSON.parse(doc.datos || '{}');
+      if (changes.url) datos.url = changes.url;
+      if (changes.ajustes !== undefined) datos.ajustes = changes.ajustes;
+      if (changes.notas !== undefined) datos.notas = changes.notas;
+      update.datos = JSON.stringify(datos);
+    }
+    await databases.updateDocument(APPWRITE_DATABASE_ID, COLLECTIONS.MACHINE_PHOTOS, id, update);
+  },
+
+  async deleteMachinePhoto(id: string): Promise<void> {
+    await databases.deleteDocument(APPWRITE_DATABASE_ID, COLLECTIONS.MACHINE_PHOTOS, id);
+  },
+
+  mapMachinePhotoDocument(doc: any): MachinePhoto {
+    const datos = doc.datos ? JSON.parse(doc.datos) : {};
+    return {
+      id: doc.$id, userId: doc.userId, ejercicioId: doc.ejercicioId,
+      ejercicioNombre: datos.ejercicioNombre ?? '',
+      gymId: doc.gymId, gymNombre: doc.gymNombre,
+      gymLat: datos.gymLat, gymLng: datos.gymLng,
+      url: datos.url ?? '', tipo: doc.tipo, esActiva: doc.esActiva,
+      ajustes: datos.ajustes, notas: datos.notas,
+      fecha: new Date(doc.fecha),
     };
   },
 };
