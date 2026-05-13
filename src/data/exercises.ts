@@ -666,6 +666,30 @@ export const exercisesData: ExerciseKnowledge[] = [
     tags: ['empuje_pierna', 'accesible_principiantes', 'seguro']
   },
   {
+    id: 'extension-pierna',
+    nombre: 'Extensión de Pierna en Máquina',
+    grupoMuscular: GrupoMuscular.PIERNAS,
+    categoria: 'aislamiento',
+    tier: 'B',
+    dificultad: 'principiante',
+    equipamiento: ['maquina'],
+    enfoqueMuscular: ['cuádriceps'],
+    tecnica: {
+      posicionInicial: 'Sentado en la máquina, espalda apoyada, tobillo bajo el rodillo.',
+      ejecucion: [
+        'Extender las rodillas hasta casi bloquear arriba',
+        'Bajar controladamente sin dejar caer el peso',
+        'Pausa 1s en la contracción máxima',
+      ],
+      erroresComunes: ['Balanceo de torso', 'Descenso demasiado rápido'],
+      consejosClave: ['Pre-agotamiento de cuádriceps antes de compuestos', 'Excelente para conexión mente-músculo en quad'],
+    },
+    imagenes: { posicionInicial: '', ejecucion: [], errores: [] },
+    variantes: [],
+    descansoSugerido: 60,
+    tags: ['aislamiento_cuadriceps', 'pre_agotamiento'],
+  },
+  {
     id: 'hack-squat',
     nombre: 'Hack Squat Machine',
     grupoMuscular: GrupoMuscular.PIERNAS,
@@ -830,6 +854,30 @@ export const exercisesData: ExerciseKnowledge[] = [
     ],
     descansoSugerido: 90,
     tags: ['aislamiento_pierna', 'femorales']
+  },
+  {
+    id: 'curl-femoral-sentado',
+    nombre: 'Curl Femoral Sentado',
+    grupoMuscular: GrupoMuscular.FEMORALES_GLUTEOS,
+    categoria: 'aislamiento',
+    tier: 'A',
+    dificultad: 'principiante',
+    equipamiento: ['maquina'],
+    enfoqueMuscular: ['femorales'],
+    tecnica: {
+      posicionInicial: 'Sentado, rodillas sobre el borde del asiento, almohadilla sobre la parte alta del tobillo.',
+      ejecucion: [
+        'Flexionar rodillas llevando los talones hacia abajo',
+        'Pausa 1s en contracción máxima',
+        'Subir controladamente sin soltar el peso',
+      ],
+      erroresComunes: ['Levantar las caderas del asiento', 'Rango de movimiento parcial'],
+      consejosClave: ['Mayor tensión en posición acortada que el curl acostado', 'Combina con RDL para trabajo completo de femorales'],
+    },
+    imagenes: { posicionInicial: '', ejecucion: [], errores: [] },
+    variantes: [],
+    descansoSugerido: 90,
+    tags: ['aislamiento_pierna', 'femorales'],
   },
   {
     id: 'zancadas',

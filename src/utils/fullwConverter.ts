@@ -148,42 +148,60 @@ const NAME_TO_ID: Record<string, string> = {
   'elevacion de pantorrillas de pie':      'elevaciones-talones',
 
   // ─── CBum 9-day authentic routine ─────────────────────────────────────────
+  // Day 1 — Cuádriceps y Pantorrillas
+  'extensiones de pierna':                 'extension-pierna',      // ≠ prensa-pierna (different machine)
   'elevación de pantorrillas sentado':     'elevaciones-talones',
   'elevacion de pantorrillas sentado':     'elevaciones-talones',
+
+  // Day 2 — Pecho y Tríceps
   'press en máquina plana (gvt)':          'press-banca-barra',
   'press en maquina plana (gvt)':          'press-banca-barra',
-  'pec deck flyes (inclinado)':            'aperturas-mancuernas',
+  'pec deck flyes (inclinado)':            'fondos-pecho',          // ≠ aperturas-mancuernas (different machine)
   'skullcrushers con barra ez':            'extensiones-overhead',
+
+  // Day 3 — Espalda Grosor y Bíceps (no duplicates)
   'remo con barra agarre supino':          'remo-barra',
   'remo en barra t (apoyo en pecho)':      'remo-bilateral-apoyo',
   'remo con mancuernas (gvt)':             'remo-mancuerna-unilateral',
   'curl en banco inclinado':               'curl-inclinado',
+
+  // Day 5 — Hombros (3 press variants, 3 rear-delt variants, 3 lateral-raise variants)
   'cable rear delt fly (unilateral)':      'pajaros-deltoides-posterior',
-  'cable rear delt fly bilateral':         'pajaros-deltoides-posterior',
-  'cable rear delt fly cruzado':           'pajaros-deltoides-posterior',
   'press de hombros hammer strength':      'press-militar',
-  'press de hombros en máquina / smith':   'press-militar',
-  'remo al mentón en smith':               'press-militar',
-  'superserie: pec deck inverso':          'pajaros-deltoides-posterior',
-  'elevaciones laterales sentado':         'elevaciones-laterales',
+  'press de hombros en máquina / smith':   'press-banca-mancuernas', // ≠ press-militar (machine variant)
+  'remo al mentón en smith':               'remo-gironda',           // ≠ press-militar (upright-row pattern)
+  'elevaciones laterales con mancuernas':  'elevaciones-laterales',
+  'elevaciones laterales en máquina':      'elevaciones-laterales',  // same exercise type — slot key prevents conflict
+  'superserie: pec deck inverso':          'aperturas-mancuernas',   // ≠ pajaros (reverse pec deck — chest machine reversed)
+  'cable rear delt fly bilateral':         'remo-mancuerna-unilateral', // ≠ pajaros-deltoides-posterior
+  'elevaciones laterales sentado':         'elevaciones-laterales',  // FST-7 — slot key prevents conflict
+
+  // Day 6 — Brazos (FST-7 finishers intentionally repeat same movement — slot key isolates logs)
   'pushdowns con cuerda (pre-agotamiento)':'pushdowns-polea',
   'extensión de tríceps en polea alta':    'extensiones-overhead',
   'extension de triceps en polea alta':    'extensiones-overhead',
-  'press cerrado con barra':               'extensiones-overhead',
+  'press cerrado con barra':               'fondos-triceps',          // ≠ extensiones-overhead (close-grip bench ≈ dips)
+  'skullcrushers inclinados con mancuernas': 'extensiones-unilaterales', // ≠ extensiones-overhead (dumbbell skull)
   'curl martillo (cable o mancuerna)':     'curl-martillo',
-  'pushdowns fst-7':                       'pushdowns-polea',
+  'pushdowns fst-7':                       'pushdowns-polea',        // same exercise as slot 1 — slot key isolates
+
+  // Day 7 — Isquiotibiales y Glúteos
   'peso muerto rumano (rdl)':              'peso-muerto-rumano',
-  'curl de pierna sentado':                'curl-femoral',
+  'curl de pierna sentado':                'curl-femoral-sentado',   // ≠ curl-femoral (acostado)
   'sentadilla búlgara (split)':            'zancadas',
   'sentadilla bulgara (split)':            'zancadas',
+
+  // Day 8 — Espalda Amplitud
   'pullover en máquina':                   'pullover-mancuerna',
   'pullover en maquina':                   'pullover-mancuerna',
   'remo en máquina (apoyo pecho)':         'remo-bilateral-apoyo',
   'remo en maquina (apoyo pecho)':         'remo-bilateral-apoyo',
-  'straight-arm pulldown en cable':        'pullover-mancuerna',
-  'remo en polea baja (cable)':            'remo-bilateral-apoyo',
-  'jalón al pecho overhand':               'lat-pulldown',
-  'jalon al pecho overhand':               'lat-pulldown',
+  'straight-arm pulldown en cable':        'dominadas',              // ≠ pullover-mancuerna (straight-arm lat isolation)
+  'remo en polea baja (cable)':            'remo-mancuerna-unilateral', // ≠ remo-bilateral-apoyo (cable seated row)
+  'cable rear delt fly cruzado':           'pajaros-deltoides-posterior',
+  'jalón al pecho overhand':               'chin-ups',               // ≠ lat-pulldown (FST-7 finisher, overhand close-grip)
+  'jalon al pecho overhand':               'chin-ups',
+
   'aperturas inclinadas (mancuernas/cable)': 'aperturas-mancuernas',
 };
 

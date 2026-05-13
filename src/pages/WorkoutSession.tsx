@@ -166,8 +166,8 @@ export default function WorkoutSession() {
   const [aiAnswer, setAiAnswer] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
-  // Edit completed sets
-  const [editingSet, setEditingSet] = useState<{ ejercicioId: string; numero: number } | null>(null);
+  // Edit completed sets — keyed by slot index, not ejercicioId, to handle duplicate IDs within a day
+  const [editingSet, setEditingSet] = useState<{ slotKey: string; numero: number } | null>(null);
   const [editReps, setEditReps] = useState('');
   const [editPeso, setEditPeso] = useState('');
   const [editRir, setEditRir] = useState('');
@@ -321,9 +321,10 @@ export default function WorkoutSession() {
   const handleReorderExerciseInDay = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id || !selectedDay) return;
-    const oldIdx = selectedDay.ejercicios.findIndex(ej => ej.ejercicioId === active.id);
-    const newIdx = selectedDay.ejercicios.findIndex(ej => ej.ejercicioId === over.id);
-    if (oldIdx < 0 || newIdx < 0) return;
+    // IDs are "slot-0", "slot-1", etc.
+    const oldIdx = parseInt(String(active.id).replace('slot-', ''), 10);
+    const newIdx = parseInt(String(over.id).replace('slot-', ''), 10);
+    if (isNaN(oldIdx) || isNaN(newIdx)) return;
     setSelectedDay({
       ...selectedDay,
       ejercicios: arrayMove(selectedDay.ejercicios, oldIdx, newIdx),
@@ -433,14 +434,14 @@ export default function WorkoutSession() {
               onDragEnd={handleReorderExerciseInDay}
             >
               <SortableContext
-                items={selectedDay.ejercicios.map(ej => ej.ejercicioId)}
+                items={selectedDay.ejercicios.map((_, idx) => `slot-${idx}`)}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-2">
                   {selectedDay.ejercicios.map((ej, idx) => (
                     <SortableSessionExercise
-                      key={ej.ejercicioId}
-                      id={ej.ejercicioId}
+                      key={`slot-${idx}`}
+                      id={`slot-${idx}`}
                       nombre={ej.ejercicio?.nombre ?? ej.ejercicioId}
                       index={idx}
                       series={ej.seriesObjetivo}
@@ -557,7 +558,8 @@ export default function WorkoutSession() {
     return null;
   }
 
-  const ejercicioLog = ejercicioLogs.get(ejercicioActual.ejercicioId);
+  const currentSlotKey = `slot-${currentExerciseIndex}`;
+  const ejercicioLog = ejercicioLogs.get(currentSlotKey);
   const seriesCompletadas = ejercicioLog?.series.length || 0;
   const totalSeries = ejercicioActual.seriesObjetivo;
 
@@ -605,7 +607,7 @@ export default function WorkoutSession() {
     const seriesActualizadas = [...logActual.series, nuevaSerie];
     const logActualizado = { ...logActual, series: seriesActualizadas };
 
-    setEjercicioLogs(prev => new Map(prev.set(ejercicioActual.ejercicioId, logActualizado)));
+    setEjercicioLogs(prev => new Map(prev.set(currentSlotKey, logActualizado)));
 
     // Calcular 1RM estimado (fórmula de Epley)
     const repsNum = parseInt(reps);
@@ -1169,7 +1171,7 @@ export default function WorkoutSession() {
                 <h4 className="font-medium mb-2 text-sm text-muted-foreground">Series Completadas:</h4>
                 <div className="space-y-2">
                   {ejercicioLog.series.map((serie) => {
-                    const isEditing = editingSet?.ejercicioId === ejercicioActual.ejercicioId && editingSet.numero === serie.numero;
+                    const isEditing = editingSet?.slotKey === currentSlotKey && editingSet.numero === serie.numero;
                     if (isEditing) {
                       return (
                         <div key={serie.numero} className="p-3 rounded-lg border-2 border-primary bg-primary/5 space-y-2">
@@ -1248,7 +1250,7 @@ export default function WorkoutSession() {
                             onClick={() => {
                               setEjercicioLogs(prev => {
                                 const next = new Map(prev);
-                                const log = next.get(ejercicioActual.ejercicioId);
+                                const log = next.get(currentSlotKey);
                                 if (!log) return prev;
                                 const updatedSeries = log.series.map(s => {
                                   if (s.numero !== serie.numero) return s;
@@ -1263,7 +1265,7 @@ export default function WorkoutSession() {
                                   }
                                   return newS;
                                 });
-                                next.set(ejercicioActual.ejercicioId, { ...log, series: updatedSeries });
+                                next.set(currentSlotKey, { ...log, series: updatedSeries });
                                 return next;
                               });
                               setEditingSet(null);
@@ -1298,7 +1300,7 @@ export default function WorkoutSession() {
                           </div>
                           <button
                             onClick={() => {
-                              setEditingSet({ ejercicioId: ejercicioActual.ejercicioId, numero: serie.numero });
+                              setEditingSet({ slotKey: currentSlotKey, numero: serie.numero });
                               setEditReps(String(serie.repeticiones ?? ''));
                               setEditPeso(String(serie.peso ?? ''));
                               setEditRir(String(serie.RIR ?? 2));
@@ -1336,14 +1338,14 @@ export default function WorkoutSession() {
                     const notasValue = e.target.value;
                     setEjercicioLogs(prev => {
                       const next = new Map(prev);
-                      const existing = next.get(ejercicioActual.ejercicioId) ?? {
+                      const existing = next.get(currentSlotKey) ?? {
                         ejercicioId: ejercicioActual.ejercicioId,
                         ejercicio: ejercicioActual.ejercicio,
                         series: [],
                         tecnicaCorrecta: true,
                         sensacionMuscular: 3 as const,
                       };
-                      next.set(ejercicioActual.ejercicioId, { ...existing, notas: notasValue });
+                      next.set(currentSlotKey, { ...existing, notas: notasValue });
                       return next;
                     });
                   }}
