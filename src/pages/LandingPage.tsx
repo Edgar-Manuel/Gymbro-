@@ -10,6 +10,7 @@ import {
   Users,
   Activity,
   Check,
+  Heart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -27,7 +28,7 @@ export default function LandingPage() {
             <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
               <a href="#features" className="hover:text-foreground transition-colors">Características</a>
               <a href="#how-it-works" className="hover:text-foreground transition-colors">Cómo funciona</a>
-              <a href="#pricing" className="hover:text-foreground transition-colors">Planes</a>
+              <a href="#open-source" className="hover:text-foreground transition-colors">Open Source</a>
             </nav>
             <div className="flex items-center gap-3">
               <Link to="/login">
@@ -67,30 +68,24 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/login">
               <Button size="lg" className="text-base px-8 h-14 shadow-lg shadow-primary/25 gap-2">
-                Empezar gratis
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </Link>
-            <Link to="/login">
-              <Button size="lg" variant="outline" className="text-base px-8 h-14 gap-2">
-                Empezar ahora
+                Empezar ahora — es gratis
                 <ChevronRight className="h-5 w-5" />
               </Button>
             </Link>
           </div>
 
-          <div className="mt-16 grid grid-cols-3 gap-6 max-w-sm mx-auto">
+          <div className="mt-16 grid grid-cols-3 gap-6 max-w-md mx-auto">
             <div>
-              <div className="text-3xl font-extrabold text-primary">10k+</div>
-              <div className="text-xs text-muted-foreground mt-1">Usuarios activos</div>
+              <div className="text-3xl font-extrabold text-primary">38</div>
+              <div className="text-xs text-muted-foreground mt-1">Ejercicios con guía técnica</div>
             </div>
             <div>
-              <div className="text-3xl font-extrabold text-primary">500+</div>
-              <div className="text-xs text-muted-foreground mt-1">Ejercicios</div>
+              <div className="text-3xl font-extrabold text-primary">5</div>
+              <div className="text-xs text-muted-foreground mt-1">Rutinas predefinidas</div>
             </div>
             <div>
-              <div className="text-3xl font-extrabold text-primary">4.9★</div>
-              <div className="text-xs text-muted-foreground mt-1">Valoración</div>
+              <div className="text-3xl font-extrabold text-primary">97</div>
+              <div className="text-xs text-muted-foreground mt-1">Videos de ejercicios</div>
             </div>
           </div>
         </div>
@@ -202,22 +197,36 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="py-24 px-4 bg-secondary/20">
+      {/* Open Source */}
+      <section id="open-source" className="py-24 px-4 bg-secondary/20">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Planes simples y transparentes</h2>
-            <p className="text-muted-foreground text-lg">Sin sorpresas. Cancela cuando quieras.</p>
+            <h2 className="text-4xl font-bold mb-4">100% Gratis y Open Source</h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+              Sin planes de pago, sin límites ocultos. Todas las funciones disponibles para todos, para siempre.
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-            {/* Free */}
-            <div className="bg-card border border-border rounded-2xl p-8">
-              <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Gratis</div>
+          <div className="max-w-lg mx-auto">
+            <div className="bg-card border-2 border-primary/30 rounded-2xl p-8 relative overflow-hidden">
+              <div className="absolute top-3 right-4 bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                <Heart className="h-3 w-3" />
+                OPEN SOURCE
+              </div>
+              <div className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Todo incluido</div>
               <div className="text-4xl font-extrabold mb-1">0€</div>
-              <div className="text-muted-foreground text-sm mb-6">Para siempre</div>
+              <div className="text-muted-foreground text-sm mb-6">Para siempre — sin trucos</div>
               <ul className="space-y-3 text-sm mb-8">
-                {['Rutinas básicas', 'Registro de entrenamientos', 'Seguimiento de peso', 'Hasta 3 rutinas'].map(f => (
+                {[
+                  'Rutinas ilimitadas con IA',
+                  'Registro de entrenamientos',
+                  'Seguimiento de peso y progreso',
+                  'Análisis nutricional avanzado',
+                  'Seguimiento corporal completo',
+                  'Asistente GymBro 24/7',
+                  'Sincronización en la nube',
+                  'Código abierto en GitHub',
+                ].map(f => (
                   <li key={f} className="flex items-center gap-2 text-muted-foreground">
                     <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                     {f}
@@ -225,33 +234,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link to="/login" className="block">
-                <Button variant="outline" className="w-full">Empezar gratis</Button>
-              </Link>
-            </div>
-
-            {/* Pro */}
-            <div className="bg-primary text-primary-foreground rounded-2xl p-8 relative overflow-hidden">
-              <div className="absolute top-3 right-4 bg-white/20 text-xs font-bold px-2 py-0.5 rounded-full">POPULAR</div>
-              <div className="text-sm font-semibold opacity-75 uppercase tracking-wider mb-2">Pro</div>
-              <div className="text-4xl font-extrabold mb-1">9.99€</div>
-              <div className="opacity-75 text-sm mb-6">por mes</div>
-              <ul className="space-y-3 text-sm mb-8">
-                {[
-                  'Todo lo del plan Gratis',
-                  'Rutinas ilimitadas con IA',
-                  'Análisis nutricional avanzado',
-                  'Seguimiento corporal completo',
-                  'Asistente GymBro 24/7',
-                  'Sincronización en la nube',
-                ].map(f => (
-                  <li key={f} className="flex items-center gap-2 opacity-90">
-                    <Check className="h-4 w-4 opacity-80 flex-shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/login" className="block">
-                <Button variant="secondary" className="w-full font-semibold">Empezar ahora</Button>
+                <Button className="w-full font-semibold">Empezar ahora</Button>
               </Link>
             </div>
           </div>
@@ -263,8 +246,8 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-4">¿Listo para transformarte?</h2>
           <p className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto">
-            Únete a miles de personas que ya están alcanzando sus metas con GymBro.
-            Completamente gratis para empezar.
+            Únete a la comunidad open source que ya entrena de forma inteligente con GymBro.
+            100% gratis, sin límites, para siempre.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/login">
