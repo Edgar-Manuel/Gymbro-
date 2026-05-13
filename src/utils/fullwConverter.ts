@@ -264,6 +264,23 @@ function shuffleSecondary<T>(arr: T[]): T[] {
   return [first, ...rest];
 }
 
+/**
+ * Convierte un nombre de ejercicio (p.ej. "Pec Deck Flyes (Inclinado)") en un
+ * slug estable y único para usar como `ejercicioId`. Los IDs basados en nombre
+ * garantizan que cada variante distinta tenga su propio historial de pesos en
+ * lugar de mezclarse con otras variantes que comparten el mismo ejercicio
+ * canónico de `exercises.ts`.
+ */
+function makeExerciseId(nombre: string): string {
+  const slug = nombre.toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/[()]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+  return slug;
+}
+
 export function fullWToRutinaSemanal(
   rutina: FullWRoutine,
   userId: string
@@ -274,9 +291,18 @@ export function fullWToRutinaSemanal(
     const ejerciciosOrden = shuffleSecondary([...dia.ejercicios]);
     const ejercicios: EjercicioEnRutina[] = ejerciciosOrden.map((ej: FullWExercise) => {
       const found = lookupExercise(ej.nombre);
-      const ejercicio = found ?? makeStubExercise(ej.nombre, stubIdx++);
+      const baseExercise = found ?? makeStubExercise(ej.nombre, stubIdx++);
+      // ID único basado en el nombre original — garantiza nombre correcto en la
+      // UI y historial de pesos independiente por variante.
+      const uniqueId = makeExerciseId(ej.nombre) || baseExercise.id;
+      const ejercicio: ExerciseKnowledge = {
+        ...baseExercise,
+        id: uniqueId,
+        nombre: ej.nombre,
+        baseExerciseId: baseExercise.id,
+      };
       return {
-        ejercicioId: ejercicio.id,
+        ejercicioId: uniqueId,
         ejercicio,
         seriesObjetivo: ej.series,
         repsObjetivo: parseReps(ej.reps),

@@ -63,6 +63,8 @@ export interface ExerciseKnowledge {
   tags?: string[]; // ej: ["tiron_vertical", "tiron_horizontal"]
   /** Id del video del catálogo exerciseVideos (alternativa a relatedExercises) */
   videoId?: string;
+  /** Id del ejercicio canónico del que esta variante hereda técnica/imágenes/videos. Solo se usa cuando `id` es un slug generado de una rutina externa (CBum, FullW, etc.). */
+  baseExerciseId?: string;
 }
 
 // User Profile
