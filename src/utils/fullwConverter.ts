@@ -133,7 +133,7 @@ const NAME_TO_ID: Record<string, string> = {
   'curl en polea baja (fst-7)':            'curl-polea',
   'press de hombros en máquina':           'press-militar',
   'press de hombros en maquina':           'press-militar',
-  'elevaciones laterales en maquina':      'elevaciones-laterales',
+  'elevaciones laterales en maquina':      'elevaciones-laterales-maquina',
   'curl de pierna acostado':               'curl-femoral',
   'peso muerto':                           'peso-muerto-convencional',
   'sentadilla en máquina de cinturón':     'hack-squat',
@@ -167,10 +167,10 @@ const NAME_TO_ID: Record<string, string> = {
   'press de hombros en máquina / smith':   'press-banca-mancuernas', // ≠ press-militar (machine variant)
   'remo al mentón en smith':               'remo-gironda',           // ≠ press-militar (upright-row pattern)
   'elevaciones laterales con mancuernas':  'elevaciones-laterales',
-  'elevaciones laterales en máquina':      'elevaciones-laterales',  // same exercise type — slot key prevents conflict
+  'elevaciones laterales en máquina':      'elevaciones-laterales-maquina',
   'superserie: pec deck inverso':          'aperturas-mancuernas',   // ≠ pajaros (reverse pec deck — chest machine reversed)
   'cable rear delt fly bilateral':         'remo-mancuerna-unilateral', // ≠ pajaros-deltoides-posterior
-  'elevaciones laterales sentado':         'elevaciones-laterales',  // FST-7 — slot key prevents conflict
+  'elevaciones laterales sentado':         'elevaciones-laterales-sentado', // FST-7 finisher
 
   // Day 6 — Brazos (FST-7 finishers intentionally repeat same movement — slot key isolates logs)
   'pushdowns con cuerda (pre-agotamiento)':'pushdowns-polea',
