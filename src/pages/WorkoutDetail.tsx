@@ -263,7 +263,16 @@ export default function WorkoutDetail() {
                               <>
                                 <span className="text-muted-foreground">×</span>
                                 <span className="font-medium w-14">
-                                  {sr.repeticiones} {sr.tipo === 'BODYWEIGHT' ? 'reps' : 'reps'}
+                                  {sr.repsDerecha !== undefined ? (
+                                    <>
+                                      <span className="text-blue-400">{sr.repeticiones}</span>
+                                      <span className="text-muted-foreground">/</span>
+                                      <span className="text-orange-400">{sr.repsDerecha}</span>
+                                    </>
+                                  ) : (
+                                    sr.repeticiones
+                                  )}{' '}
+                                  {sr.tipo === 'BODYWEIGHT' ? 'reps' : 'reps'}
                                 </span>
                               </>
                             )}

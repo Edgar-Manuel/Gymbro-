@@ -63,9 +63,14 @@ function detectSetType(ej: { tags?: string[]; equipamiento?: string[] } | undefi
   const tags = ej.tags ?? [];
   if (tags.some(t => /isometr|cardio|tiempo|plancha/i.test(t))) return 'TIME';
   const eq = ej.equipamiento ?? [];
-  // Solo peso corporal sin pesa adicional → BODYWEIGHT
   if (eq.length === 1 && eq[0] === 'peso_corporal') return 'BODYWEIGHT';
   return 'WEIGHT';
+}
+
+function isUnilateral(ej: { nombre?: string; tags?: string[] } | undefined): boolean {
+  if (!ej) return false;
+  if (ej.tags?.includes('unilateral')) return true;
+  return /unilateral/i.test(ej.nombre ?? '');
 }
 import { inferirSiguienteDia } from '@/utils/workoutInference';
 import { getVideoForExercise, getVolumenSesion } from '@/utils/exerciseUtils';
@@ -126,6 +131,7 @@ export default function WorkoutSession() {
 
   // Formulario de serie actual
   const [reps, setReps] = useState('');
+  const [repsDer, setRepsDer] = useState('');
   const [peso, setPeso] = useState('');
   const [tiempoSegundos, setTiempoSegundos] = useState('');
   const [rir, setRir] = useState<number>(2);
@@ -562,6 +568,7 @@ export default function WorkoutSession() {
 
   const handleRegistrarSerie = () => {
     const setType = detectSetType(ejercicioActual.ejercicio);
+    const unilateral = isUnilateral(ejercicioActual.ejercicio);
 
     // Validación según tipo
     if (setType === 'TIME') {
@@ -572,6 +579,11 @@ export default function WorkoutSession() {
     } else if (setType === 'BODYWEIGHT') {
       if (!reps) {
         alert('Introduce las repeticiones');
+        return;
+      }
+    } else if (unilateral) {
+      if (!reps || !repsDer || !peso) {
+        alert('Introduce las repeticiones de cada lado y el peso');
         return;
       }
     } else {
@@ -590,6 +602,7 @@ export default function WorkoutSession() {
       completada: true,
       tipo: setType,
       tiempoSegundos: setType === 'TIME' ? parseInt(tiempoSegundos) : undefined,
+      repsDerecha: unilateral && repsDer ? parseInt(repsDer) : undefined,
     };
 
     // Actualizar o crear ejercicio log
@@ -615,6 +628,7 @@ export default function WorkoutSession() {
 
     // Limpiar formulario
     setReps('');
+    setRepsDer('');
     setTiempoSegundos('');
     setRir(2);
 
@@ -1072,6 +1086,7 @@ export default function WorkoutSession() {
 
               {(() => {
                 const setType = detectSetType(ejercicioActual.ejercicio);
+                const unilateral = isUnilateral(ejercicioActual.ejercicio);
                 if (setType === 'TIME') {
                   return (
                     <div className="grid grid-cols-2 gap-3">
@@ -1141,6 +1156,72 @@ export default function WorkoutSession() {
                     </div>
                   );
                 }
+                // UNILATERAL: Izq | Der | Peso | RIR
+                if (unilateral) {
+                  return (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="reps-izq" className="text-xs text-blue-400">Reps Izquierda</Label>
+                          <Input
+                            id="reps-izq"
+                            type="number"
+                            inputMode="numeric"
+                            value={reps}
+                            onChange={(e) => setReps(e.target.value)}
+                            placeholder={repsObjetivo.toString()}
+                            className="text-lg font-semibold text-center h-14 border-blue-400/40"
+                            min="1" max="50"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="reps-der" className="text-xs text-orange-400">Reps Derecha</Label>
+                          <Input
+                            id="reps-der"
+                            type="number"
+                            inputMode="numeric"
+                            value={repsDer}
+                            onChange={(e) => setRepsDer(e.target.value)}
+                            placeholder={repsObjetivo.toString()}
+                            className="text-lg font-semibold text-center h-14 border-orange-400/40"
+                            min="1" max="50"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="peso" className="text-xs">Peso (kg)</Label>
+                          <Input
+                            id="peso"
+                            type="number"
+                            step="0.25"
+                            inputMode="decimal"
+                            value={peso}
+                            onChange={(e) => setPeso(e.target.value)}
+                            placeholder={pesoSugerido?.toString() || "0"}
+                            className="text-lg font-semibold text-center h-14"
+                            min="0"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="rir" className="text-xs">RIR</Label>
+                          <Select value={rir.toString()} onValueChange={(v) => setRir(parseInt(v))}>
+                            <SelectTrigger id="rir" className="h-14">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">RIR 0 (fallo)</SelectItem>
+                              <SelectItem value="1">RIR 1</SelectItem>
+                              <SelectItem value="2">RIR 2</SelectItem>
+                              <SelectItem value="3">RIR 3</SelectItem>
+                              <SelectItem value="4">RIR 4+</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
                 // WEIGHT: comportamiento por defecto (3 columnas)
                 return (
                   <div className="grid grid-cols-3 gap-3">
@@ -1199,6 +1280,7 @@ export default function WorkoutSession() {
                   const t = detectSetType(ejercicioActual.ejercicio);
                   if (t === 'TIME') return !tiempoSegundos || parseInt(tiempoSegundos) <= 0;
                   if (t === 'BODYWEIGHT') return !reps;
+                  if (isUnilateral(ejercicioActual.ejercicio)) return !reps || !repsDer || !peso;
                   return !reps || !peso;
                 })()}
               >
@@ -1223,6 +1305,15 @@ export default function WorkoutSession() {
                           <span className="font-semibold">{serie.tiempoSegundos}s</span>
                         ) : serie.tipo === 'BODYWEIGHT' ? (
                           <span className="font-semibold">{serie.repeticiones} reps (PC)</span>
+                        ) : serie.repsDerecha !== undefined ? (
+                          <>
+                            <span className="text-blue-400 font-semibold">{serie.repeticiones}</span>
+                            <span className="text-muted-foreground mx-0.5">/</span>
+                            <span className="text-orange-400 font-semibold">{serie.repsDerecha}</span>
+                            <span className="text-muted-foreground text-xs ml-1">reps</span>
+                            {' × '}
+                            <span className="font-semibold">{serie.peso}kg</span>
+                          </>
                         ) : (
                           <>
                             <span className="font-semibold">{serie.repeticiones} reps</span>
