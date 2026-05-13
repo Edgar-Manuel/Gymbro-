@@ -7,7 +7,7 @@ import { InjuryRepository } from '../repositories/InjuryRepository';
 import { CardioRepository } from '../repositories/CardioRepository';
 import { MachinePhotoRepository } from '../repositories/MachinePhotoRepository';
 import { appwriteDbHelpers } from '../appwriteDb';
-import { databases } from '@/services/appwrite';
+import { databases, account } from '@/services/appwrite';
 import { APPWRITE_DATABASE_ID, COLLECTIONS } from '@/config/appwriteSchema';
 import { db } from '../schema';
 
@@ -26,6 +26,13 @@ export const SyncManager = {
     async syncAll(): Promise<SyncResult> {
         if (!navigator.onLine) {
             return { synced: 0, errors: 0, errorMessages: [], skippedOffline: true };
+        }
+
+        // Skip sync for unauthenticated / guest users
+        try {
+            await account.get();
+        } catch {
+            return { synced: 0, errors: 0, errorMessages: [], skippedOffline: false };
         }
 
         console.log('[Sync] Starting background sync...');

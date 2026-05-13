@@ -167,6 +167,8 @@ export interface SerieLog {
   tipo?: WorkoutSetType;
   /** Para sets tipo TIME (plancha, isometricos): duración en segundos */
   tiempoSegundos?: number;
+  /** Para ejercicios unilaterales: reps del lado derecho. `repeticiones` = lado izquierdo. */
+  repsDerecha?: number;
 }
 
 export interface ExerciseLog {

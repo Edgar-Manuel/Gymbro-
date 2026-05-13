@@ -231,7 +231,11 @@ export const appwriteDbHelpers = {
           objetivo: rutina.objetivo,
           nivel: rutina.nivel,
           diasPorSemana: rutina.diasPorSemana,
-          diasRutina: rutina.diasRutina || rutina.dias,
+          diasRutina: (rutina.diasRutina || rutina.dias || []).map(dia => ({
+            ...dia,
+            // Strip full ExerciseKnowledge objects — only ejercicioId is needed to reload
+            ejercicios: (dia.ejercicios || []).map(({ ejercicio: _ej, ...rest }) => rest),
+          })),
           duracionTotal: rutina.duracionTotal,
         }),
       };
@@ -263,7 +267,10 @@ export const appwriteDbHelpers = {
           objetivo: rutina.objetivo,
           nivel: rutina.nivel,
           diasPorSemana: rutina.diasPorSemana,
-          diasRutina: rutina.diasRutina || rutina.dias,
+          diasRutina: (rutina.diasRutina || rutina.dias || []).map(dia => ({
+            ...dia,
+            ejercicios: (dia.ejercicios || []).map(({ ejercicio: _ej, ...rest }) => rest),
+          })),
           duracionTotal: rutina.duracionTotal,
         }),
       };
