@@ -199,8 +199,10 @@ function computeWeek(
     }
   }
   const anchorRoutineIdx = nextDay
-    ? diasRutina.findIndex(d => d.id === nextDay.id)
-    : -1;
+    ? (diasRutina.findIndex(d => d.id === nextDay.id) !== -1
+        ? diasRutina.findIndex(d => d.id === nextDay.id)
+        : 0)
+    : diasRutina.length > 0 ? 0 : -1;
 
   const week: WeekDay[] = days.map((label, i) => {
     const date = new Date(monday.getTime() + i * dayMs);
@@ -230,17 +232,18 @@ function computeWeek(
 
     let dailyMuscles: string[] = [];
     if (trained && workoutDelDia) {
-      const rd = diasRutina.find(d => d.id === workoutDelDia.diaRutinaId);
-      if (rd?.grupos?.length > 0) {
-        dailyMuscles = rd.grupos;
-      } else {
-        dailyMuscles = [...new Set(
-          (workoutDelDia.ejercicios ?? [])
-            .map(e => e.ejercicio?.grupoMuscular)
-            .filter(Boolean) as string[]
-        )];
+      // Priority 1: actual workout exercise data (survives routine switches)
+      dailyMuscles = [...new Set(
+        (workoutDelDia.ejercicios ?? [])
+          .map(e => e.ejercicio?.grupoMuscular)
+          .filter(Boolean) as string[]
+      )];
+      // Priority 2: matched routine day grupos (same routine)
+      if (dailyMuscles.length === 0) {
+        const rd = diasRutina.find(d => d.id === workoutDelDia.diaRutinaId);
+        if (rd?.grupos?.length > 0) dailyMuscles = rd.grupos;
       }
-      // Fallback: use scheduled routineDay when workout log has no muscle data
+      // Priority 3: scheduled routineDay for this slot
       if (dailyMuscles.length === 0 && routineDay) {
         if (routineDay.grupos?.length > 0) {
           dailyMuscles = routineDay.grupos;
@@ -573,7 +576,7 @@ export default function Dashboard() {
 
   const getNextWorkoutDay = () => {
     if (!activeRoutine?.dias?.length) return null;
-    const activeDias = activeRoutine.dias.filter(d => d.ejercicios.length > 0);
+    const activeDias = activeRoutine.dias.filter(d => d.ejercicios.length > 0 || (d.grupos && d.grupos.length > 0));
     if (!activeDias.length) return null;
 
     const completados = recentWorkouts
