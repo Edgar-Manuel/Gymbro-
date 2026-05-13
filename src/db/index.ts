@@ -8,6 +8,8 @@ import { BodyTrackingRepository } from './repositories/BodyTrackingRepository';
 import { AchievementRepository } from './repositories/AchievementRepository';
 import { InjuryRepository } from './repositories/InjuryRepository';
 import { CardioRepository } from './repositories/CardioRepository';
+import { MachinePhotoRepository } from './repositories/MachinePhotoRepository';
+import { GymRepository } from './repositories/GymRepository';
 import { SyncManager } from './sync/SyncManager';
 export { setStorageMode, getStorageMode } from './config';
 
@@ -25,6 +27,8 @@ export const dbHelpers = {
   ...AchievementRepository,
   ...InjuryRepository,
   ...CardioRepository,
+  ...MachinePhotoRepository,
+  ...GymRepository,
 
   // Utilities
   clearAllData: async () => {
@@ -39,6 +43,8 @@ export const dbHelpers = {
     await db.progressPhotos.clear();
     await db.lesiones.clear();
     await db.cardioSessions.clear();
+    await db.machinePhotos.clear();
+    await db.gyms?.clear();
   },
 
   // Recalculate stats from local workouts
@@ -47,6 +53,7 @@ export const dbHelpers = {
   // Sync
   sync: SyncManager.syncAll,
   getPendingSyncCount: SyncManager.getPendingCount,
+  clearStuckPending: SyncManager.clearStuckPending,
   pullBodyMeasurements: BodyTrackingRepository.pullBodyMeasurements,
 };
 

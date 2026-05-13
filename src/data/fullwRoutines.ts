@@ -11,6 +11,10 @@ export interface FullWExercise {
   pesoInicial?: number;  // kg sugerido para S1
   /** Marca el ejercicio como FST-7 (Fascia Stretch Training) — 7 series cortas. */
   isFST7?: boolean;
+  /** La última serie (o todas) se realizan con drop set. */
+  isDropSet?: boolean;
+  /** Este ejercicio forma superserie con el siguiente. */
+  isSuperset?: boolean;
 }
 
 export interface FullWDay {

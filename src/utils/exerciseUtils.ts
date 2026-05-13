@@ -41,7 +41,14 @@ export function getVideoForExercise(
     const direct = exerciseVideos.find(v => v.id === ejercicio.videoId);
     if (direct) return direct;
   }
-  return exerciseVideos.find(v => v.relatedExercises.includes(ejercicioId));
+  const byId = exerciseVideos.find(v => v.relatedExercises.includes(ejercicioId));
+  if (byId) return byId;
+  // Fallback: rutinas externas (CBum, FullW) generan slugs únicos por nombre
+  // pero conservan `baseExerciseId` para encontrar videos de la variante canónica.
+  if (ejercicio?.baseExerciseId) {
+    return exerciseVideos.find(v => v.relatedExercises.includes(ejercicio.baseExerciseId!));
+  }
+  return undefined;
 }
 
 // ─── Volumen y grupos musculares de una sesión ──────────────────────────────

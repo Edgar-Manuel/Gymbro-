@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,7 @@ import { checkAndAwardAchievements, type EarnedAchievement } from '@/utils/achie
 import { notificationManager } from '@/utils/notificationManager';
 import { useAppStore } from '@/store';
 import { dbHelpers } from '@/db';
-import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular, WorkoutSetType } from '@/types';
+import type { WorkoutLog, ExerciseLog, SerieLog, DiaRutina, Lesion, GrupoMuscular, MachinePhoto, EjercicioEnRutina, ExerciseKnowledge, WorkoutSetType } from '@/types';
 
 // Item sortable de ejercicio en la pre-sesión
 function SortableSessionExercise({ id, nombre, index, series, reps }: {
@@ -74,10 +75,15 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Pencil, Trash2 } from 'lucide-react';
 import EditSerieDialog from '@/components/EditSerieDialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { toast } from 'sonner';
 import { INJURY_AFFECTS, LESION_ZONA_LABELS, REHAB_EXERCISES } from '@/utils/injuryData';
 import { CARDIO_RECOMENDACIONES } from '@/utils/cardioData';
+import { getRoutineTheme } from '@/utils/routineTheme';
 import CardioPanel from '@/components/CardioPanel';
+import MachinePhotoCard from '@/components/MachinePhotoCard';
+import MachinePhotoCapture from '@/components/MachinePhotoCapture';
+import MachinePhotoViewer from '@/components/MachinePhotoViewer';
+import GymSelector from '@/components/GymSelector';
+import { exerciseAgent } from '@/services/agents';
 import {
   Check,
   ArrowRight,
@@ -90,14 +96,22 @@ import {
   Heart,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Info,
   CheckCircle2,
   XCircle,
+  Building2,
+  Camera,
+  Plus,
+  Search,
+  Bot,
+  Send,
 } from 'lucide-react';
 
 export default function WorkoutSession() {
   const navigate = useNavigate();
   const { currentUser, activeRoutine, startWorkout, finishWorkout, activeWorkout } = useAppStore();
+  const theme = getRoutineTheme(activeRoutine?.id);
 
   // Estado para selector de día
   const [selectedDay, setSelectedDay] = useState<DiaRutina | null>(null);
@@ -135,6 +149,27 @@ export default function WorkoutSession() {
   const [affectedInjuries, setAffectedInjuries] = useState<Lesion[]>([]);
   const [showRehabSection, setShowRehabSection] = useState(false);
 
+  // Machine photo guide
+  const [machinePhoto, setMachinePhoto] = useState<MachinePhoto | null>(null);
+  const [machineTodasFotos, setMachineTodasFotos] = useState<MachinePhoto[]>([]);
+  const [machinePhotoViewerOpen, setMachinePhotoViewerOpen] = useState(false);
+  const [machinePhotoCaptureOpen, setMachinePhotoCaptureOpen] = useState(false);
+  // gymSesion: gym selected for this workout session (independent of user.gymActual)
+  const [gymSesion, setGymSesion] = useState<{ gymId: string; gymNombre: string } | null>(null);
+  const [gymSelectorOpen, setGymSelectorOpen] = useState(false);
+  const [dismissedMachineKey, setDismissedMachineKey] = useState<string | null>(null);
+
+  // Add-exercise picker
+  const [addExerciseOpen, setAddExerciseOpen] = useState(false);
+  const [allExercises, setAllExercises] = useState<ExerciseKnowledge[]>([]);
+  const [addExerciseSearch, setAddExerciseSearch] = useState('');
+  const [ejerciciosExtra, setEjerciciosExtra] = useState<EjercicioEnRutina[]>([]);
+
+  // AI question inside tech modal
+  const [aiQuestion, setAiQuestion] = useState('');
+  const [aiAnswer, setAiAnswer] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+
   useEffect(() => {
     if (!currentUser || !activeRoutine) {
       navigate('/');
@@ -150,7 +185,7 @@ export default function WorkoutSession() {
     pesoMaxHistorico: number;
   } | null>(null);
 
-  const loadPesoSugerido = async () => {
+  const loadPesoSugerido = useCallback(async () => {
     if (!currentUser || !selectedDay) return;
 
     const ejercicioActual = selectedDay.ejercicios[currentExerciseIndex];
@@ -201,21 +236,45 @@ export default function WorkoutSession() {
     } catch (error) {
       console.error('Error cargando peso sugerido:', error);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, selectedDay, currentExerciseIndex]);
 
   // Cargar peso sugerido cuando cambia el ejercicio
   useEffect(() => {
     if (selectedDay && hasStarted) {
       loadPesoSugerido();
     }
-  }, [currentExerciseIndex, selectedDay, hasStarted]);
+  }, [currentExerciseIndex, selectedDay, hasStarted, loadPesoSugerido]);
+
+  // Load machine photo for current exercise
+  useEffect(() => {
+    const loadMachinePhoto = async () => {
+      if (!currentUser || !selectedDay || !hasStarted || !gymSesion) {
+        setMachinePhoto(null);
+        setMachineTodasFotos([]);
+        return;
+      }
+      const ejercicioActual = selectedDay.ejercicios[currentExerciseIndex];
+      if (!ejercicioActual) return;
+      try {
+        const active = await dbHelpers.getActiveMachinePhoto(currentUser.id, ejercicioActual.ejercicioId, gymSesion.gymId);
+        const todas = await dbHelpers.getMachinePhotos(currentUser.id, ejercicioActual.ejercicioId, gymSesion.gymId);
+        setMachinePhoto(active ?? null);
+        setMachineTodasFotos(todas);
+      } catch (err) {
+        console.error('Error cargando foto de máquina:', err);
+        setMachinePhoto(null);
+      }
+    };
+    loadMachinePhoto();
+  }, [currentExerciseIndex, selectedDay, hasStarted, gymSesion]);
 
   // Load active injuries
   useEffect(() => {
     if (!currentUser) return;
     dbHelpers.getActiveInjuries(currentUser.id)
       .then(setActiveInjuries)
-      .catch(() => {});
+      .catch(err => console.error('Error cargando lesiones:', err));
   }, [currentUser]);
 
   // Compute which injuries affect the selected day
@@ -259,9 +318,10 @@ export default function WorkoutSession() {
   const handleReorderExerciseInDay = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id || !selectedDay) return;
-    const oldIdx = selectedDay.ejercicios.findIndex(ej => ej.ejercicioId === active.id);
-    const newIdx = selectedDay.ejercicios.findIndex(ej => ej.ejercicioId === over.id);
-    if (oldIdx < 0 || newIdx < 0) return;
+    // IDs are "slot-0", "slot-1", etc.
+    const oldIdx = parseInt(String(active.id).replace('slot-', ''), 10);
+    const newIdx = parseInt(String(over.id).replace('slot-', ''), 10);
+    if (isNaN(oldIdx) || isNaN(newIdx)) return;
     setSelectedDay({
       ...selectedDay,
       ejercicios: arrayMove(selectedDay.ejercicios, oldIdx, newIdx),
@@ -307,6 +367,12 @@ export default function WorkoutSession() {
 
     return (
       <>
+        {/* Routine identity banner */}
+        <div className={`${theme.headerGradient} text-white px-4 py-2.5 flex items-center gap-2`}>
+          <span className="text-sm font-semibold">{theme.badge}</span>
+          <span className="text-white/60 text-xs">·</span>
+          <span className="text-xs text-white/80 truncate">{activeRoutine.nombre}</span>
+        </div>
         <DaySelector
           dias={activeRoutine.dias.filter(d => d.ejercicios.length > 0)}
           onSelectDay={handleSelectDay}
@@ -365,14 +431,14 @@ export default function WorkoutSession() {
               onDragEnd={handleReorderExerciseInDay}
             >
               <SortableContext
-                items={selectedDay.ejercicios.map(ej => ej.ejercicioId)}
+                items={selectedDay.ejercicios.map((_, idx) => `slot-${idx}`)}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-2">
                   {selectedDay.ejercicios.map((ej, idx) => (
                     <SortableSessionExercise
-                      key={ej.ejercicioId}
-                      id={ej.ejercicioId}
+                      key={`slot-${idx}`}
+                      id={`slot-${idx}`}
                       nombre={ej.ejercicio?.nombre ?? ej.ejercicioId}
                       index={idx}
                       series={ej.seriesObjetivo}
@@ -387,15 +453,28 @@ export default function WorkoutSession() {
 
         {selectedDay && !hasStarted && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg">
-            <div className="container mx-auto max-w-4xl">
-              <Button
-                size="lg"
-                className="w-full h-14 text-lg"
-                onClick={() => setShowWellnessCheck(true)}
+            <div className="container mx-auto max-w-4xl space-y-2">
+              {/* Gym indicator */}
+              <button
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors text-sm"
+                onClick={() => setGymSelectorOpen(true)}
               >
-                <Check className="w-5 h-5 mr-2" />
-                Comenzar Entrenamiento: {selectedDay.nombre}
-              </Button>
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <Building2 className="w-4 h-4" />
+                  {gymSesion ? gymSesion.gymNombre : 'Seleccionar gym…'}
+                </span>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <button
+                className={`w-full h-14 text-lg font-semibold rounded-xl ${theme.headerGradient} text-white flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform`}
+                onClick={() => {
+                  if (!gymSesion) { setGymSelectorOpen(true); return; }
+                  setShowWellnessCheck(true);
+                }}
+              >
+                <Check className="w-5 h-5" />
+                Comenzar: {selectedDay.nombre}
+              </button>
             </div>
           </div>
         )}
@@ -453,18 +532,31 @@ export default function WorkoutSession() {
             </div>
           </div>
         )}
+
+        {/* Gym selector — must be in pre-start return too */}
+        <GymSelector
+          open={gymSelectorOpen}
+          required={!gymSesion}
+          onSelect={(gymId, gymNombre) => {
+            setGymSesion({ gymId, gymNombre });
+            setGymSelectorOpen(false);
+            if (selectedDay) setShowWellnessCheck(true);
+          }}
+          onClose={() => setGymSelectorOpen(false)}
+        />
       </>
     );
   }
 
-  const ejerciciosDelDia = selectedDay.ejercicios;
+  const ejerciciosDelDia = [...selectedDay.ejercicios, ...ejerciciosExtra];
   const ejercicioActual = ejerciciosDelDia[currentExerciseIndex];
 
   if (!ejercicioActual) {
     return null;
   }
 
-  const ejercicioLog = ejercicioLogs.get(ejercicioActual.ejercicioId);
+  const currentSlotKey = `slot-${currentExerciseIndex}`;
+  const ejercicioLog = ejercicioLogs.get(currentSlotKey);
   const seriesCompletadas = ejercicioLog?.series.length || 0;
   const totalSeries = ejercicioActual.seriesObjetivo;
 
@@ -512,7 +604,7 @@ export default function WorkoutSession() {
     const seriesActualizadas = [...logActual.series, nuevaSerie];
     const logActualizado = { ...logActual, series: seriesActualizadas };
 
-    setEjercicioLogs(prev => new Map(prev.set(ejercicioActual.ejercicioId, logActualizado)));
+    setEjercicioLogs(prev => new Map(prev.set(currentSlotKey, logActualizado)));
 
     // Calcular 1RM estimado (fórmula de Epley)
     const repsNum = parseInt(reps);
@@ -543,13 +635,11 @@ export default function WorkoutSession() {
 
   // Aplica una transformación al log del ejercicio actual.
   const updateExerciseLog = (transform: (log: ExerciseLog) => ExerciseLog) => {
-    const ejId = ejerciciosDelDia[currentExerciseIndex]?.ejercicioId;
-    if (!ejId) return;
     setEjercicioLogs(prev => {
       const next = new Map(prev);
-      const existing = next.get(ejId);
+      const existing = next.get(currentSlotKey);
       if (!existing) return prev;
-      next.set(ejId, transform(existing));
+      next.set(currentSlotKey, transform(existing));
       return next;
     });
   };
@@ -573,29 +663,25 @@ export default function WorkoutSession() {
         .map((s, i) => ({ ...s, numero: i + 1 })),
     }));
     // Reajusta el contador de la próxima serie
-    const ejId = ejerciciosDelDia[currentExerciseIndex]?.ejercicioId;
-    if (ejId) {
-      const log = ejercicioLogs.get(ejId);
-      const remaining = (log?.series.length ?? 1) - 1;
-      setCurrentSetNumber(remaining + 1);
-    }
+    const log = ejercicioLogs.get(currentSlotKey);
+    const remaining = (log?.series.length ?? 1) - 1;
+    setCurrentSetNumber(remaining + 1);
     setConfirmDeleteSerie(null);
     toast.success('Serie eliminada');
   };
 
   // Calcula el próximo número de serie de un ejercicio basándose en las
   // series ya registradas. Evita duplicar "Serie 1" al volver atrás.
-  const nextSetNumberForExercise = (ejId: string) => {
-    const log = ejercicioLogs.get(ejId);
+  const nextSetNumberForExercise = (slotKey: string) => {
+    const log = ejercicioLogs.get(slotKey);
     if (!log || log.series.length === 0) return 1;
     return Math.max(...log.series.map(s => s.numero)) + 1;
   };
 
   const handleSiguienteEjercicio = () => {
     if (currentExerciseIndex < ejerciciosDelDia.length - 1) {
-      const nextEj = ejerciciosDelDia[currentExerciseIndex + 1];
       setCurrentExerciseIndex(prev => prev + 1);
-      setCurrentSetNumber(nextSetNumberForExercise(nextEj.ejercicioId));
+      setCurrentSetNumber(nextSetNumberForExercise(`slot-${currentExerciseIndex + 1}`));
       setShowTimer(false);
       setPeso('');
       setEstimated1RM(null);
@@ -608,9 +694,8 @@ export default function WorkoutSession() {
 
   const handleAnteriorEjercicio = () => {
     if (currentExerciseIndex > 0) {
-      const prevEj = ejerciciosDelDia[currentExerciseIndex - 1];
       setCurrentExerciseIndex(prev => prev - 1);
-      setCurrentSetNumber(nextSetNumberForExercise(prevEj.ejercicioId));
+      setCurrentSetNumber(nextSetNumberForExercise(`slot-${currentExerciseIndex - 1}`));
       setShowTimer(false);
       setPeso('');
     }
@@ -670,7 +755,7 @@ export default function WorkoutSession() {
       navigate('/workout/summary', { state: { workout: workoutFinal } });
     } catch (error) {
       console.error('Error guardando entrenamiento:', error);
-      alert('Error al guardar el entrenamiento. Por favor, intenta de nuevo.');
+      toast.error('Error al guardar el entrenamiento. Por favor, intenta de nuevo.');
     }
   };
 
@@ -679,6 +764,34 @@ export default function WorkoutSession() {
       finishWorkout();
       navigate('/');
     }
+  };
+
+  const handleAskAI = async () => {
+    if (!aiQuestion.trim() || aiLoading) return;
+    setAiLoading(true);
+    setAiAnswer('');
+    try {
+      const resp = await exerciseAgent.process(aiQuestion, {
+        currentExercise: ejercicioActual?.ejercicio,
+      });
+      setAiAnswer(resp.content);
+    } catch {
+      setAiAnswer('No se pudo obtener respuesta. Verifica tu conexión.');
+    } finally {
+      setAiLoading(false);
+      setAiQuestion('');
+    }
+  };
+
+  const handleAddExercicio = (ejercicio: ExerciseKnowledge) => {
+    const nuevo: EjercicioEnRutina = {
+      ejercicioId: ejercicio.id,
+      ejercicio,
+      seriesObjetivo: 3,
+      repsObjetivo: [8, 12],
+    };
+    setEjerciciosExtra(prev => [...prev, nuevo]);
+    setAddExerciseOpen(false);
   };
 
   const handleSwap = (nuevo: typeof ejercicioActual) => {
@@ -701,37 +814,62 @@ export default function WorkoutSession() {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header con progreso */}
-      <div className="sticky top-0 z-40 bg-primary text-primary-foreground p-4 shadow-lg">
+      <div className={`sticky top-0 z-40 ${theme.headerGradient} text-white p-4 shadow-lg`}>
         <div className="container mx-auto max-w-4xl">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-xl font-bold">{selectedDay.nombre}</h1>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">{theme.badge}</span>
+              </div>
+              <h1 className="text-xl font-bold leading-tight mt-0.5">{selectedDay.nombre}</h1>
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleCancelarEntrenamiento}
-                className="text-primary-foreground hover:bg-primary-foreground/20"
+                className="text-white hover:bg-white/20"
               >
                 <X className="w-4 h-4" />
               </Button>
             </div>
           </div>
-          <Progress value={progreso} className="h-2 bg-primary-foreground/20" />
+          <Progress value={progreso} className="h-2 bg-white/20" />
           <div className="flex items-center justify-between mt-2 text-sm opacity-90">
-            <span>Ejercicio {currentExerciseIndex + 1} de {ejerciciosDelDia.length}</span>
-            {(() => {
-              const currentVolumen = getVolumenSesion({
-                id: '', userId: '', fecha: new Date(),
-                ejercicios: Array.from(ejercicioLogs.values()),
-                completado: false,
-              });
-              if (currentVolumen <= 0) return null;
-              return (
-                <span className="font-semibold tabular-nums">
-                  Volumen: {currentVolumen >= 1000 ? `${(currentVolumen / 1000).toFixed(1)}t` : `${Math.round(currentVolumen)} kg`}
-                </span>
-              );
-            })()}
+            <p>
+              Ejercicio {currentExerciseIndex + 1} de {ejerciciosDelDia.length}
+              {ejerciciosExtra.length > 0 && (
+                <span className="ml-1 opacity-70 text-xs">(+{ejerciciosExtra.length} extra)</span>
+              )}
+            </p>
+            <div className="flex items-center gap-2">
+              {(() => {
+                const currentVolumen = getVolumenSesion({
+                  id: '', userId: '', fecha: new Date(),
+                  ejercicios: Array.from(ejercicioLogs.values()),
+                  completado: false,
+                });
+                if (currentVolumen <= 0) return null;
+                return (
+                  <span className="font-semibold tabular-nums">
+                    {currentVolumen >= 1000 ? `${(currentVolumen / 1000).toFixed(1)}t` : `${Math.round(currentVolumen)} kg`}
+                  </span>
+                );
+              })()}
+              <button
+                onClick={async () => {
+                  if (allExercises.length === 0) {
+                    const all = await dbHelpers.getAllExercises();
+                    setAllExercises(all);
+                  }
+                  setAddExerciseSearch('');
+                  setAddExerciseOpen(true);
+                }}
+                className="flex items-center gap-1 text-xs text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded-full transition-colors"
+              >
+                <Plus className="w-3 h-3" /> Añadir
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -794,6 +932,46 @@ export default function WorkoutSession() {
             </div>
           </CardHeader>
           <CardContent>
+            {/* Machine photo card — shown for ALL exercises when gym is selected */}
+            {gymSesion && (() => {
+              const ej = selectedDay?.ejercicios[currentExerciseIndex];
+              const key = `${ej?.ejercicioId ?? ''}-dismissed`;
+              const dismissed = dismissedMachineKey === key;
+              if (machinePhoto && !dismissed) {
+                return (
+                  <MachinePhotoCard
+                    photo={machinePhoto}
+                    todasFotos={machineTodasFotos}
+                    ejercicioNombre={ej?.ejercicio?.nombre ?? ''}
+                    gymNombre={gymSesion.gymNombre}
+                    onVerDetalle={() => setMachinePhotoViewerOpen(true)}
+                    onAñadirFoto={() => setMachinePhotoCaptureOpen(true)}
+                    onDismiss={() => setDismissedMachineKey(key)}
+                  />
+                );
+              }
+              if (!dismissed) {
+                return (
+                  <button
+                    className="w-full mb-4 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-muted-foreground/25 hover:border-primary/40 hover:bg-muted/10 transition-colors text-left group"
+                    onClick={() => setMachinePhotoCaptureOpen(true)}
+                  >
+                    <Camera className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary/60 shrink-0" />
+                    <span className="text-xs text-muted-foreground group-hover:text-foreground">
+                      Añadir foto de referencia
+                    </span>
+                    <button
+                      className="ml-auto text-muted-foreground/40 hover:text-muted-foreground p-1"
+                      onClick={e => { e.stopPropagation(); setDismissedMachineKey(key); }}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </button>
+                );
+              }
+              return null;
+            })()}
+
             {/* Objetivo */}
             <div className="bg-accent/50 p-4 rounded-lg mb-4">
               <p className="text-sm font-medium mb-1">Objetivo:</p>
@@ -1098,14 +1276,14 @@ export default function WorkoutSession() {
                     const notasValue = e.target.value;
                     setEjercicioLogs(prev => {
                       const next = new Map(prev);
-                      const existing = next.get(ejercicioActual.ejercicioId) ?? {
+                      const existing = next.get(currentSlotKey) ?? {
                         ejercicioId: ejercicioActual.ejercicioId,
                         ejercicio: ejercicioActual.ejercicio,
                         series: [],
                         tecnicaCorrecta: true,
                         sensacionMuscular: 3 as const,
                       };
-                      next.set(ejercicioActual.ejercicioId, { ...existing, notas: notasValue });
+                      next.set(currentSlotKey, { ...existing, notas: notasValue });
                       return next;
                     });
                   }}
@@ -1326,16 +1504,52 @@ export default function WorkoutSession() {
               )}
             </div>
 
-            <div className="px-5 pb-5 pt-3 border-t shrink-0">
-              <button
-                onClick={() => setShowTechModal(false)}
-                className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
-              >
-                Entendido, a entrenar
-              </button>
-            </div>
+            {/* Ask AI section */}
+            <div className="border-t pt-4 space-y-3">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Bot className="w-3.5 h-3.5" /> Preguntar a la IA
+              </p>
+              {aiAnswer && (
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-sm leading-relaxed whitespace-pre-wrap">
+                  {aiAnswer}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  value={aiQuestion}
+                  onChange={e => setAiQuestion(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey && aiQuestion.trim() && !aiLoading) {
+                      e.preventDefault();
+                      handleAskAI();
+                    }
+                  }}
+                  placeholder={`Pregunta sobre ${ejercicioActual.ejercicio?.nombre ?? 'este ejercicio'}…`}
+                  className="flex-1 h-9 px-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  onClick={handleAskAI}
+                  disabled={!aiQuestion.trim() || aiLoading}
+                  className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 transition-opacity shrink-0"
+                >
+                  {aiLoading
+                    ? <span className="w-3.5 h-3.5 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
+                    : <Send className="w-3.5 h-3.5" />
+                  }
+                </button>
+              </div>
+          </div>
+
+          <div className="px-5 pb-5 pt-3 border-t shrink-0">
+            <button
+              onClick={() => { setShowTechModal(false); setAiQuestion(''); setAiAnswer(''); }}
+              className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
+            >
+              Entendido, a entrenar
+            </button>
           </div>
         </div>
+      </div>
       )}
 
       {/* Timer de descanso */}
@@ -1387,6 +1601,124 @@ export default function WorkoutSession() {
         confirmLabel="Borrar"
         onConfirm={performDeleteSerie}
       />
+      {/* Machine photo modals */}
+      {gymSesion && selectedDay && currentUser && (() => {
+        const ej = selectedDay.ejercicios[currentExerciseIndex];
+        const refreshPhotos = async () => {
+          const active = await dbHelpers.getActiveMachinePhoto(currentUser.id, ej?.ejercicioId ?? '', gymSesion.gymId);
+          const todas = await dbHelpers.getMachinePhotos(currentUser.id, ej?.ejercicioId ?? '', gymSesion.gymId);
+          setMachinePhoto(active ?? null);
+          setMachineTodasFotos(todas);
+        };
+        return (
+          <>
+            <MachinePhotoCapture
+              open={machinePhotoCaptureOpen}
+              ejercicioId={ej?.ejercicioId ?? ''}
+              ejercicioNombre={ej?.ejercicio?.nombre ?? ''}
+              gymId={gymSesion.gymId}
+              gymNombre={gymSesion.gymNombre}
+              onGuardar={async (data) => {
+                const photo: MachinePhoto = {
+                  id: `mp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                  userId: currentUser.id,
+                  ejercicioId: ej?.ejercicioId ?? '',
+                  ejercicioNombre: ej?.ejercicio?.nombre ?? '',
+                  gymId: gymSesion.gymId,
+                  gymNombre: gymSesion.gymNombre,
+                  url: data.url,
+                  tipo: data.tipo,
+                  ajustes: data.ajustes,
+                  notas: data.notas || undefined,
+                  fecha: new Date(),
+                  esActiva: true,
+                  syncStatus: 'pending_create',
+                  lastUpdated: Date.now(),
+                };
+                await dbHelpers.addMachinePhoto(photo);
+                await refreshPhotos();
+              }}
+              onClose={() => setMachinePhotoCaptureOpen(false)}
+            />
+            <MachinePhotoViewer
+              open={machinePhotoViewerOpen}
+              fotos={machineTodasFotos}
+              ejercicioNombre={ej?.ejercicio?.nombre ?? ''}
+              gymNombre={gymSesion.gymNombre}
+              onEditar={() => {}}
+              onEliminar={async (id) => {
+                await dbHelpers.deleteMachinePhoto(id);
+                await refreshPhotos();
+              }}
+              onAñadirFoto={() => { setMachinePhotoViewerOpen(false); setMachinePhotoCaptureOpen(true); }}
+              onClose={() => setMachinePhotoViewerOpen(false)}
+            />
+          </>
+        );
+      })()}
+
+      {/* Gym selector */}
+      <GymSelector
+        open={gymSelectorOpen}
+        required={!gymSesion}
+        onSelect={(gymId, gymNombre) => {
+          setGymSesion({ gymId, gymNombre });
+          setGymSelectorOpen(false);
+          // If coming from start button, proceed to wellness
+          if (!hasStarted && selectedDay) setShowWellnessCheck(true);
+        }}
+        onClose={() => setGymSelectorOpen(false)}
+      />
+
+      {/* Add exercise picker */}
+      {addExerciseOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card w-full max-w-lg rounded-t-2xl max-h-[80vh] flex flex-col shadow-xl">
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b shrink-0">
+              <h2 className="font-bold text-base">Añadir ejercicio</h2>
+              <button onClick={() => setAddExerciseOpen(false)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-4 pt-3 pb-2 shrink-0">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  autoFocus
+                  value={addExerciseSearch}
+                  onChange={e => setAddExerciseSearch(e.target.value)}
+                  placeholder="Buscar ejercicio…"
+                  className="w-full h-10 pl-9 pr-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-1">
+              {allExercises
+                .filter(e => {
+                  const q = addExerciseSearch.toLowerCase();
+                  return !q || e.nombre.toLowerCase().includes(q) || e.grupoMuscular?.toLowerCase().includes(q);
+                })
+                .slice(0, 40)
+                .map(e => (
+                  <button
+                    key={e.id}
+                    onClick={() => handleAddExercicio(e)}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border hover:border-primary/50 hover:bg-primary/5 text-left transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{e.nombre}</p>
+                      <p className="text-xs text-muted-foreground">{e.grupoMuscular} · {e.categoria}</p>
+                    </div>
+                    <Plus className="w-4 h-4 text-primary shrink-0" />
+                  </button>
+                ))}
+              {allExercises.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">Cargando ejercicios…</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Cloud, CloudOff, RefreshCw, AlertTriangle } from 'lucide-react';
 import { dbHelpers } from '@/db';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ export function SyncIndicator() {
     const [pendingCount, setPendingCount] = useState(0);
     const [isSyncing, setIsSyncing] = useState(false);
     const [lastErrors, setLastErrors] = useState<string[]>([]);
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -34,6 +35,14 @@ export function SyncIndicator() {
         };
     }, []);
 
+    const handleClearStuck = async () => {
+        await dbHelpers.clearStuckPending();
+        const count = await dbHelpers.getPendingSyncCount();
+        setPendingCount(count);
+        setLastErrors([]);
+        toast.success('Elementos bloqueados liberados');
+    };
+
     const handleSync = async () => {
         if (!isOnline) return;
         setIsSyncing(true);
@@ -44,10 +53,12 @@ export function SyncIndicator() {
             setLastErrors(result.errorMessages);
 
             if (result.errors > 0) {
+                const firstError = result.errorMessages[0] ?? '';
                 toast.error(`Sincronización con errores`, {
                     description: result.synced > 0
-                        ? `${result.synced} subidos · ${result.errors} fallidos. Revisa la consola para detalles.`
-                        : `${result.errors} cambios no se pudieron subir. Revisa la consola para detalles.`,
+                        ? `${result.synced} subidos · ${result.errors} fallidos: ${firstError}`
+                        : `${result.errors} fallidos: ${firstError}`,
+                    duration: 8000,
                 });
             } else if (result.synced > 0) {
                 toast.success(`${result.synced} ${result.synced === 1 ? 'cambio sincronizado' : 'cambios sincronizados'}`);
@@ -100,16 +111,26 @@ export function SyncIndicator() {
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={handleSync} className={`${tone} relative`}>
+                        <Button
+                            variant="ghost" size="icon"
+                            className={`${tone} relative`}
+                            onClick={handleSync}
+                            onPointerDown={() => { longPressTimer.current = setTimeout(handleClearStuck, 800); }}
+                            onPointerUp={() => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }}
+                            onPointerLeave={() => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }}
+                        >
                             {hasErrors ? <AlertTriangle className="h-5 w-5" /> : <RefreshCw className="h-5 w-5" />}
                             <span className={`absolute top-1 right-1 h-2 w-2 rounded-full ${dot} animate-pulse`} />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
                         {hasErrors ? (
-                            <div>
-                                <p className="font-medium">{pendingCount} pendientes — última sync con {lastErrors.length} {lastErrors.length === 1 ? 'error' : 'errores'}</p>
-                                <p className="text-xs opacity-70 mt-1">Click para reintentar</p>
+                            <div className="max-w-xs">
+                                <p className="font-medium">{pendingCount} pendientes — {lastErrors.length} {lastErrors.length === 1 ? 'error' : 'errores'}</p>
+                                {lastErrors.slice(0, 2).map((e, i) => (
+                                    <p key={i} className="text-xs opacity-70 mt-0.5 break-words">{e}</p>
+                                ))}
+                                <p className="text-xs opacity-50 mt-1">Click para reintentar · mantén para limpiar</p>
                             </div>
                         ) : (
                             <p>{pendingCount} cambios pendientes de subir. Click para sincronizar.</p>

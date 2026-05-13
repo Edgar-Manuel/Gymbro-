@@ -1,4 +1,5 @@
 import { db, dbHelpers } from '@/db';
+import { GymRepository } from '@/db/repositories/GymRepository';
 import { exercisesData } from '@/data/exercises';
 import type { UserProfile, UserStatistics } from '@/types';
 
@@ -74,6 +75,9 @@ export async function initializeDatabase() {
 
       console.log('✅ Usuario por defecto creado');
     }
+
+    // Fix any gyms stuck in pending sync (local-only table, no Appwrite collection)
+    await GymRepository.fixPendingGyms();
 
     isInitialized = true;
     isInitializing = false;

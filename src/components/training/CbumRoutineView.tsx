@@ -9,7 +9,7 @@ import {
 import type { FullWRoutine } from '@/data/fullwRoutines';
 import {
   ChevronDown, ChevronUp, Trophy, Calendar, Clock, ArrowRight,
-  Dumbbell, Sparkles, Salad, Brain, Moon, Flame,
+  Dumbbell, Sparkles, Salad, Brain, Moon, Flame, Zap, Link2,
 } from 'lucide-react';
 
 interface Props {
@@ -110,8 +110,8 @@ export default function CbumRoutineView({ onUseRoutine }: Props) {
           <div className="grid grid-cols-4 gap-2 text-center">
             <div className="bg-background/70 rounded-lg p-2">
               <Calendar className="w-4 h-4 mx-auto mb-1 text-amber-500" />
-              <p className="font-bold text-sm">{rutina.dias}</p>
-              <p className="text-[10px] text-muted-foreground">días/ciclo</p>
+              <p className="font-bold text-sm">9 días</p>
+              <p className="text-[10px] text-muted-foreground">ciclo rotativo</p>
             </div>
             <div className="bg-background/70 rounded-lg p-2">
               <Dumbbell className="w-4 h-4 mx-auto mb-1 text-orange-500" />
@@ -120,15 +120,13 @@ export default function CbumRoutineView({ onUseRoutine }: Props) {
             </div>
             <div className="bg-background/70 rounded-lg p-2">
               <Sparkles className="w-4 h-4 mx-auto mb-1 text-yellow-500" />
-              <p className="font-bold text-sm">
-                {intensity === 'principiante' ? 1 : intensity === 'intermedio' ? '~2' : 2}
-              </p>
-              <p className="text-[10px] text-muted-foreground">series efect.</p>
+              <p className="font-bold text-sm">2× espalda</p>
+              <p className="text-[10px] text-muted-foreground">por ciclo</p>
             </div>
             <div className="bg-background/70 rounded-lg p-2">
               <Clock className="w-4 h-4 mx-auto mb-1 text-amber-600" />
               <p className="font-bold text-sm">
-                {phase === 'prep' ? '90+' : '75-90'}
+                {phase === 'prep' ? '100+' : '80-100'}
               </p>
               <p className="text-[10px] text-muted-foreground">min/sesión</p>
             </div>
@@ -214,46 +212,90 @@ export default function CbumRoutineView({ onUseRoutine }: Props) {
 
             {isOpen && !isRest && (
               <CardContent className="pt-0 space-y-2">
-                {dia.ejercicios.map((ej, ei) => (
-                  <div
-                    key={ei}
-                    className={`rounded-xl p-3 ${
-                      ej.isFST7
-                        ? 'bg-gradient-to-r from-orange-100/60 to-red-100/40 dark:from-orange-950/40 dark:to-red-950/30 border border-orange-300 dark:border-orange-800/60'
-                        : 'bg-muted/40'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm flex items-center gap-1.5 flex-wrap">
-                          <span>{ei + 1}. {ej.nombre}</span>
-                          {ej.isFST7 && (
-                            <Badge className="bg-orange-500 hover:bg-orange-500 text-white text-[9px] px-1.5 py-0 h-4 gap-0.5">
-                              <Flame className="w-2.5 h-2.5" />
-                              FST-7
+                {dia.ejercicios.map((ej, ei) => {
+                  const isPairedTop = ej.isSuperset;
+                  const isPairedBottom = ei > 0 && dia.ejercicios[ei - 1]?.isSuperset;
+
+                  return (
+                    <div key={ei} className={isPairedTop ? 'pb-0' : ''}>
+                      {/* Superserie label — encima del primer ejercicio del par */}
+                      {isPairedTop && (
+                        <div className="flex items-center gap-1 mb-1 px-1">
+                          <Link2 className="w-3 h-3 text-violet-500" />
+                          <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-wider">
+                            Superserie — sin descanso entre ejercicios
+                          </span>
+                        </div>
+                      )}
+
+                      <div
+                        className={`rounded-xl p-3 ${
+                          ej.isFST7
+                            ? 'bg-gradient-to-r from-orange-100/60 to-red-100/40 dark:from-orange-950/40 dark:to-red-950/30 border border-orange-300 dark:border-orange-800/60'
+                            : isPairedTop
+                            ? 'bg-violet-50/60 dark:bg-violet-950/30 border border-violet-300/60 dark:border-violet-700/40 rounded-b-none border-b-0'
+                            : isPairedBottom
+                            ? 'bg-violet-50/60 dark:bg-violet-950/30 border border-violet-300/60 dark:border-violet-700/40 rounded-t-none'
+                            : 'bg-muted/40'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm flex items-center gap-1.5 flex-wrap">
+                              <span>{ei + 1}. {ej.nombre}</span>
+                              {ej.isFST7 && (
+                                <Badge className="bg-orange-500 hover:bg-orange-500 text-white text-[9px] px-1.5 py-0 h-4 gap-0.5">
+                                  <Flame className="w-2.5 h-2.5" />
+                                  FST-7
+                                </Badge>
+                              )}
+                              {ej.isDropSet && (
+                                <Badge className="bg-blue-500 hover:bg-blue-500 text-white text-[9px] px-1.5 py-0 h-4 gap-0.5">
+                                  <Zap className="w-2.5 h-2.5" />
+                                  Drop Set
+                                </Badge>
+                              )}
+                              {(isPairedTop || isPairedBottom) && (
+                                <Badge className="bg-violet-500 hover:bg-violet-500 text-white text-[9px] px-1.5 py-0 h-4 gap-0.5">
+                                  <Link2 className="w-2.5 h-2.5" />
+                                  {isPairedTop ? 'A' : 'B'}
+                                </Badge>
+                              )}
+                            </p>
+                            {ej.notas && !ej.isSuperset && (
+                              <p className="text-xs text-muted-foreground mt-1 italic">
+                                ✦ {ej.notas}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-1 shrink-0 items-end">
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] whitespace-nowrap ${
+                                ej.isFST7 ? 'border-orange-400 text-orange-700 dark:text-orange-300' :
+                                (isPairedTop || isPairedBottom) ? 'border-violet-400 text-violet-700 dark:text-violet-300' : ''
+                              }`}
+                            >
+                              {ej.series} × {ej.reps}
                             </Badge>
-                          )}
-                        </p>
-                        {ej.notas && (
-                          <p className="text-xs text-muted-foreground mt-1 italic">
-                            ✦ {ej.notas}
-                          </p>
-                        )}
+                            {!isPairedTop && (
+                              <Badge variant="secondary" className="text-[10px] whitespace-nowrap">
+                                {ej.descanso}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex flex-col gap-1 shrink-0 items-end">
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] whitespace-nowrap ${ej.isFST7 ? 'border-orange-400 text-orange-700 dark:text-orange-300' : ''}`}
-                        >
-                          {ej.series} × {ej.reps}
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] whitespace-nowrap">
-                          {ej.descanso}
-                        </Badge>
-                      </div>
+
+                      {/* Conector visual entre A y B de la superserie */}
+                      {isPairedTop && (
+                        <div className="flex justify-center -my-0.5 relative z-10">
+                          <div className="w-px h-3 bg-violet-400 dark:bg-violet-600" />
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             )}
           </Card>

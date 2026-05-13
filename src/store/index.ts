@@ -8,6 +8,12 @@ import type {
   UserStatistics
 } from '@/types';
 
+export type WeeklyOverride = {
+  assignments: Record<number, string>;  // dayIdx (0=Mon…6=Sun) → routineDayId
+  displaced: number[];                   // dayIdxs whose workout was moved away
+  weekKey: string;
+} | null;
+
 interface AppState {
   // User
   currentUser: UserProfile | null;
@@ -36,6 +42,10 @@ interface AppState {
   // Selected exercise (for detail view)
   selectedExercise: ExerciseKnowledge | null;
   setSelectedExercise: (exercise: ExerciseKnowledge | null) => void;
+
+  // Weekly schedule override (reschedule missed workout)
+  weeklyOverride: WeeklyOverride;
+  setWeeklyOverride: (o: WeeklyOverride) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -68,6 +78,10 @@ export const useAppStore = create<AppState>()(
       // Selected exercise
       selectedExercise: null as ExerciseKnowledge | null,
       setSelectedExercise: (exercise) => set({ selectedExercise: exercise }),
+
+      // Weekly override
+      weeklyOverride: null as WeeklyOverride,
+      setWeeklyOverride: (o) => set({ weeklyOverride: o }),
     }),
     {
       name: 'gymbro-storage',
@@ -75,6 +89,7 @@ export const useAppStore = create<AppState>()(
         currentUser: state.currentUser,
         isDarkMode: state.isDarkMode,
         sidebarOpen: state.sidebarOpen,
+        weeklyOverride: state.weeklyOverride,
       }),
     }
   )
