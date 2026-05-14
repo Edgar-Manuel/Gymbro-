@@ -19,7 +19,9 @@ export const RoutineRepository = {
                 } catch (error) {
                     console.warn('[Repo] Error fetching active routine from cloud:', error);
                 }
-            } else {
+            } else if (local.syncStatus === 'synced') {
+                // Only overwrite with cloud version if local is already synced.
+                // Never overwrite pending_create/pending_update — those haven't reached Appwrite yet.
                 appwriteDbHelpers.getActiveRoutine(userId)
                     .then(routine => {
                         if (routine) db.rutinas.put({ ...routine, syncStatus: 'synced', lastUpdated: Date.now() });
@@ -44,9 +46,13 @@ export const RoutineRepository = {
                     console.warn('[Repo] Error fetching routines from cloud:', error);
                 }
             } else {
-                appwriteDbHelpers.getUserRoutines(userId)
-                    .then(routines => db.rutinas.bulkPut(routines.map(r => ({ ...r, syncStatus: 'synced' as const, lastUpdated: Date.now() }))))
-                    .catch(err => console.warn('[Repo] background routines refresh failed', err));
+                // Only refresh routines that are already synced — don't overwrite pending local changes
+                const hasPending = local.some(r => r.syncStatus !== 'synced');
+                if (!hasPending) {
+                    appwriteDbHelpers.getUserRoutines(userId)
+                        .then(routines => db.rutinas.bulkPut(routines.map(r => ({ ...r, syncStatus: 'synced' as const, lastUpdated: Date.now() }))))
+                        .catch(err => console.warn('[Repo] background routines refresh failed', err));
+                }
             }
         }
 
