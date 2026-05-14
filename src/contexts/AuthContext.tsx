@@ -46,9 +46,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const store = useAppStore.getState();
           const localUser = store.currentUser;
 
-          // Si hay un usuario local y no es el usuario por defecto ('user-1')
-          // Y además el email es distinto al de la sesión actual de Appwrite
-          if (localUser && localUser.id !== 'user-1' && localUser.email && localUser.email !== user.email) {
+          // Limpiar datos solo si hay un cambio real de cuenta: el userId de Appwrite
+          // ($id) no coincide con el ID local guardado. Comparar solo por email es
+          // peligroso porque puede dar falsos positivos al renovar sesión.
+          const accountIdMismatch = localUser && localUser.id !== 'user-1' && localUser.id !== user.$id;
+          if (accountIdMismatch) {
             console.log('🔄 Cambio de cuenta detectado. Limpiando base de datos local...');
 
             await dbHelpers.clearAllData();
